@@ -1,0 +1,4 @@
+test:
+  adapter: postgresql
+  url: <%= ENV.fetch("DATABASE_URL") %>
+  database: outbox_test

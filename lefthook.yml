@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    rubocop:
+      tags: backend
+      glob: "{*.rb,**/*.rb,Gemfile,Rakefile}"
+      runner: bundle exec rubocop -A --force-exclusion {staged_files} && git add {staged_files}

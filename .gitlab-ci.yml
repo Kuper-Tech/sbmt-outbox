@@ -1,0 +1,26 @@
+include:
+  - project: "nstmrt/rubygems/templates"
+    ref: master
+    file: "build-rubygems.yml"
+
+tests:
+  stage: test
+  image: dreg.sbmt.io/dhub/library/ruby:$RUBY_VERSION
+  parallel:
+    matrix:
+      - RUBY_VERSION: ['2.5', '2.6', '2.7']
+  services:
+    - name: dreg.sbmt.io/dhub/library/postgres:12.2
+      alias: postgres
+  variables:
+    POSTGRES_PASSWORD: secret
+    POSTGRES_HOST_AUTH_METHOD: trust
+    DATABASE_URL: postgres://postgres:secret@postgres:5432
+  script:
+    - gem update --system > /dev/null # We want the latest Bundler until we update the base Ruby image
+    - bin/setup
+    - bundle exec rubocop
+    - bundle exec rspec --format RspecJunitFormatter --out test-results/rspec_$RUBY_VERSION.xml --format documentation
+  artifacts:
+    reports:
+      junit: test-results/rspec*.xml
