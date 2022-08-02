@@ -1,0 +1,36 @@
+services:
+  ruby:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        RUBY_VERSION: ${RUBY_VERSION:-2.5}
+    image: outbox-dev:0.1.0-ruby_${RUBY_VERSION:-2.5}
+    environment:
+      HISTFILE: /app/tmp/.bash_history
+      BUNDLE_PATH: /usr/local/bundle
+      BUNDLE_CONFIG: /app/.bundle/config
+      DATABASE_URL: postgres://postgres:@postgres:5432
+    command: bash
+    working_dir: /app
+    volumes:
+      - .:/app:cached
+      - bundler_data:/usr/local/bundle
+    tmpfs:
+      - /tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - 5432
+    healthcheck:
+      test: pg_isready -U postgres -h 127.0.0.1
+      interval: 10s
+
+volumes:
+  bundler_data:

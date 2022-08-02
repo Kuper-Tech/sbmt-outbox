@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+
+ENGINE_PATH = File.expand_path("../lib/sbmt/outbox/engine", __dir__)
+
+require_relative "../spec/rails_helper"
+
+# The full Rails console will be available in Rails 6
+require "rails/engine/commands"

@@ -1,0 +1,62 @@
+version: '7'
+
+environment:
+  RUBY_VERSION: '2.5'
+
+compose:
+  files:
+    - docker-compose.yml
+
+interaction:
+  bash:
+    description: Open the Bash shell in app's container
+    service: ruby
+    command: /bin/bash
+
+  bundle:
+    description: Run Bundler commands
+    service: ruby
+    command: bundle
+
+  appraisal:
+    description: Run Appraisal commands
+    service: ruby
+    command: bundle exec appraisal
+
+  rspec:
+    description: Run Rspec commands
+    service: ruby
+    command: bundle exec rspec
+    subcommands:
+      all:
+        command: bundle exec appraisal rspec
+      rails-5.0:
+        command: bundle exec appraisal rails-5.0 rspec
+      rails-5.1:
+        command: bundle exec appraisal rails-5.1 rspec
+      rails-5.2:
+        command: bundle exec appraisal rails-5.2 rspec
+      rails-6.0:
+        command: bundle exec appraisal rails-6.0 rspec
+      rails-6.1:
+        command: bundle exec appraisal rails-6.1 rspec
+
+  rubocop:
+    description: Run Ruby linter
+    service: ruby
+    command: bundle exec rubocop
+
+  setup:
+    description: Install deps
+    service: ruby
+    command: bin/setup
+
+  test:
+    description: Run linters, run all tests
+    service: ruby
+    command: bin/test
+
+provision:
+  - dip compose down --volumes
+  - cp -f lefthook-local.dip_example.yml lefthook-local.yml
+  - dip setup

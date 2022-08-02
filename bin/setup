@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+bundle install
+bundle exec appraisal install

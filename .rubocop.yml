@@ -1,0 +1,41 @@
+# We want Exclude directives from different
+# config files to get merged, not overwritten
+inherit_mode:
+  merge:
+    - Exclude
+
+AllCops:
+  NewCops: enable
+  SuggestExtensions: false
+
+require:
+  # Performance cops are bundled with Standard
+  - rubocop-performance
+  - rubocop-rails
+  - rubocop-rspec
+  # Standard's config uses custom cops,
+  # so it must be loaded
+  - standard
+
+inherit_gem:
+  standard: config/base.yml
+
+# rubocop-rails
+Rails/SkipsModelValidations:
+  Enabled: false
+
+# rubocop-rspec
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/LetSetup:
+  Enabled: false
+
+RSpec/StubbedMock:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
