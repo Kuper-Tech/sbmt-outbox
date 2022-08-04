@@ -2,7 +2,7 @@
 
 class OrderCreatedProducer < Sbmt::Outbox::BaseProducer
   option :topic, default: lambda {
-    config.dig(:producer, :topics, :orders)
+    config.dig(:producer, :topics, :order_created)
   }
 
   def publish(outbox_item, payload)

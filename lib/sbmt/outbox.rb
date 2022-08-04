@@ -31,7 +31,7 @@ module Sbmt
     end
 
     def yaml_config
-      @yaml_config ||= config.paths.each_with_object({}) do |path, memo|
+      @yaml_config ||= config.paths.each_with_object({}.with_indifferent_access) do |path, memo|
         memo.deep_merge!(
           YAML.safe_load(ERB.new(File.read(path)).result, [], [], true)
             .with_indifferent_access
