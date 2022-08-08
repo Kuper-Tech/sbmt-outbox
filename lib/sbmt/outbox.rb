@@ -9,6 +9,7 @@ require "dry-monads"
 require "dry/monads/do"
 require "schked"
 require "waterdrop"
+require "yabeda"
 
 require_relative "outbox/version"
 require_relative "outbox/error_tracker"
