@@ -12,10 +12,10 @@ require "combustion"
 begin
   Combustion.initialize! :active_record do
     if ENV["LOG"].to_s.empty?
-      config.logger = Logger.new(nil)
+      config.logger = ActiveSupport::TaggedLogging.new(Logger.new(nil))
       config.log_level = :fatal
     else
-      config.logger = Logger.new($stdout)
+      config.logger = ActiveSupport::TaggedLogging.new(Logger.new($stdout))
       config.log_level = :debug
     end
 
@@ -41,6 +41,7 @@ require "rspec/rails"
 # Add additional requires below this line. Rails is not loaded until this point!
 require "fabrication"
 require "sidekiq/testing"
+require "yabeda/rspec"
 
 Dir[Sbmt::Outbox::Engine.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
 Dir[Sbmt::Outbox::Engine.root.join("spec/fabricators/**/*.rb")].sort.each { |f| require f }

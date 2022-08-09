@@ -1,4 +1,8 @@
 default: &default
+  items:
+    outbox_item:
+      max_retries: 1
+
   producer:
     topics:
       order_created: orders

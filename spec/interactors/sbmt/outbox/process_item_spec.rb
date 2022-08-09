@@ -6,9 +6,11 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
 
     let(:event_name) { "order_created" }
     let(:timeout) { 1 }
+    let(:max_retries) { 0 }
 
     before do
       allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_return(true)
+      allow(OutboxItem).to receive(:max_retries).and_return(max_retries)
     end
 
     context "when outbox item is not found in db" do
@@ -16,7 +18,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
 
       it "returns error" do
         expect(result).not_to be_success
-        expect(result.failure).to eq("OutboxItem#{outbox_item.id} not found")
+        expect(result.failure).to match(/not found/)
       end
     end
 
@@ -31,7 +33,13 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
 
       it "returns error" do
         expect(result).not_to be_success
-        expect(result.failure).to eq("OutboxItem#{outbox_item.id} not found")
+        expect(result.failure).to match(/not found/)
+      end
+
+      it "tracks Yabeda error counter" do
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter)
+
+        result
       end
     end
 
@@ -46,13 +54,13 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect(result).not_to be_success
       end
 
-      it 'changes status to "failed"' do
+      it "changes status to failed" do
         result
         expect(outbox_item.reload).to be_failed
       end
 
       it "tracks error" do
-        expect(result.failure).to eq("missing transports for OutboxItem##{outbox_item.id}")
+        expect(result.failure).to match(/missing transports/)
       end
 
       it "does not remove outbox item" do
@@ -70,6 +78,13 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       it "removes outbox item" do
         expect { result }.to change(OutboxItem, :count).by(-1)
       end
+
+      it "tracks Yabeda sent counter and last_sent_event_id" do
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.sent_counter)
+          .and update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
+
+        result
+      end
     end
 
     context "when outbox item produce to kafka unsuccessfully" do
@@ -83,19 +98,27 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect(result).not_to be_success
       end
 
-      it 'changes status to "failed"' do
+      it "changes status to failed" do
         result
         expect(outbox_item.reload).to be_failed
       end
 
       it "tracks error" do
-        error_message = "Export failed for OutboxItem##{outbox_item.id} with error: " \
-          "Transport OrderCreatedProducer returned false"
-        expect(result.failure).to eq(error_message)
+        expect(result.failure).to match(/transport OrderCreatedProducer returned false/)
       end
 
       it "does not remove outbox item" do
         expect { result }.not_to change(OutboxItem, :count)
+      end
+
+      context "when has one retry available" do
+        let(:max_retries) { 1 }
+
+        it "doesn't change status to failed" do
+          result
+          expect(outbox_item.reload).to be_pending
+          expect(outbox_item.errors_count).to eq 1
+        end
       end
     end
 
@@ -103,23 +126,23 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow(Timeout)
-          .to(receive(:timeout))
-          .with(timeout, described_class::ProcessItemError)
-          .and_raise(described_class::ProcessItemError, "timeout")
+        allow_any_instance_of(OrderCreatedProducer).to receive(:publish) do
+          sleep 3
+          false
+        end
       end
 
       it "returns error" do
         expect(result).not_to be_success
       end
 
-      it 'changes status to "failed"' do
+      it "changes status to failed" do
         result
         expect(outbox_item.reload).to be_failed
       end
 
       it "tracks error" do
-        expect(result.failure).to eq("timeout")
+        expect(result.failure).to match(/execution expired/)
       end
 
       it "does not remove outbox item" do
