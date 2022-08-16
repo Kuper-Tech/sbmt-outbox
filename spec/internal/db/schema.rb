@@ -7,6 +7,7 @@ ActiveRecord::Schema.define do
     t.json :options
     t.binary :proto_payload, null: false
     t.integer :status, null: false, default: 0
+    t.integer :errors_count, null: false, default: 0
     t.timestamps
   end
 

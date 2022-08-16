@@ -11,8 +11,16 @@ require "combustion"
 
 begin
   Combustion.initialize! :active_record do
-    config.logger = Logger.new(nil)
-    config.log_level = :fatal
+    if ENV["LOG"].to_s.empty?
+      config.logger = ActiveSupport::TaggedLogging.new(Logger.new(nil))
+      config.log_level = :fatal
+    else
+      config.logger = ActiveSupport::TaggedLogging.new(Logger.new($stdout))
+      config.log_level = :debug
+    end
+
+    config.active_record.logger = config.logger
+
     config.i18n.available_locales = [:ru, :en]
     config.i18n.default_locale = :ru
   end
@@ -27,10 +35,13 @@ rescue => e
   exit(1)
 end
 
+ActiveRecord::Base.logger = Rails.logger
+
 require "rspec/rails"
 # Add additional requires below this line. Rails is not loaded until this point!
 require "fabrication"
 require "sidekiq/testing"
+require "yabeda/rspec"
 
 Dir[Sbmt::Outbox::Engine.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
 Dir[Sbmt::Outbox::Engine.root.join("spec/fabricators/**/*.rb")].sort.each { |f| require f }

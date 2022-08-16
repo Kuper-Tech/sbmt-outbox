@@ -31,6 +31,7 @@ create_table :my_outbox_items do |t|
   t.json :options
   t.binary :proto_payload, null: false
   t.integer :status, null: false, default: 0
+  t.integer :errors_count, null: false, default: 0
   t.timestamps
 end
 
@@ -73,8 +74,9 @@ end
 default: &default
   ignore_kafka_errors: true
   items:
-    MyOutboxItem:
-      partition_size: 2
+    my_outbox_item:
+      partition_size: 2 # default: 1
+      max_retries: 1 # default: 0
 
 development:
   <<: *default
@@ -102,7 +104,9 @@ end
 
 ## Usage
 
-TODO: Implement base outbox-items creator in this gem.
+```ruby
+Sbmt::Outbox::CreateItem.call(MyOutboxItem, attributes: some_attrs)
+```
 
 ## Development & Test
 

@@ -20,7 +20,7 @@ tests:
     - gem update --system > /dev/null # We want the latest Bundler until we update the base Ruby image
     - bin/setup
     - bundle exec rubocop
-    - bundle exec rspec --format RspecJunitFormatter --out test-results/rspec_$RUBY_VERSION.xml --format documentation
+    - bundle exec appraisal rspec --format RspecJunitFormatter --out test-results/rspec_$RUBY_VERSION.xml --format documentation
   artifacts:
     reports:
       junit: test-results/rspec*.xml
