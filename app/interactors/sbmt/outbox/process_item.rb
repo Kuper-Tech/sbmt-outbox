@@ -104,8 +104,13 @@ module Sbmt
         end
 
         after_commit do
-          Yabeda.outbox.error_counter
-            .increment(item_class.metric_labels)
+          if outbox_item.nil? || outbox_item.max_retries_exceeded?
+            Yabeda.outbox.error_counter
+              .increment(item_class.metric_labels)
+          else
+            Yabeda.outbox.retry_counter
+              .increment(item_class.metric_labels)
+          end
         end
 
         Failure(error_message)
