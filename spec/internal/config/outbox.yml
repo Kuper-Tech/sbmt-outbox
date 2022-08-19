@@ -1,4 +1,7 @@
 default: &default
+  kafka:
+    required_acks: -1
+
   items:
     outbox_item:
       max_retries: 1

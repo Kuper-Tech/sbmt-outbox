@@ -6,8 +6,8 @@ module Sbmt
     class BaseProducer
       extend Dry::Initializer
 
-      option :producer, default: -> { WaterDrop::SyncProducer }
-      option :async_producer, default: -> { WaterDrop::AsyncProducer }
+      option :producer, default: -> { KafkaProducers::SyncProducer }
+      option :async_producer, default: -> { KafkaProducers::AsyncProducer }
       option :config, default: -> { Outbox.yaml_config }
 
       def self.call(outbox_item, payload)
