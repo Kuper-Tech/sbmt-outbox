@@ -35,12 +35,6 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect(result).not_to be_success
         expect(result.failure).to match(/not found/)
       end
-
-      it "tracks Yabeda error counter" do
-        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter)
-
-        result
-      end
     end
 
     context "when there is no producer for defined event_name" do
@@ -111,6 +105,12 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect { result }.not_to change(OutboxItem, :count)
       end
 
+      it "tracks Yabeda error counter" do
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter)
+
+        result
+      end
+
       context "when has one retry available" do
         let(:max_retries) { 1 }
 
@@ -118,6 +118,12 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
           result
           expect(outbox_item.reload).to be_pending
           expect(outbox_item.errors_count).to eq 1
+        end
+
+        it "tracks Yabeda retry counter" do
+          expect { result }.to increment_yabeda_counter(Yabeda.outbox.retry_counter)
+
+          result
         end
       end
     end

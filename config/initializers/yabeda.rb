@@ -8,7 +8,11 @@ Yabeda.configure do
 
     counter :error_counter,
       tags: %i[name],
-      comment: "Errors that occurred while processing outbox messages"
+      comment: "Errors (excepting retries) that occurred while processing outbox messages"
+
+    counter :retry_counter,
+      tags: %i[name],
+      comment: "Retries that occurred while processing outbox messages"
 
     gauge :last_stored_event_id,
       tags: %i[name],
