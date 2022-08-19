@@ -32,6 +32,8 @@ module Sbmt
         rescue Dry::Monads::Do::Halt => e
           e.result
         end
+      ensure
+        track_metrics
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
@@ -103,14 +105,10 @@ module Sbmt
           Outbox.error_tracker.error(outbox_error)
         end
 
-        after_commit do
-          if outbox_item.nil? || outbox_item.max_retries_exceeded?
-            Yabeda.outbox.error_counter
-              .increment(item_class.metric_labels)
-          else
-            Yabeda.outbox.retry_counter
-              .increment(item_class.metric_labels)
-          end
+        if outbox_item.nil? || outbox_item.max_retries_exceeded?
+          counters[:error_counter] += 1
+        else
+          counters[:retry_counter] += 1
         end
 
         Failure(error_message)
@@ -122,13 +120,7 @@ module Sbmt
           "Record: #{item_class.name}##{item_id} #{outbox_item.log_details.to_json}"
         )
 
-        after_commit do
-          Yabeda.outbox.sent_counter
-            .increment(item_class.metric_labels)
-
-          Yabeda.outbox.last_sent_event_id
-            .set(item_class.metric_labels, item_id)
-        end
+        counters[:sent_counter] += 1
       end
 
       def fail_outbox_item(outbox_item, error_message)
@@ -146,6 +138,25 @@ module Sbmt
         else
           outbox_item.save! # just save errors_count
         end
+      end
+
+      def track_metrics
+        labels = item_class.metric_labels
+
+        %i[error_counter retry_counter sent_counter].each do |counter_name|
+          Yabeda.outbox
+            .send(counter_name)
+            .increment(labels, by: counters[counter_name])
+        end
+
+        return unless counters[:sent_counter] > 0
+
+        Yabeda.outbox.last_sent_event_id
+          .set(labels, item_id)
+      end
+
+      def counters
+        @counters ||= Hash.new(0)
       end
 
       def log_success(message)
