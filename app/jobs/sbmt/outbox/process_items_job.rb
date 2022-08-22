@@ -10,7 +10,7 @@ module Sbmt
       sidekiq_options queue: :outbox,
         lock: :until_executed,
         # Actually, we don't know how long the processing will be
-        lock_ttl: 1.hour.to_i,
+        lock_ttl: 15.minutes.to_i,
         retry: false
 
       def self.enqueue
