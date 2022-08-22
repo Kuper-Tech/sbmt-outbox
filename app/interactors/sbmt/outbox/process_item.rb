@@ -2,7 +2,7 @@
 
 module Sbmt
   module Outbox
-    class ProcessItem < DryInteractor
+    class ProcessItem < Sbmt::Outbox::DryInteractor
       TIMEOUT = ENV.fetch("SBMT_OUTBOX__APP__PROCESS_ITEM_TIMEOUT", 30).to_i
 
       param :item_class, reader: :private
@@ -12,25 +12,31 @@ module Sbmt
       delegate :logger, to: :Rails
 
       def call
+        outbox_item = nil
+
         item_class.transaction do
-          outbox_item = yield fetch_outbox_item
-          payload = yield build_payload(outbox_item)
-          transports = yield fetch_transports(outbox_item)
+          Timeout.timeout(timeout) do
+            outbox_item = yield fetch_outbox_item
+            payload = yield build_payload(outbox_item)
+            transports = yield fetch_transports(outbox_item)
 
-          result = List(transports)
-            .fmap { |transport| process_item(transport, outbox_item, payload) }
-            .typed(Dry::Monads::Result)
-            .traverse
+            result = List(transports)
+              .fmap { |transport| process_item(transport, outbox_item, payload) }
+              .typed(Dry::Monads::Result)
+              .traverse
 
-          if result.failure?
-            track_failed(result, outbox_item)
-          else
-            outbox_item.delete
-            track_successed(outbox_item)
-            Success(true)
+            if result.failure?
+              track_failed(result, outbox_item)
+            else
+              outbox_item.delete
+              track_successed(outbox_item)
+              Success(true)
+            end
           end
         rescue Dry::Monads::Do::Halt => e
           e.result
+        rescue Timeout::Error
+          track_failed("execution expired", outbox_item)
         end
       ensure
         track_metrics
@@ -71,9 +77,7 @@ module Sbmt
 
       def process_item(transport, outbox_item, payload)
         result = Try do
-          Timeout.timeout(timeout) do
-            transport.call(outbox_item, payload)
-          end
+          transport.call(outbox_item, payload)
         end
 
         if result.error?
@@ -92,7 +96,7 @@ module Sbmt
 
       def track_failed(error, outbox_item = nil)
         failure = error.respond_to?(:failure) ? error.failure : error
-        error_message = "Outbox item failed with error: #{failure}." \
+        error_message = "Outbox item failed with error: #{failure}. " \
                         "Record: #{item_class.name}##{item_id}"
         error_message += " #{outbox_item.log_details.to_json}" if outbox_item
 

@@ -133,26 +133,16 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
 
       before do
         allow_any_instance_of(OrderCreatedProducer).to receive(:publish) do
-          sleep 3
+          sleep 2
           false
         end
       end
 
       it "returns error" do
-        expect(result).not_to be_success
-      end
-
-      it "changes status to failed" do
-        result
-        expect(outbox_item.reload).to be_failed
-      end
-
-      it "tracks error" do
-        expect(result.failure).to match(/execution expired/)
-      end
-
-      it "does not remove outbox item" do
         expect { result }.not_to change(OutboxItem, :count)
+        expect(result).not_to be_success
+        expect(outbox_item.reload).to be_failed
+        expect(result.failure).to match(/execution expired/)
       end
     end
 
