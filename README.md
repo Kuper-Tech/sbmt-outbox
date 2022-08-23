@@ -32,6 +32,7 @@ create_table :my_outbox_items do |t|
   t.binary :proto_payload, null: false
   t.integer :status, null: false, default: 0
   t.integer :errors_count, null: false, default: 0
+  t.timestamp :processed_at
   t.timestamps
 end
 
@@ -48,6 +49,30 @@ class MyOutboxItem < Sbmt::Outbox::Item
     [
       MyEventCreatedProducer
     ]
+  end
+end
+```
+
+В геме используется дефолтная ретрай стратегия.
+Повтор событий происходит каждый раз, пока количество попыток не достигнет `max_retries`
+В конфигурации можно указать экспоненциальный интревал между попытками.
+Для этого указывает в конфигах `exponential_retry_interval: true`.
+Дополнительно можно передать дополнительные параметры.
+Для работы экспоненциальной стратегии, важно, чтобы в модели было поле  `t.timestamp :processed_at`
+Также можно передать свою стратегию, определив метод `retry_strategy`
+
+```ruby
+# app/models/my_outbox_item.rb
+class MyOutboxItem < Sbmt::Outbox::Item
+  def retry_strategy
+    MyRetryStrategy
+  end
+end
+
+class MyRetryStrategy
+  # Return boolean
+  def self.call(outbox_item)
+    # my logic
   end
 end
 ```
@@ -77,6 +102,10 @@ default: &default
     my_outbox_item:
       partition_size: 2 # default: 1
       max_retries: 1 # default: 0
+      exponential_retry_interval: true # Enable exponential interval between attempts to process an outbox item. Default: false
+      minimal_retry_interval: 10 # default: 10
+      maximal_retry_interval: 600 # default: 600
+      multiplier_retry_interval: 2 # default: 2
 
 development:
   <<: *default

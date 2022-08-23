@@ -7,10 +7,12 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
     let(:event_name) { "order_created" }
     let(:timeout) { 1 }
     let(:max_retries) { 0 }
+    let(:exponential_retry_interval) { false }
 
     before do
       allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_return(true)
       allow(OutboxItem).to receive(:max_retries).and_return(max_retries)
+      allow(OutboxItem).to receive(:exponential_retry_interval).and_return(exponential_retry_interval)
     end
 
     context "when outbox item is not found in db" do
@@ -177,6 +179,83 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
 
       it "removes outbox item" do
         expect { result }.to change(OutboxItem, :count).by(-1)
+      end
+    end
+
+    context "when outbox item has custom retry strategy" do
+      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+
+      before do
+        allow_any_instance_of(OutboxItem).to receive(:retry_strategy).and_return(RetryStrategy)
+      end
+
+      it "returns success" do
+        expect(RetryStrategy).to receive(:call).with(outbox_item).and_return(true)
+
+        expect(result).to be_success
+      end
+
+      it "removes outbox item" do
+        expect { result }.to change(OutboxItem, :count).by(-1)
+      end
+    end
+
+    context "when exponential_retry_interval enabled" do
+      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let(:exponential_retry_interval) { true }
+
+      before do
+        allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_return(false)
+      end
+
+      it "changes status to failed" do
+        result
+        expect(outbox_item.reload).to be_failed
+      end
+
+      it "updates processed_at attribute" do
+        expect { result }.to change { outbox_item.reload.processed_at }
+      end
+
+      context "when has one retry available" do
+        let(:max_retries) { 1 }
+
+        it "doesn't change status to failed" do
+          result
+          expect(outbox_item.reload).to be_pending
+        end
+
+        it "increment errors count" do
+          expect { result }.to change { outbox_item.reload.errors_count }.from(0).to(1)
+        end
+
+        context "with the next processing time is greater than the current time" do
+          let!(:outbox_item) do
+            Fabricate(:outbox_item, event_name: event_name, processed_at: 1.hour.from_now)
+          end
+
+          it "doesn't increment errors count" do
+            expect { result }.not_to change { outbox_item.reload.errors_count }
+          end
+
+          it "outbox item processing skip" do
+            expect(result.failure).to match(/Skip processing/)
+          end
+        end
+
+        context "with the next processing time is less than the current time" do
+          let!(:outbox_item) do
+            Fabricate(:outbox_item, event_name: event_name, processed_at: 1.hour.ago)
+          end
+
+          it "increment errors count" do
+            expect { result }.to change { outbox_item.reload.errors_count }.from(0).to(1)
+          end
+
+          it "outbox item processing continues" do
+            expect(result.failure).not_to match(/Skip processing/)
+          end
+        end
       end
     end
   end

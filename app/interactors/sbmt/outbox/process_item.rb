@@ -17,6 +17,7 @@ module Sbmt
         item_class.transaction do
           Timeout.timeout(timeout) do
             outbox_item = yield fetch_outbox_item
+            yield check_retry_strategy(outbox_item)
             payload = yield build_payload(outbox_item)
             transports = yield fetch_transports(outbox_item)
 
@@ -53,6 +54,19 @@ module Sbmt
         return Success(outbox_item) if outbox_item
 
         track_failed("not found")
+      end
+
+      def check_retry_strategy(outbox_item)
+        retry_strategy = outbox_item.retry_strategy
+
+        result =
+          if retry_strategy
+            outbox_item.retry_strategy.call(outbox_item)
+          else
+            outbox_item.default_retry_strategy
+          end
+
+        result ? Success() : Failure("Skip processing")
       end
 
       def build_payload(outbox_item)
@@ -128,6 +142,8 @@ module Sbmt
       end
 
       def fail_outbox_item(outbox_item, error_message)
+        outbox_item.assign_attributes(processed_at: Time.zone.now) if outbox_item.has_processed_at_attribute?
+
         unless outbox_item.retriable?
           return outbox_item.failed!
         end

@@ -31,6 +31,22 @@ module Sbmt
           (Outbox.yaml_config.dig(:items, outbox_name, :max_retries) || 0).to_i
         end
 
+        def exponential_retry_interval
+          (Outbox.yaml_config.dig(:items, outbox_name, :exponential_retry_interval) || false)
+        end
+
+        def minimal_retry_interval
+          (Outbox.yaml_config.dig(:items, outbox_name, :minimal_retry_interval) || 10).to_i
+        end
+
+        def maximal_retry_interval
+          (Outbox.yaml_config.dig(:items, outbox_name, :maximal_retry_interval) || 10 * 60).to_i
+        end
+
+        def multiplier_retry_interval
+          (Outbox.yaml_config.dig(:items, outbox_name, :multiplier_retry_interval) || 2).to_i
+        end
+
         def outbox_name
           @outbox_name ||= name.underscore
         end
@@ -44,6 +60,21 @@ module Sbmt
         options = (self[:options] || {})
         options = options.deep_merge(default_options).deep_merge(extra_options)
         options.symbolize_keys
+      end
+
+      def retry_strategy
+        nil
+      end
+
+      def default_retry_strategy
+        return true unless exponential_retry_interval?
+        return true if processed_at.nil?
+
+        ExponentialRetryStrategy.new(
+          minimal_interval: self.class.minimal_retry_interval,
+          maximal_elapsed_time: self.class.maximal_retry_interval,
+          multiplier: self.class.multiplier_retry_interval
+        ).call(errors_count, processed_at)
       end
 
       def transports
@@ -60,6 +91,14 @@ module Sbmt
 
       def retriable?
         has_attribute?(:errors_count) && self.class.max_retries > 0
+      end
+
+      def exponential_retry_interval?
+        retriable? && self.class.exponential_retry_interval && has_processed_at_attribute?
+      end
+
+      def has_processed_at_attribute?
+        has_attribute?(:processed_at)
       end
 
       def max_retries_exceeded?
