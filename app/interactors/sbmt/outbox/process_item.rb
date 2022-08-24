@@ -9,7 +9,7 @@ module Sbmt
       param :item_id, reader: :private
       option :timeout, reader: :private, default: -> { TIMEOUT }
 
-      delegate :logger, to: :Rails
+      delegate :logger, to: "Sbmt::Outbox"
 
       def call
         outbox_item = nil

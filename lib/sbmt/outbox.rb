@@ -8,6 +8,8 @@ require "dry-initializer"
 require "dry-monads"
 require "dry/monads/do"
 require "schked"
+require "kafka"
+require "delivery_boy"
 require "waterdrop"
 require "yabeda"
 require "after_commit_everywhere"
@@ -15,6 +17,9 @@ require "after_commit_everywhere"
 require_relative "outbox/version"
 require_relative "outbox/errors"
 require_relative "outbox/error_tracker"
+require_relative "outbox/kafka_producers/delivery_boy"
+require_relative "outbox/kafka_producers/async_producer"
+require_relative "outbox/kafka_producers/sync_producer"
 require_relative "outbox/engine"
 
 module Sbmt
@@ -23,6 +28,10 @@ module Sbmt
 
     def config
       @config ||= Rails.application.config.outbox
+    end
+
+    def logger
+      @logger ||= Rails.logger
     end
 
     def error_tracker
