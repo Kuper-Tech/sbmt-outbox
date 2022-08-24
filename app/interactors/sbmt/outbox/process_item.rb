@@ -2,7 +2,7 @@
 
 module Sbmt
   module Outbox
-    class ProcessItem < DryInteractor
+    class ProcessItem < Sbmt::Outbox::DryInteractor
       TIMEOUT = ENV.fetch("SBMT_OUTBOX__APP__PROCESS_ITEM_TIMEOUT", 30).to_i
 
       param :item_class, reader: :private
@@ -12,26 +12,34 @@ module Sbmt
       delegate :logger, to: :Rails
 
       def call
+        outbox_item = nil
+
         item_class.transaction do
-          outbox_item = yield fetch_outbox_item
-          payload = yield build_payload(outbox_item)
-          transports = yield fetch_transports(outbox_item)
+          Timeout.timeout(timeout) do
+            outbox_item = yield fetch_outbox_item
+            payload = yield build_payload(outbox_item)
+            transports = yield fetch_transports(outbox_item)
 
-          result = List(transports)
-            .fmap { |transport| process_item(transport, outbox_item, payload) }
-            .typed(Dry::Monads::Result)
-            .traverse
+            result = List(transports)
+              .fmap { |transport| process_item(transport, outbox_item, payload) }
+              .typed(Dry::Monads::Result)
+              .traverse
 
-          if result.failure?
-            track_failed(result, outbox_item)
-          else
-            outbox_item.delete
-            track_successed(outbox_item)
-            Success(true)
+            if result.failure?
+              track_failed(result, outbox_item)
+            else
+              outbox_item.delete
+              track_successed(outbox_item)
+              Success(true)
+            end
           end
         rescue Dry::Monads::Do::Halt => e
           e.result
+        rescue Timeout::Error
+          track_failed("execution expired", outbox_item)
         end
+      ensure
+        track_metrics
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
@@ -69,9 +77,7 @@ module Sbmt
 
       def process_item(transport, outbox_item, payload)
         result = Try do
-          Timeout.timeout(timeout) do
-            transport.call(outbox_item, payload)
-          end
+          transport.call(outbox_item, payload)
         end
 
         if result.error?
@@ -90,7 +96,7 @@ module Sbmt
 
       def track_failed(error, outbox_item = nil)
         failure = error.respond_to?(:failure) ? error.failure : error
-        error_message = "Outbox item failed with error: #{failure}." \
+        error_message = "Outbox item failed with error: #{failure}. " \
                         "Record: #{item_class.name}##{item_id}"
         error_message += " #{outbox_item.log_details.to_json}" if outbox_item
 
@@ -103,14 +109,10 @@ module Sbmt
           Outbox.error_tracker.error(outbox_error)
         end
 
-        after_commit do
-          if outbox_item.nil? || outbox_item.max_retries_exceeded?
-            Yabeda.outbox.error_counter
-              .increment(item_class.metric_labels)
-          else
-            Yabeda.outbox.retry_counter
-              .increment(item_class.metric_labels)
-          end
+        if outbox_item.nil? || outbox_item.max_retries_exceeded?
+          counters[:error_counter] += 1
+        else
+          counters[:retry_counter] += 1
         end
 
         Failure(error_message)
@@ -122,13 +124,7 @@ module Sbmt
           "Record: #{item_class.name}##{item_id} #{outbox_item.log_details.to_json}"
         )
 
-        after_commit do
-          Yabeda.outbox.sent_counter
-            .increment(item_class.metric_labels)
-
-          Yabeda.outbox.last_sent_event_id
-            .set(item_class.metric_labels, item_id)
-        end
+        counters[:sent_counter] += 1
       end
 
       def fail_outbox_item(outbox_item, error_message)
@@ -146,6 +142,25 @@ module Sbmt
         else
           outbox_item.save! # just save errors_count
         end
+      end
+
+      def track_metrics
+        labels = item_class.metric_labels
+
+        %i[error_counter retry_counter sent_counter].each do |counter_name|
+          Yabeda.outbox
+            .send(counter_name)
+            .increment(labels, by: counters[counter_name])
+        end
+
+        return unless counters[:sent_counter] > 0
+
+        Yabeda.outbox.last_sent_event_id
+          .set(labels, item_id)
+      end
+
+      def counters
+        @counters ||= Hash.new(0)
       end
 
       def log_success(message)
