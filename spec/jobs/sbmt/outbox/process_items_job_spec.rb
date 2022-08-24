@@ -10,7 +10,7 @@ describe Sbmt::Outbox::ProcessItemsJob do
     expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, item.id, timeout: 5)
 
     expect { perform }.to change { described_class.jobs.size }.by(1)
-    expect(described_class.jobs.last["args"]).to match_array(["OutboxItem", 0])
+    expect(described_class.jobs.last["args"]).to match_array(["OutboxItem", 0, 0])
     described_class.drain
   end
 
