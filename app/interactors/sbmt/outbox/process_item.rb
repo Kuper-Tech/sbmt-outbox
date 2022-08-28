@@ -9,7 +9,7 @@ module Sbmt
       param :item_id, reader: :private
       option :timeout, reader: :private, default: -> { TIMEOUT }
 
-      delegate :logger, to: "Sbmt::Outbox"
+      delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
 
       def call
         outbox_item = nil
@@ -37,7 +37,11 @@ module Sbmt
         rescue Dry::Monads::Do::Halt => e
           e.result
         rescue Timeout::Error
-          track_failed("execution expired", outbox_item)
+          if outbox_item
+            track_failed("execution expired", outbox_item)
+          else
+            track_fatal("execution expired")
+          end
         end
       ensure
         track_metrics
@@ -53,7 +57,7 @@ module Sbmt
           .find_by(id: item_id)
         return Success(outbox_item) if outbox_item
 
-        track_failed("not found")
+        track_fatal("not found")
       end
 
       def check_retry_strategy(outbox_item)
@@ -95,6 +99,7 @@ module Sbmt
         end
 
         if result.error?
+          Outbox.error_tracker.error(result.exception)
           return Failure("transport #{transport} raised error: #{result.exception.message}")
         end
 
@@ -108,23 +113,17 @@ module Sbmt
         end
       end
 
-      def track_failed(error, outbox_item = nil)
-        failure = error.respond_to?(:failure) ? error.failure : error
-        error_message = "Outbox item failed with error: #{failure}. " \
-                        "Record: #{item_class.name}##{item_id}"
-        error_message += " #{outbox_item.log_details.to_json}" if outbox_item
+      def track_failed(error, outbox_item)
+        error_message = "#{format_error_message(error)} #{outbox_item.log_details.to_json}"
+        log_failure(error_message, outbox_name: item_class.outbox_name)
 
-        log_error(error_message)
+        outbox_item.increment_errors_counter!
+        outbox_item.processed!
 
-        if outbox_item
-          fail_outbox_item(outbox_item, error_message)
-        else
-          outbox_error = ProcessItemError.new(error_message)
-          Outbox.error_tracker.error(outbox_error)
-        end
-
-        if outbox_item.nil? || outbox_item.max_retries_exceeded?
+        if outbox_item.max_retries_exceeded?
+          track_error_exception(error_message)
           counters[:error_counter] += 1
+          outbox_item.failed!
         else
           counters[:retry_counter] += 1
         end
@@ -132,32 +131,33 @@ module Sbmt
         Failure(error_message)
       end
 
+      def track_fatal(error)
+        error_message = format_error_message(error)
+        log_failure(error_message, outbox_name: item_class.outbox_name)
+        track_error_exception(error_message)
+
+        counters[:error_counter] += 1
+
+        Failure(error_message)
+      end
+
       def track_successed(outbox_item)
-        log_success(
-          "Outbox item successfully processed and deleted. " \
-          "Record: #{item_class.name}##{item_id} #{outbox_item.log_details.to_json}"
-        )
+        msg = "Outbox item successfully processed and deleted. " \
+              "Record: #{item_class.name}##{item_id} #{outbox_item.log_details.to_json}"
+        log_success(msg, outbox_name: item_class.outbox_name)
 
         counters[:sent_counter] += 1
       end
 
-      def fail_outbox_item(outbox_item, error_message)
-        outbox_item.assign_attributes(processed_at: Time.zone.now) if outbox_item.has_processed_at_attribute?
+      def track_error_exception(error_message)
+        error = ProcessItemError.new(error_message)
+        Outbox.error_tracker.error(error)
+      end
 
-        unless outbox_item.retriable?
-          return outbox_item.failed!
-        end
-
-        outbox_item.increment(:errors_count)
-
-        if outbox_item.max_retries_exceeded?
-          error = MaxRetriesExceededError.new(error_message)
-          Outbox.error_tracker.error(error)
-
-          outbox_item.failed!
-        else
-          outbox_item.save! # just save errors_count
-        end
+      def format_error_message(error)
+        failure = error.respond_to?(:failure) ? error.failure : error
+        "Outbox item failed with error: #{failure}. " \
+        "Record: #{item_class.name}##{item_id}"
       end
 
       def track_metrics
@@ -177,24 +177,6 @@ module Sbmt
 
       def counters
         @counters ||= Hash.new(0)
-      end
-
-      def log_success(message)
-        log_with_tags do
-          logger.info(message)
-        end
-      end
-
-      def log_error(message)
-        log_with_tags do
-          logger.error(message)
-        end
-      end
-
-      def log_with_tags
-        logger.tagged(outbox_name: item_class.outbox_name) do
-          yield
-        end
       end
     end
   end

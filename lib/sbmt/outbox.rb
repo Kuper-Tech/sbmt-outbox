@@ -18,6 +18,7 @@ require "exponential_backoff"
 require_relative "outbox/version"
 require_relative "outbox/errors"
 require_relative "outbox/error_tracker"
+require_relative "outbox/logger"
 require_relative "outbox/kafka_producers/delivery_boy"
 require_relative "outbox/kafka_producers/async_producer"
 require_relative "outbox/kafka_producers/sync_producer"
@@ -32,7 +33,7 @@ module Sbmt
     end
 
     def logger
-      @logger ||= Rails.logger
+      @logger ||= Sbmt::Outbox::Logger.new
     end
 
     def error_tracker

@@ -107,6 +107,18 @@ module Sbmt
         errors_count > self.class.max_retries
       end
 
+      def increment_errors_counter!
+        return unless retriable?
+
+        increment!(:errors_count)
+      end
+
+      def processed!
+        return unless has_processed_at_attribute?
+
+        update_column(:processed_at, Time.current)
+      end
+
       private
 
       def default_options
