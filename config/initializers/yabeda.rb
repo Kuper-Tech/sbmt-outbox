@@ -23,4 +23,10 @@ Yabeda.configure do
       comment: "The ID of the last sent event. " \
                "If the message order is not preserved, the value may be inaccurate"
   end
+
+  group :dead_letters do
+    counter :error_counter,
+      tags: %i[name topic],
+      comment: "Errors that occurred while consuming messages"
+  end
 end

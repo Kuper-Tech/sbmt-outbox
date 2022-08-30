@@ -42,3 +42,6 @@ RSpec/MessageSpies:
 
 RSpec/NestedGroups:
   Max: 10
+
+RSpec/ExampleLength:
+  Max: 15

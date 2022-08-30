@@ -44,6 +44,10 @@ module Sbmt
       @item_classes ||= config.item_classes.map(&:constantize)
     end
 
+    def dead_letter_classes
+      @dead_letter_classes ||= config.dead_letter_classes.map(&:constantize)
+    end
+
     def yaml_config
       @yaml_config ||= config.paths.each_with_object({}.with_indifferent_access) do |path, memo|
         memo.deep_merge!(

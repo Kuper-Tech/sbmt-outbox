@@ -20,6 +20,8 @@ end
 
 ## Configuration
 
+### Outbox pattern
+
 Асинхронный процесс, который отслеживает изменения запускается по расписанию в [Schked](https://github.com/bibendi/schked).
 
 Чтобы этот процесс увидел ваши откладываемые события, вам нужно реализовать таблицу в БД и модель.
@@ -131,10 +133,79 @@ Rails.application.config.outbox.tap do |config|
 end
 ```
 
-## Usage
+### Dead letters pattern
+
+Если наш Kafka consumer не смог обработать сообщение, то оно откладывается в специальную таблицу в базе данных.
 
 ```ruby
-Sbmt::Outbox::CreateItem.call(MyOutboxItem, attributes: some_attrs)
+  create_table :my_dead_letters, id: :bigint do |t|
+    t.binary :proto_payload, null: false
+    t.json :metadata
+    t.string :topic_name, null: false
+    t.text :error
+    t.timestamps
+  end
+```
+
+В модели необходимо определить методы `handler` и `payload`.
+
+```ruby
+# app/models/my_dead_letter.rb
+class MyDeadLetter < Sbmt::Outbox::DeadLetter
+  def handler
+    MyConsumerHandler
+  end
+
+  def payload
+    MyDecoder.decode(proto_payload)
+  end
+end
+```
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  ...
+  config.dead_letter_classes << 'MyDeadLetter'
+end
+```
+
+## Usage
+
+
+### Create outbox item
+
+```ruby
+transaction do
+  some_record.save!
+
+  result = Sbmt::Outbox::CreateItem.call(MyOutboxItem, attributes: some_attrs)
+  raise result.failure unless result.success?
+end
+```
+
+### Create inbox dead letter
+
+```ruby
+result = handle(message.payload)
+return if result.success?
+
+result = Sbmt::Outbox::CreateDeadLetter.call(
+  MyDeadLetter,
+  proto_payload: message.raw_payload,
+  topic_name: message.metadata.topic,
+  metadata: message.metadata,
+  error: error
+)
+
+raise result.failure unless result.success?
+```
+
+Для повторения процессинга событий, существует rake task:
+
+```sh
+rake outbox:process_dead_letters[MyDeadLetter,1,2,3,8]
 ```
 
 ## Development & Test
