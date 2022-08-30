@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
   s.add_dependency "dry-initializer", "~> 3.0"
   s.add_dependency "dry-monads", "~> 1.3"
   s.add_dependency "ruby-kafka", "~> 1.3"
+  s.add_dependency "exponential-backoff", "~> 0.0"
   s.add_dependency "rails", ">= 5.0", "< 7"
   s.add_dependency "schked", "~> 0.3"
   s.add_dependency "sidekiq", "< 6"
