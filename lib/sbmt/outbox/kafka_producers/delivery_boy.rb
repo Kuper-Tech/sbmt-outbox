@@ -7,7 +7,7 @@ module Sbmt
         module_function
 
         def instance
-          @instance ||= ::DeliveryBoy::Instance.new(config, Outbox.logger)
+          @instance ||= ::DeliveryBoy::Instance.new(config, ::DeliveryBoy.logger)
         end
 
         def config
