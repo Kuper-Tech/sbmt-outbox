@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    sbmt-outbox (0.6.0)
+    sbmt-outbox (0.7.0)
       after_commit_everywhere (~> 1.2)
       delivery_boy (~> 1.1)
       dry-initializer (~> 3.0)
@@ -151,7 +151,7 @@ GEM
       tzinfo
     exponential-backoff (0.0.4)
     fabrication (2.22.0)
-    fugit (1.5.3)
+    fugit (1.6.0)
       et-orbi (~> 1, >= 1.2.7)
       raabro (~> 1.4)
     globalid (1.0.0)
