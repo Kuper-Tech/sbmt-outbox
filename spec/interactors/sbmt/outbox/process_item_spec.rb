@@ -19,6 +19,8 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       let(:outbox_item) { OpenStruct.new(id: 1, options: {}) }
 
       it "returns error" do
+        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+        expect(Sbmt::Outbox.logger).to receive(:log_failure)
         expect(result).not_to be_success
         expect(result.failure).to match(/not found/)
       end
@@ -34,6 +36,8 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       end
 
       it "returns error" do
+        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+        expect(Sbmt::Outbox.logger).to receive(:log_failure)
         expect(result).not_to be_success
         expect(result.failure).to match(/not found/)
       end
@@ -56,6 +60,9 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       end
 
       it "tracks error" do
+        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+        expect(Sbmt::Outbox.logger).to receive(:log_failure)
+
         expect(result.failure).to match(/missing transports/)
       end
 
@@ -68,6 +75,8 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       it "returns success" do
+        expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
+        expect(Sbmt::Outbox.logger).to receive(:log_success)
         expect(result).to be_success
       end
 
@@ -100,6 +109,8 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       end
 
       it "tracks error" do
+        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+        expect(Sbmt::Outbox.logger).to receive(:log_failure)
         expect(result.failure).to match(/transport OrderCreatedProducer returned false/)
       end
 
@@ -117,6 +128,8 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         let(:max_retries) { 1 }
 
         it "doesn't change status to failed" do
+          expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
+          expect(Sbmt::Outbox.logger).to receive(:log_failure)
           result
           expect(outbox_item.reload).to be_pending
           expect(outbox_item.errors_count).to eq 1

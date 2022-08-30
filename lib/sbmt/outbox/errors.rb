@@ -7,8 +7,5 @@ module Sbmt
 
     class ProcessItemError < Error
     end
-
-    class MaxRetriesExceededError < Error
-    end
   end
 end
