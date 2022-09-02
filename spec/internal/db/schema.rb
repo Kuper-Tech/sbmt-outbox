@@ -14,4 +14,12 @@ ActiveRecord::Schema.define do
 
   add_index :outbox_items, :uuid, unique: true
   add_index :outbox_items, :status
+
+  create_table :dead_letters do |t|
+    t.binary :proto_payload, null: false
+    t.json :metadata
+    t.string :topic_name, null: false
+    t.text :error
+    t.timestamps
+  end
 end

@@ -7,5 +7,8 @@ module Sbmt
 
     class ProcessItemError < Error
     end
+
+    class ProcessDeadLetterError < Error
+    end
   end
 end

@@ -8,6 +8,7 @@ module Sbmt
       IDEMPOTENCY_HEADER_NAME = "Idempotency-Key"
       SEQUENCE_HEADER_NAME = "Sequence-ID"
       EVENT_TIME_HEADER_NAME = "Created-At"
+      OUTBOX_HEADER_NAME = "Outbox-Name"
 
       enum status: {
         pending: 0,
@@ -124,6 +125,7 @@ module Sbmt
       def default_options
         {
           headers: {
+            OUTBOX_HEADER_NAME => self.class.outbox_name,
             IDEMPOTENCY_HEADER_NAME => uuid,
             SEQUENCE_HEADER_NAME => id.to_s,
             EVENT_TIME_HEADER_NAME => created_at&.to_datetime&.rfc3339(6)
