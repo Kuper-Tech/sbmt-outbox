@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    sbmt-outbox (0.7.0)
+    sbmt-outbox (1.0.0)
       after_commit_everywhere (~> 1.2)
       delivery_boy (~> 1.1)
       dry-initializer (~> 3.0)

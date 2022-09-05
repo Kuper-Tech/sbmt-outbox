@@ -13,7 +13,7 @@ module Sbmt
 
       def log_failure(message, outbox_name:, **params)
         log_with_tags(outbox_name: outbox_name, status: "failure", **params) do
-          logger.info(message)
+          logger.error(message)
         end
       end
 
