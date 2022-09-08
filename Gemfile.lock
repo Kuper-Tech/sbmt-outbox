@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sbmt-outbox (0.7.0)
+    sbmt-outbox (1.1.0)
       after_commit_everywhere (~> 1.2)
       delivery_boy (~> 1.1)
       dry-initializer (~> 3.0)
@@ -197,10 +197,7 @@ GEM
       thor (>= 0.19.0, < 2.0)
     rainbow (3.1.1)
     rake (13.0.6)
-    redis (5.0.0)
-      redis-client (~> 0.7)
-    redis-client (0.7.1)
-      connection_pool
+    redis (4.5.1)
     regexp_parser (2.5.0)
     rexml (3.2.5)
     rspec (3.11.0)
@@ -256,11 +253,11 @@ GEM
     schked (0.4.0)
       rufus-scheduler (~> 3.0)
       thor
-    sidekiq (6.0.0.pre1)
-      connection_pool (>= 2.2.2)
-      rack (>= 1.5.0)
+    sidekiq (5.2.10)
+      connection_pool (~> 2.2, >= 2.2.2)
+      rack (~> 2.0)
       rack-protection (>= 1.5.0)
-      redis (>= 4.0.2)
+      redis (~> 4.5, < 4.6.0)
     sidekiq-unique-jobs (7.1.27)
       brpoplpush-redis_script (> 0.1.1, <= 2.0.0)
       concurrent-ruby (~> 1.0, >= 1.0.5)

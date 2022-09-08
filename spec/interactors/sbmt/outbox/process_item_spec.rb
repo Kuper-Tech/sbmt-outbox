@@ -21,8 +21,9 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       it "returns error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
+          .with("Outbox item failed with error: not found.\nRecord: OutboxItem#1.\n", outbox_name: "outbox_item", backtrace: nil)
         expect(result).not_to be_success
-        expect(result.failure).to match(/not found/)
+        expect(result.failure).to eq :not_found
       end
     end
 
@@ -39,7 +40,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
         expect(result).not_to be_success
-        expect(result.failure).to match(/not found/)
+        expect(result.failure).to eq :not_found
       end
     end
 
@@ -63,7 +64,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
 
-        expect(result.failure).to match(/missing transports/)
+        expect(result.failure).to eq :missing_transports
       end
 
       it "does not remove outbox item" do
@@ -111,7 +112,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       it "tracks error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
-        expect(result.failure).to match(/transport OrderCreatedProducer returned false/)
+        expect(result.failure).to eq :transport_failure
       end
 
       it "does not remove outbox item" do
@@ -143,6 +144,40 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       end
     end
 
+    context "when item processing raised exception" do
+      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+
+      before do
+        allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_raise("boom")
+      end
+
+      it "returns error" do
+        expect(result).to be_failure
+      end
+
+      it "changes status to failed" do
+        result
+        expect(outbox_item.reload).to be_failed
+      end
+
+      it "tracks error" do
+        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+        expect(Sbmt::Outbox.logger).to receive(:log_failure)
+          .with(/Outbox item failed with error: boom/, outbox_name: "outbox_item", backtrace: kind_of(String))
+        expect(result.failure).to eq "boom"
+      end
+
+      it "does not remove outbox item" do
+        expect { result }.not_to change(OutboxItem, :count)
+      end
+
+      it "tracks Yabeda error counter" do
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter)
+
+        result
+      end
+    end
+
     context "when there is timeout error when publishing to kafka" do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
@@ -157,7 +192,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
         expect { result }.not_to change(OutboxItem, :count)
         expect(result).not_to be_success
         expect(outbox_item.reload).to be_failed
-        expect(result.failure).to match(/execution expired/)
+        expect(result.failure).to eq :timeout
       end
     end
 
@@ -252,7 +287,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
           end
 
           it "outbox item processing skip" do
-            expect(result.failure).to match(/Skip processing/)
+            expect(result.failure).to eq :skip_processing
           end
         end
 
@@ -266,7 +301,7 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
           end
 
           it "outbox item processing continues" do
-            expect(result.failure).not_to match(/Skip processing/)
+            expect(result.failure).not_to eq :skip_processing
           end
         end
       end
