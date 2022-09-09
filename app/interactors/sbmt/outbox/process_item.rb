@@ -97,7 +97,7 @@ module Sbmt
         case result
         when Dry::Monads::Result
           if result.failure?
-            track_failed("transport #{transport} returned failure: #{result.failure}")
+            track_failed("transport #{transport} returned failure: #{result.failure}", outbox_item)
             Failure(:transport_failure)
           else
             Success()

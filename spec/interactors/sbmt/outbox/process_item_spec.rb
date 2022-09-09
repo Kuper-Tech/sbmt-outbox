@@ -178,6 +178,28 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
       end
     end
 
+    context "when item processing returning failure" do
+      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+
+      before do
+        allow_any_instance_of(OrderCreatedProducer).to receive(:publish)
+          .and_return(Dry::Monads::Result::Failure.new("some error"))
+      end
+
+      it "returns error" do
+        expect(result).to be_failure
+      end
+
+      it "changes status to failed" do
+        result
+        expect(outbox_item.reload).to be_failed
+      end
+
+      it "does not remove outbox item" do
+        expect { result }.not_to change(OutboxItem, :count)
+      end
+    end
+
     context "when there is timeout error when publishing to kafka" do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
