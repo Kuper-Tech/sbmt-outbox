@@ -3,15 +3,16 @@
 module Sbmt
   module Outbox
     class ProcessItemsJob
-      include Sidekiq::Worker
+      class GeneralTimeoutError < StandardError
+      end
 
-      BATCH_SIZE = ENV.fetch("SBMT_OUTBOX__APP__PROCESSING_BATCH_SIZE", 100).to_i
-      TIMEOUT = ENV.fetch("SBMT_OUTBOX__APP__PROCESS_ITEM_TIMEOUT", 5).to_i
+      include Sidekiq::Worker
 
       sidekiq_options queue: :outbox,
         lock: :until_executed,
-        lock_ttl: (BATCH_SIZE * TIMEOUT) + 1.minute.to_i,
+        lock_ttl: Outbox.config.process_items.queue_timeout + Outbox.config.process_items.general_timeout + 60,
         lock_args_method: :lock_args,
+        on_conflict: :log,
         retry: false
 
       class << self
@@ -25,44 +26,105 @@ module Sbmt
         def enqueue
           Outbox.item_classes.each do |item_class|
             item_class.partition_size.times do |partition_key|
-              perform_async(item_class, partition_key, 0)
+              perform_async(item_class, partition_key)
             end
           end
         end
       end
 
-      def perform(item_class_name = nil, partition_key = 0, start_id = 0)
-        return self.class.enqueue unless item_class_name
+      delegate :config, :logger, to: "Sbmt::Outbox"
 
-        @requeue_args = [item_class_name, partition_key]
+      def perform(item_class_name, partition_key = 0, start_id = 0, enqueued_at = Time.current.to_s)
+        Timeout.timeout(config.process_items.general_timeout, GeneralTimeoutError) do
+          self.item_class = item_class_name.constantize
+          self.partition_key = partition_key
 
-        item_class = item_class_name.constantize
+          if job_expired?(enqueued_at)
+            logger.log_failure(
+              "Job has expired before start processing outbox items.\n" \
+              "with: start_id: #{start_id}, enqueued_at: #{enqueued_at}",
+              outbox_name: item_class.outbox_name,
+              partition_key: partition_key
+            )
 
-        scope = item_class
-          .for_precessing
-          .select(:id)
-
-        scope = scope.where(partition_key: partition_key) if item_class.partition_size > 1
-        scope = scope.where("id >= ?", start_id) if start_id > 0
-
-        scope.order(:id).limit(BATCH_SIZE + 1).each_with_index do |item, i|
-          # we have more than BATCH_SIZE items, so reenqueue the job
-          if i >= BATCH_SIZE
-            @requeue = true
-            @requeue_args << item.id
-            break
-          else
-            ProcessItem.call(item_class, item.id, timeout: TIMEOUT)
+            return
           end
+
+          Cutoff.wrap(config.process_items.cutoff_timeout) do
+            process_items(start_id)
+          end
+        end
+      rescue GeneralTimeoutError
+        logger.log_failure(
+          "General timeout error when processing outbox items.\n" \
+          "Requeuing with: start_id: #{start_id}, last_id: #{last_id}",
+          outbox_name: item_class.outbox_name,
+          partition_key: partition_key
+        )
+
+        requeue!
+      rescue Cutoff::CutoffExceededError
+        logger.log_info(
+          "Cutoff timeout error when processing outbox items.\n" \
+          "Requeuing with: start_id: #{start_id}, last_id: #{last_id}",
+          outbox_name: item_class.outbox_name,
+          partition_key: partition_key
+        )
+
+        requeue!
+      end
+
+      attr_accessor :item_class,
+        :partition_key,
+        :last_id,
+        :requeue
+
+      def job_expired?(enqueued_at)
+        return false if enqueued_at.nil?
+
+        enqueued_time = Time.zone.parse(enqueued_at)
+        enqueued_time + config.process_items.queue_timeout < Time.current
+      end
+
+      def process_items(start_id)
+        scope = item_class.for_precessing.select(:id)
+        scope = scope.where(partition_key: partition_key) if item_class.partition_size > 1
+
+        scope.find_each(start: start_id, batch_size: config.process_items.batch_size) do |item|
+          # TODO: check result object and use circuit breaker
+          ProcessItem.call(item_class, item.id)
+          self.last_id = item.id
+          Cutoff.checkpoint!
         end
       end
 
-      def after_unlock
-        self.class.perform_async(*@requeue_args) if requeue?
+      def requeue!
+        self.requeue = true
       end
 
       def requeue?
-        !!@requeue
+        !!requeue && !last_id.nil?
+      end
+
+      # Don't make it private method — it won't be called in that case!
+      def after_unlock
+        return unless requeue?
+
+        Yabeda.outbox
+          .requeue_counter
+          .increment(
+            name: item_class.outbox_name,
+            partition_key: partition_key
+          )
+
+        job_args = [item_class.name, partition_key, last_id + 1, Time.current.to_s]
+        job_id = self.class.perform_async(*job_args)
+
+        logger.log_info(
+          "Requeued job #{self.class.name} with jid: #{job_id}, args: #{job_args}",
+          outbox_name: item_class.outbox_name,
+          partition_key: partition_key
+        )
       end
     end
   end

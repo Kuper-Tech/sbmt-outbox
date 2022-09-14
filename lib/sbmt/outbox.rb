@@ -14,6 +14,7 @@ require "waterdrop"
 require "yabeda"
 require "after_commit_everywhere"
 require "exponential_backoff"
+require "cutoff"
 
 require_relative "outbox/version"
 require_relative "outbox/errors"

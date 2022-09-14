@@ -2,10 +2,9 @@
 
 RSpec.describe Sbmt::Outbox::ProcessItem do
   describe "#call" do
-    subject(:result) { described_class.call(OutboxItem, outbox_item.id, timeout: timeout) }
+    subject(:result) { described_class.call(OutboxItem, outbox_item.id) }
 
     let(:event_name) { "order_created" }
-    let(:timeout) { 1 }
     let(:max_retries) { 0 }
     let(:exponential_retry_interval) { false }
 
@@ -197,24 +196,6 @@ RSpec.describe Sbmt::Outbox::ProcessItem do
 
       it "does not remove outbox item" do
         expect { result }.not_to change(OutboxItem, :count)
-      end
-    end
-
-    context "when there is timeout error when publishing to kafka" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
-
-      before do
-        allow_any_instance_of(OrderCreatedProducer).to receive(:publish) do
-          sleep 2
-          false
-        end
-      end
-
-      it "returns error" do
-        expect { result }.not_to change(OutboxItem, :count)
-        expect(result).not_to be_success
-        expect(outbox_item.reload).to be_failed
-        expect(result.failure).to eq :timeout
       end
     end
 
