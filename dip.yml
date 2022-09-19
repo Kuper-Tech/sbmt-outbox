@@ -18,6 +18,11 @@ interaction:
     service: ruby
     command: bundle
 
+  rails:
+    description: Run RoR commands
+    service: ruby
+    command: bundle exec rails
+
   appraisal:
     description: Run Appraisal commands
     service: ruby

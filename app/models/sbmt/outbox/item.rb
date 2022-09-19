@@ -12,7 +12,9 @@ module Sbmt
 
       enum status: {
         pending: 0,
-        failed: 1
+        failed: 1,
+        delivered: 2,
+        discarded: 3
       }
 
       validates :uuid, presence: true
@@ -24,58 +26,21 @@ module Sbmt
       scope :for_precessing, -> { where(status: statuses[:pending]) }
 
       class << self
-        def partition_size
-          (Outbox.yaml_config.dig(:items, outbox_name, :partition_size) || 1).to_i
-        end
-
-        def max_retries
-          (Outbox.yaml_config.dig(:items, outbox_name, :max_retries) || 0).to_i
-        end
-
-        def exponential_retry_interval
-          (Outbox.yaml_config.dig(:items, outbox_name, :exponential_retry_interval) || false)
-        end
-
-        def minimal_retry_interval
-          (Outbox.yaml_config.dig(:items, outbox_name, :minimal_retry_interval) || 10).to_i
-        end
-
-        def maximal_retry_interval
-          (Outbox.yaml_config.dig(:items, outbox_name, :maximal_retry_interval) || 10 * 60).to_i
-        end
-
-        def multiplier_retry_interval
-          (Outbox.yaml_config.dig(:items, outbox_name, :multiplier_retry_interval) || 2).to_i
-        end
-
         def outbox_name
           @outbox_name ||= name.underscore
         end
 
-        def metric_labels
-          @metric_labels ||= {name: outbox_name}
+        def config
+          @config ||= Sbmt::Outbox::ItemConfig.new(outbox_name)
         end
       end
+
+      delegate :outbox_name, :config, to: "self.class"
 
       def options
         options = (self[:options] || {})
         options = options.deep_merge(default_options).deep_merge(extra_options)
         options.symbolize_keys
-      end
-
-      def retry_strategy
-        nil
-      end
-
-      def default_retry_strategy
-        return true unless exponential_retry_interval?
-        return true if processed_at.nil?
-
-        ExponentialRetryStrategy.new(
-          minimal_interval: self.class.minimal_retry_interval,
-          maximal_elapsed_time: self.class.maximal_retry_interval,
-          multiplier: self.class.multiplier_retry_interval
-        ).call(errors_count, processed_at)
       end
 
       def transports
@@ -91,33 +56,21 @@ module Sbmt
       end
 
       def retriable?
-        has_attribute?(:errors_count) && self.class.max_retries > 0
-      end
-
-      def exponential_retry_interval?
-        retriable? && self.class.exponential_retry_interval && has_processed_at_attribute?
-      end
-
-      def has_processed_at_attribute?
-        has_attribute?(:processed_at)
+        config.max_retries > 0
       end
 
       def max_retries_exceeded?
         return true unless retriable?
 
-        errors_count > self.class.max_retries
+        errors_count > config.max_retries
       end
 
-      def increment_errors_counter!
-        return unless retriable?
-
-        increment!(:errors_count)
+      def increment_errors_counter
+        increment(:errors_count)
       end
 
-      def processed!
-        return unless has_processed_at_attribute?
-
-        update_column(:processed_at, Time.current)
+      def touch_processed_at
+        self.processed_at = Time.current
       end
 
       private
@@ -125,7 +78,7 @@ module Sbmt
       def default_options
         {
           headers: {
-            OUTBOX_HEADER_NAME => self.class.outbox_name,
+            OUTBOX_HEADER_NAME => outbox_name,
             IDEMPOTENCY_HEADER_NAME => uuid,
             SEQUENCE_HEADER_NAME => id.to_s,
             EVENT_TIME_HEADER_NAME => created_at&.to_datetime&.rfc3339(6)

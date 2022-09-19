@@ -29,8 +29,8 @@ end
 ```ruby
 create_table :my_outbox_items do |t|
   t.string :uuid, null: false
-  t.string :event_name, null: false
-  t.json :options
+  t.string :event_name, null: false # optional, use it when you have several events per one outbox table
+  t.jsonb :options
   t.binary :proto_payload, null: false
   t.integer :status, null: false, default: 0
   t.integer :errors_count, null: false, default: 0
@@ -40,6 +40,7 @@ end
 
 add_index :my_outbox_items, :uuid, unique: true
 add_index :my_outbox_items, :status
+add_index :my_outbox_items, :created_at
 ```
 
 В модели необходимо определить метод `transports`.
@@ -51,30 +52,6 @@ class MyOutboxItem < Sbmt::Outbox::Item
     [
       MyEventCreatedProducer
     ]
-  end
-end
-```
-
-В геме используется дефолтная ретрай стратегия.
-Повтор событий происходит каждый раз, пока количество попыток не достигнет `max_retries`
-В конфигурации можно указать экспоненциальный интревал между попытками.
-Для этого указывает в конфигах `exponential_retry_interval: true`.
-Дополнительно можно передать дополнительные параметры.
-Для работы экспоненциальной стратегии, важно, чтобы в модели было поле  `t.timestamp :processed_at`
-Также можно передать свою стратегию, определив метод `retry_strategy`
-
-```ruby
-# app/models/my_outbox_item.rb
-class MyOutboxItem < Sbmt::Outbox::Item
-  def retry_strategy
-    MyRetryStrategy
-  end
-end
-
-class MyRetryStrategy
-  # Return boolean
-  def self.call(outbox_item)
-    # my logic
   end
 end
 ```
@@ -102,12 +79,9 @@ default: &default
   ignore_kafka_errors: true
   items:
     my_outbox_item:
+      retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
       max_retries: 1 # default: 0
-      exponential_retry_interval: true # Enable exponential interval between attempts to process an outbox item. Default: false
-      minimal_retry_interval: 10 # default: 10
-      maximal_retry_interval: 600 # default: 600
-      multiplier_retry_interval: 2 # default: 2
 
 development:
   <<: *default
@@ -132,6 +106,50 @@ Rails.application.config.outbox.tap do |config|
   config.paths << Rails.root.join("config/outbox.yml").to_s
 end
 ```
+
+#### Retry strategies
+
+В геме используется несколько видов стратегий для повторения обработок события в случае ошибки. Стратегии можно комбинировать — они будут запускаться по очереди. Каждая стратегия принимает одно из трех решений: обработать сообщение сейчас; пропустить обработку; пометить сообщение как не нуждающееся в обработке.
+
+##### Exponential backoff
+
+```yaml
+# config/outbox.yml
+
+  items:
+    my_outbox_item:
+      ...
+      minimal_retry_interval: 10 # default: 10
+      maximal_retry_interval: 600 # default: 600
+      multiplier_retry_interval: 2 # default: 2
+      retry_strategies:
+        - exponential_backoff
+```
+
+##### Compacted log
+
+Данная стратегия необходима, если используется [Kafka log compaction](https://habr.com/ru/company/sberbank/blog/590045/).
+
+```ruby
+change_table :my_outbox_items do |t|
+  t.bigint :event_key, null: false
+end
+
+add_index :my_outbox_items, [:event_key], where: "status = 2"
+```
+
+```yaml
+# config/outbox.yml
+
+  items:
+    my_outbox_item:
+      ...
+      retry_strategies:
+        - exponential_backoff
+        - compacted_log
+```
+
+Если вы хотите (и должны хотеть) использовать вместе с `exponential_backoff`, то у убедитесь в том, что `compacted_log` идет последней, для минимизации запросов в БД.
 
 ### Dead letters pattern
 

@@ -25,7 +25,7 @@ module Sbmt
 
         def enqueue
           Outbox.item_classes.each do |item_class|
-            item_class.partition_size.times do |partition_key|
+            item_class.config.partition_size.times do |partition_key|
               perform_async(item_class, partition_key)
             end
           end
@@ -88,10 +88,11 @@ module Sbmt
 
       def process_items(start_id)
         scope = item_class.for_precessing.select(:id)
-        scope = scope.where(partition_key: partition_key) if item_class.partition_size > 1
+        scope = scope.where(partition_key: partition_key) if item_class.config.partition_size > 1
 
         scope.find_each(start: start_id, batch_size: config.process_items.batch_size) do |item|
           # TODO: check result object and use circuit breaker
+          #       take into account :skip_processing failure
           ProcessItem.call(item_class, item.id)
           self.last_id = item.id
           Cutoff.checkpoint!

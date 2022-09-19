@@ -4,7 +4,10 @@ default: &default
 
   items:
     outbox_item:
-      max_retries: 1
+      retention: P1W
+      retry_strategies:
+        - exponential_backoff
+        - compacted_log
 
   producer:
     topics:
