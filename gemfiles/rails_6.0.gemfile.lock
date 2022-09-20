@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    sbmt-outbox (1.1.1)
+    sbmt-outbox (1.2.0)
       after_commit_everywhere (~> 1.2)
       cutoff (~> 0.5)
       delivery_boy (~> 1.1)
