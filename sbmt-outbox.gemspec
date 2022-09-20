@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
   end
 
   s.add_dependency "after_commit_everywhere", "~> 1.2"
+  s.add_dependency "cutoff", "~> 0.5"
   s.add_dependency "delivery_boy", "~> 1.1"
   s.add_dependency "dry-initializer", "~> 3.0"
   s.add_dependency "dry-monads", "~> 1.3"
@@ -34,7 +35,7 @@ Gem::Specification.new do |s|
   s.add_dependency "exponential-backoff", "~> 0.0"
   s.add_dependency "rails", ">= 5.0", "< 7"
   s.add_dependency "schked", "~> 0.3"
-  s.add_dependency "sidekiq", "< 6"
+  s.add_dependency "sidekiq", "~> 5.2"
   s.add_dependency "sidekiq-unique-jobs", "~> 7.1"
   s.add_dependency "waterdrop", "~> 1.4"
   s.add_dependency "ruby2_keywords" # Remove this on Ruby 2.7

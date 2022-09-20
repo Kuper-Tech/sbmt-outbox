@@ -14,6 +14,10 @@ Yabeda.configure do
       tags: %i[name],
       comment: "Retries that occurred while processing outbox messages"
 
+    counter :requeue_counter,
+      tags: %i[name partition_key],
+      comment: "Requeue of a sidekiq job that occurred while processing outbox messages"
+
     gauge :last_stored_event_id,
       tags: %i[name],
       comment: "The ID of the last stored event"

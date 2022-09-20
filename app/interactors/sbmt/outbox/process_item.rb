@@ -3,11 +3,8 @@
 module Sbmt
   module Outbox
     class ProcessItem < Sbmt::Outbox::DryInteractor
-      TIMEOUT = ENV.fetch("SBMT_OUTBOX__APP__PROCESS_ITEM_TIMEOUT", 30).to_i
-
       param :item_class, reader: :private
       param :item_id, reader: :private
-      option :timeout, reader: :private, default: -> { TIMEOUT }
 
       delegate :log_success, to: "Sbmt::Outbox.logger"
 
@@ -15,25 +12,20 @@ module Sbmt
         outbox_item = nil
 
         item_class.transaction do
-          Timeout.timeout(timeout) do
-            outbox_item = yield fetch_outbox_item
-            yield check_retry_strategy(outbox_item)
-            payload = yield build_payload(outbox_item)
-            transports = yield fetch_transports(outbox_item)
+          outbox_item = yield fetch_outbox_item
+          yield check_retry_strategy(outbox_item)
+          payload = yield build_payload(outbox_item)
+          transports = yield fetch_transports(outbox_item)
 
-            transports.each do |transport|
-              yield process_item(transport, outbox_item, payload)
-            end
-
-            outbox_item.delete
-            track_successed(outbox_item)
-            Success(outbox_item)
+          transports.each do |transport|
+            yield process_item(transport, outbox_item, payload)
           end
+
+          outbox_item.delete
+          track_successed(outbox_item)
+          Success(outbox_item)
         rescue Dry::Monads::Do::Halt => e
           e.result
-        rescue Timeout::Error
-          track_failed("execution expired", outbox_item)
-          Failure(:timeout)
         rescue => e
           track_failed(e, outbox_item)
           Failure(e.message)

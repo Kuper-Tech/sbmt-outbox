@@ -11,6 +11,8 @@ module Sbmt
         end
       end
 
+      alias_method :log_info, :log_success
+
       def log_failure(message, outbox_name:, **params)
         log_with_tags(outbox_name: outbox_name, status: "failure", **params) do
           logger.error(message)

@@ -12,6 +12,13 @@ module Sbmt
         c.item_classes = []
         c.dead_letter_classes = []
         c.paths = []
+        c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
+          c.pooling_interval = 10
+          c.queue_timeout = 60
+          c.general_timeout = 300
+          c.cutoff_timeout = 100
+          c.batch_size = 100
+        end
       end
 
       rake_tasks do
