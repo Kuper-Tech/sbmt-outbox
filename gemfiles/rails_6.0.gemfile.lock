@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    sbmt-outbox (1.2.0)
+    sbmt-outbox (2.0.0)
       after_commit_everywhere (~> 1.2)
       cutoff (~> 0.5)
       delivery_boy (~> 1.1)
@@ -94,7 +94,7 @@ GEM
       railties (>= 3.0.0)
       thor (>= 0.14.6)
     concurrent-ruby (1.1.10)
-    connection_pool (2.2.5)
+    connection_pool (2.3.0)
     crass (1.0.6)
     cutoff (0.5.1)
     delivery_boy (1.1.0)
@@ -153,7 +153,7 @@ GEM
       tzinfo
     exponential-backoff (0.0.4)
     fabrication (2.22.0)
-    fugit (1.6.0)
+    fugit (1.7.0)
       et-orbi (~> 1, >= 1.2.7)
       raabro (~> 1.4)
     globalid (1.0.0)

@@ -3,4 +3,5 @@
 Fabricator(:outbox_item, from: "OutboxItem") do
   proto_payload { "test" }
   event_name { "order_created" }
+  event_key { sequence(:event_key) }
 end

@@ -14,6 +14,10 @@ Yabeda.configure do
       tags: %i[name],
       comment: "Retries that occurred while processing outbox messages"
 
+    counter :discarded_counter,
+      tags: %i[name],
+      comment: "The total number of discarded events"
+
     counter :requeue_counter,
       tags: %i[name partition_key],
       comment: "Requeue of a sidekiq job that occurred while processing outbox messages"

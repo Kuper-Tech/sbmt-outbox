@@ -6,7 +6,8 @@ describe Sbmt::Outbox::CreateItem do
   let(:attributes) do
     {
       event_name: "order_created",
-      proto_payload: "test"
+      proto_payload: "test",
+      event_key: 10
     }
   end
 

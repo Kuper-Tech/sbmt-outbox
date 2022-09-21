@@ -6,3 +6,7 @@ every "#{Sbmt::Outbox.config.process_items.pooling_interval}s",
   timeout: "60s" do
   Sbmt::Outbox::ProcessItemsJob.enqueue
 end
+
+every "1h", as: "Sbmt::Outbox::DeleteStaleItemsJob", overlap: false, timeout: "60s" do
+  Sbmt::Outbox::DeleteStaleItemsJob.enqueue
+end
