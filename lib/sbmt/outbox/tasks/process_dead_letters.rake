@@ -9,7 +9,8 @@ namespace :outbox do
     dead_letter_class = class_name.constantize
 
     scope = dead_letter_class.all
-    scope = scope.where(id: ids) if args.extras.present?
+    scope = scope.where(id: ids) if ids.present?
+
     scope.find_each do |dead_letter|
       Sbmt::Outbox::ProcessDeadLetter.call(dead_letter.class, dead_letter.id)
     end

@@ -35,6 +35,8 @@ rescue => e
   exit(1)
 end
 
+Rails.application.load_tasks
+
 ActiveRecord::Base.logger = Rails.logger
 
 require "rspec/rails"

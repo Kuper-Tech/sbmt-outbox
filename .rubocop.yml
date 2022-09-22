@@ -45,3 +45,7 @@ RSpec/NestedGroups:
 
 RSpec/ExampleLength:
   Max: 15
+
+RSpec/DescribeClass:
+  Exclude:
+    - spec/lib/sbmt/outbox/tasks/*
