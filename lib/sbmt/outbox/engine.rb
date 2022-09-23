@@ -22,6 +22,7 @@ module Sbmt
       end
 
       rake_tasks do
+        load "sbmt/outbox/tasks/retry_failed_outbox_items.rake"
         load "sbmt/outbox/tasks/delete_failed_outbox_items.rake"
         load "sbmt/outbox/tasks/process_dead_letters.rake"
       end

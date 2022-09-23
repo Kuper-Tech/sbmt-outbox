@@ -59,7 +59,7 @@ describe Sbmt::Outbox::ProcessItemsJob do
 
     it "processes only one item" do
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, item.id) do |_item_class, _id|
-        sleep 1
+        sleep 2
       end
 
       expect(Sbmt::Outbox::ProcessItem).not_to receive(:call).with(OutboxItem, item_2.id)
