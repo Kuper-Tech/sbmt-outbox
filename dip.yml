@@ -1,7 +1,7 @@
 version: '7'
 
 environment:
-  RUBY_VERSION: '2.5'
+  RUBY_VERSION: '3.1'
 
 compose:
   files:
@@ -45,6 +45,8 @@ interaction:
         command: bundle exec appraisal rails-6.0 rspec
       rails-6.1:
         command: bundle exec appraisal rails-6.1 rspec
+      rails-7.0:
+        command: bundle exec appraisal rails-7.0 rspec
 
   rubocop:
     description: Run Ruby linter
@@ -64,4 +66,6 @@ interaction:
 provision:
   - dip compose down --volumes
   - cp -f lefthook-local.dip_example.yml lefthook-local.yml
+  - rm -f Gemfile.lock
+  - rm -f gemfiles/*gemfile*
   - dip setup

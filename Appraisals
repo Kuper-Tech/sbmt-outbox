@@ -2,36 +2,26 @@
 
 # See compatibility table at https://www.fastruby.io/blog/ruby/rails/versions/compatibility-table.html
 
-if RUBY_VERSION > "2.4"
-  if RUBY_VERSION < "2.6"
-    appraise "rails-5.0" do
-      gem "rails", "~> 5.0.0"
+versions_map = {
+  "5.0" => %w[2.5],
+  "5.1" => %w[2.5],
+  "5.2" => %w[2.6],
+  "6.0" => %w[2.7],
+  "6.1" => %w[2.7 3.0],
+  "7.0" => %w[3.1]
+}
+
+current_ruby_version = RUBY_VERSION.split(".").first(2).join(".")
+
+versions_map.each do |rails_version, ruby_versions|
+  ruby_versions.each do |ruby_version|
+    if ruby_version != current_ruby_version
+      puts "Skipping Rails #{rails_version} for Ruby #{ruby_version}"
+      next
     end
 
-    appraise "rails-5.1" do
-      gem "rails", "~> 5.1.0"
+    appraise "rails-#{rails_version}" do
+      gem "rails", "~> #{rails_version}.0"
     end
   end
-
-  if RUBY_VERSION < "2.7"
-    appraise "rails-5.2" do
-      gem "rails", "~> 5.2.0"
-    end
-  end
-
-  if RUBY_VERSION < "3.0"
-    appraise "rails-6.0" do
-      gem "rails", "~> 6.0.0"
-    end
-  end
-
-  if RUBY_VERSION < "3.1"
-    appraise "rails-6.1" do
-      gem "rails", "~> 6.1.0"
-    end
-  else
-    raise "Unsupported Ruby version: #{RUBY_VERSION}"
-  end
-else
-  raise "Unsupported Ruby version: #{RUBY_VERSION}"
 end
