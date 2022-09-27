@@ -8,7 +8,7 @@ PATH
       dry-initializer (~> 3.0)
       dry-monads (~> 1.3)
       exponential-backoff (~> 0.0)
-      rails (>= 5.0, < 7)
+      rails (>= 5.0)
       ruby-kafka (~> 1.3)
       ruby2_keywords
       schked (~> 0.3)
