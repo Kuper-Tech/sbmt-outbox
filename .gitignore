@@ -9,3 +9,5 @@
 /test-results/
 .rspec_status
 lefthook-local.yml
+/Gemfile.lock
+/gemfiles/*gemfile*

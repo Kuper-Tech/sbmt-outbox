@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 describe Sbmt::Outbox::CreateDeadLetter do
-  let(:result) { described_class.call(DeadLetter, params) }
+  let(:result) { described_class.call(DeadLetter, **params) }
   let(:params) do
     {
       proto_payload: "test-payload",

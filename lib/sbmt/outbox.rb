@@ -52,11 +52,21 @@ module Sbmt
     def yaml_config
       @yaml_config ||= config.paths.each_with_object({}.with_indifferent_access) do |path, memo|
         memo.deep_merge!(
-          YAML.safe_load(ERB.new(File.read(path)).result, [], [], true)
-            .with_indifferent_access
-            .fetch(Rails.env, {})
+          load_yaml(path)
         )
       end
+    end
+
+    def load_yaml(path)
+      data = if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
+        YAML.safe_load(ERB.new(File.read(path)).result, aliases: true)
+      else
+        YAML.safe_load(ERB.new(File.read(path)).result, [], [], true)
+      end
+
+      data
+        .with_indifferent_access
+        .fetch(Rails.env, {})
     end
   end
 end

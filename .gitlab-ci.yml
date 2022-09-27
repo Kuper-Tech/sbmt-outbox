@@ -3,12 +3,19 @@ include:
     ref: master
     file: "build-rubygems.yml"
 
+lint:
+  stage: test
+  image: dreg.sbmt.io/dhub/library/ruby:3.1
+  script:
+    - bundle install
+    - bundle exec rubocop
+
 tests:
   stage: test
   image: dreg.sbmt.io/dhub/library/ruby:$RUBY_VERSION
   parallel:
     matrix:
-      - RUBY_VERSION: ['2.5', '2.6', '2.7']
+      - RUBY_VERSION: ['2.5', '2.6', '2.7', '3.0', '3.1']
   services:
     - name: dreg.sbmt.io/dhub/library/postgres:12.2
       alias: postgres
@@ -19,7 +26,6 @@ tests:
   script:
     - gem update --system > /dev/null # We want the latest Bundler until we update the base Ruby image
     - bin/setup
-    - bundle exec rubocop
     - bundle exec appraisal rspec --format RspecJunitFormatter --out test-results/rspec_$RUBY_VERSION.xml --format documentation
   artifacts:
     reports:
