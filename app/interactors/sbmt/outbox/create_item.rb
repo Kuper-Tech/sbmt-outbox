@@ -25,7 +25,7 @@ module Sbmt
           Yabeda
             .outbox
             .last_stored_event_id
-            .set({outbox_name: item_class.outbox_name}, item_id)
+            .set({name: item_class.outbox_name}, item_id)
         end
       end
     end
