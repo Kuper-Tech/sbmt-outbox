@@ -25,6 +25,7 @@ tests:
     POSTGRES_PASSWORD: secret
     POSTGRES_HOST_AUTH_METHOD: trust
     DATABASE_URL: postgres://postgres:secret@postgres:5432
+    REDIS_URL: redis://redis:6379/0
   script:
     - gem update --system > /dev/null # We want the latest Bundler until we update the base Ruby image
     - bin/setup
