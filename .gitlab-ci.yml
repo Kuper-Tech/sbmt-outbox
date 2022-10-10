@@ -19,6 +19,8 @@ tests:
   services:
     - name: dreg.sbmt.io/dhub/library/postgres:12.2
       alias: postgres
+    - name: dreg.sbmt.io/dhub/library/redis:7
+      alias: redis
   variables:
     POSTGRES_PASSWORD: secret
     POSTGRES_HOST_AUTH_METHOD: trust
