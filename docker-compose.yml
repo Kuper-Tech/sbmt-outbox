@@ -11,6 +11,7 @@ services:
       BUNDLE_PATH: /usr/local/bundle
       BUNDLE_CONFIG: /app/.bundle/config
       DATABASE_URL: postgres://postgres:@postgres:5432
+      REDIS_URL: redis://redis:6379/0
     command: bash
     working_dir: /app
     volumes:
@@ -21,6 +22,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
   postgres:
     image: postgres:13
@@ -30,6 +33,12 @@ services:
       - 5432
     healthcheck:
       test: pg_isready -U postgres -h 127.0.0.1
+      interval: 10s
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: redis-cli ping
       interval: 10s
 
 volumes:
