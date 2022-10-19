@@ -51,8 +51,8 @@ module Sbmt
 
       def fetch_outbox_item
         outbox_item = item_class
-          .for_precessing
-          .lock("FOR UPDATE NOWAIT")
+          .for_processing
+          .lock("FOR UPDATE")
           .find_by(id: item_id)
         return Success(outbox_item) if outbox_item
 
