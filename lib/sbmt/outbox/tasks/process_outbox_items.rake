@@ -8,7 +8,7 @@ namespace :outbox do
     raise "Invalid item name" unless Sbmt::Outbox.item_classes.map(&:to_s).include?(item_class_name)
     item_class = item_class_name.constantize
 
-    scope = item_class.for_precessing.select(:id)
+    scope = item_class.for_processing.select(:id)
     scope = scope.where(id: ids) unless ids.empty?
     scope.find_each do |item|
       Sbmt::Outbox::ProcessItem.call(item_class, item.id)

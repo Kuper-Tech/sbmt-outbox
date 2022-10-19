@@ -89,7 +89,7 @@ module Sbmt
       end
 
       def process_items(start_id)
-        scope = item_class.for_precessing.select(:id)
+        scope = item_class.for_processing.select(:id)
         scope = scope.where(partition_key: partition_key) if item_class.config.partition_size > 1
 
         scope.find_each(start: start_id, batch_size: config.process_items.batch_size) do |item|
