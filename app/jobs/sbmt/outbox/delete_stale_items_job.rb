@@ -16,9 +16,7 @@ module Sbmt
       class << self
         def enqueue
           Outbox.item_classes.each do |item_class|
-            item_class.config.partition_size.times do |partition_key|
-              perform_async(item_class.to_s)
-            end
+            perform_async(item_class.to_s)
           end
         end
       end

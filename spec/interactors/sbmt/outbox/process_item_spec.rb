@@ -74,7 +74,8 @@ describe Sbmt::Outbox::ProcessItem do
 
       it "returns success" do
         expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
-        expect(Sbmt::Outbox.logger).to receive(:log_success)
+        allow(Sbmt::Outbox.logger).to receive(:log_success)
+        expect(Sbmt::Outbox.logger).to receive(:log_success).with(/delivered/, any_args)
         expect(result).to be_success
         expect(outbox_item.reload).to be_delivered
       end

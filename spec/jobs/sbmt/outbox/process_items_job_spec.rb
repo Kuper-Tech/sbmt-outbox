@@ -25,7 +25,7 @@ describe Sbmt::Outbox::ProcessItemsJob do
     described_class.drain
   end
 
-  context "when cutoff timeout error" do
+  context "when requeue timeout error" do
     let!(:item_2) { Fabricate(:outbox_item, event_name: "created_order") }
     let(:cutoff) { 1 }
 
@@ -48,13 +48,17 @@ describe Sbmt::Outbox::ProcessItemsJob do
     end
   end
 
-  context "when general timeout" do
+  context "when general timeout error" do
     let!(:item_2) { Fabricate(:outbox_item, event_name: "created_order") }
+    let(:cutoff) { 1 }
     let(:timeout) { 1 }
 
     before do
       allow(Sbmt::Outbox.config.process_items)
         .to receive(:general_timeout).and_return(timeout)
+
+      allow(Sbmt::Outbox.config.process_items)
+        .to receive(:cutoff_timeout).and_return(cutoff)
     end
 
     it "processes only one item" do
@@ -64,7 +68,7 @@ describe Sbmt::Outbox::ProcessItemsJob do
 
       expect(Sbmt::Outbox::ProcessItem).not_to receive(:call).with(OutboxItem, item_2.id)
 
-      expect_any_instance_of(described_class).to receive(:requeue!)
+      expect_any_instance_of(described_class).not_to receive(:requeue!)
 
       described_class.perform_async("OutboxItem")
       described_class.drain

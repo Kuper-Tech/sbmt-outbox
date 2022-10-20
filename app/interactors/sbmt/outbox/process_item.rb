@@ -9,6 +9,12 @@ module Sbmt
       delegate :log_success, to: "Sbmt::Outbox.logger"
 
       def call
+        log_success(
+          "Start processing outbox item.\n" \
+          "Record: #{item_class.name}##{item_id}",
+          outbox_name: item_class.outbox_name
+        )
+
         outbox_item = nil
 
         item_class.transaction do
@@ -45,7 +51,7 @@ module Sbmt
 
       def fetch_outbox_item
         outbox_item = item_class
-          .for_precessing
+          .for_processing
           .lock("FOR UPDATE")
           .find_by(id: item_id)
         return Success(outbox_item) if outbox_item

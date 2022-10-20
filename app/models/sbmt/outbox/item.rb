@@ -23,7 +23,7 @@ module Sbmt
         self.uuid ||= SecureRandom.uuid if has_attribute?(:uuid)
       end
 
-      scope :for_precessing, -> { where(status: statuses[:pending]) }
+      scope :for_processing, -> { where(status: statuses[:pending]) }
 
       class << self
         def outbox_name
