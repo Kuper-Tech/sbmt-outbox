@@ -1,0 +1,16 @@
+#!/usr/local/bin/ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "sbmt/outbox/cli"
+
+# rubocop:disable Lint/RescueException
+begin
+  Sbmt::Outbox::CLI.start(ARGV)
+rescue Exception => e
+  warn "Outbox exited with error"
+  warn(e.message) if e.respond_to?(:message)
+  warn(e.backtrace.join("\n")) if e.respond_to?(:backtrace) && e.backtrace.respond_to?(:join)
+  exit 1
+end
+# rubocop:enable Lint/RescueException

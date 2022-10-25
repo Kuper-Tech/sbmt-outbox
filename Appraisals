@@ -15,10 +15,7 @@ current_ruby_version = RUBY_VERSION.split(".").first(2).join(".")
 
 versions_map.each do |rails_version, ruby_versions|
   ruby_versions.each do |ruby_version|
-    if ruby_version != current_ruby_version
-      puts "Skipping Rails #{rails_version} for Ruby #{ruby_version}"
-      next
-    end
+    next if ruby_version != current_ruby_version
 
     appraise "rails-#{rails_version}" do
       gem "rails", "~> #{rails_version}.0"

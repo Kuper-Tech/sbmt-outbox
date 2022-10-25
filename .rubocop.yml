@@ -44,8 +44,16 @@ RSpec/NestedGroups:
   Max: 10
 
 RSpec/ExampleLength:
-  Max: 15
+  Max: 35
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
 
 RSpec/DescribeClass:
   Exclude:
     - spec/lib/sbmt/outbox/tasks/*
+
+RSpec/InstanceVariable:
+  Exclude:
+    # TODO: Remove this when changing the minimum Rails version to 5.1
+    - spec/lib/sbmt/outbox/worker_spec.rb

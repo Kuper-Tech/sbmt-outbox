@@ -13,7 +13,9 @@ Gem::Specification.new do |s|
   s.summary = "Outbox service"
   s.description = "A service that uses a relational database inserts messages/events into an outbox table as part of the local transaction."
 
-  s.files = Dir["{app,config,lib}/**/*", "Rakefile", "README.md"]
+  s.files = Dir["{app,config,lib,exe}/**/*", "Rakefile", "README.md"]
+  s.bindir = "exe"
+  s.executables = s.files.grep(%r{^exe/}) { |f| File.basename(f) }
 
   s.required_ruby_version = ">= 2.5"
 
@@ -40,6 +42,8 @@ Gem::Specification.new do |s|
   s.add_dependency "waterdrop", "~> 1.4"
   s.add_dependency "ruby2_keywords" # Remove this on Ruby 2.7
   s.add_dependency "yabeda", "~> 0.8"
+  s.add_dependency "thor"
+  s.add_dependency "redlock"
 
   s.add_development_dependency "appraisal"
   s.add_development_dependency "bundler"
