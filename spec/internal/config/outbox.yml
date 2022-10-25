@@ -1,26 +1,20 @@
-default: &default
+test:
   kafka:
     required_acks: -1
 
-  items:
+  outbox_items:
     outbox_item:
       retention: P1W
       retry_strategies:
         - exponential_backoff
         - compacted_log
 
+  inbox_items:
+    inbox_item:
+      retention: P1W
+      retry_strategies:
+        - exponential_backoff
+
   producer:
     topics:
       order_created: orders
-
-development:
-  <<: *default
-
-test:
-  <<: *default
-
-staging:
-  <<: *default
-
-production:
-  <<: *default

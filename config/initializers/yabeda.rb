@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
 Yabeda.configure do
-  group :outbox do
+  box_counters = -> do
     counter :sent_counter,
       tags: %i[name],
-      comment: "The total number of sent events"
+      comment: "The total number of processed messages"
 
     counter :error_counter,
       tags: %i[name],
-      comment: "Errors (excepting retries) that occurred while processing outbox messages"
+      comment: "Errors (excepting retries) that occurred while processing messages"
 
     counter :retry_counter,
       tags: %i[name],
-      comment: "Retries that occurred while processing outbox messages"
+      comment: "Retries that occurred while processing messages"
 
     counter :discarded_counter,
       tags: %i[name],
-      comment: "The total number of discarded events"
+      comment: "The total number of discarded messages"
 
     counter :requeue_counter,
       tags: %i[name partition_key],
@@ -29,8 +29,11 @@ Yabeda.configure do
     gauge :last_sent_event_id,
       tags: %i[name],
       comment: "The ID of the last sent event. " \
-               "If the message order is not preserved, the value may be inaccurate"
+                "If the message order is not preserved, the value may be inaccurate"
   end
+
+  group :outbox, &box_counters
+  group :inbox, &box_counters
 
   group :dead_letters do
     counter :error_counter,

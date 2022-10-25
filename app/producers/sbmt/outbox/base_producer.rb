@@ -6,22 +6,28 @@ module Sbmt
     class BaseProducer
       extend Dry::Initializer
 
+      class << self
+        def [](name:, topic:)
+          klass = Class.new(self) do
+            define_method :topic do
+              @topic ||= topic
+            end
+          end
+
+          Sbmt::Outbox::BaseProducer.const_set("#{name.classify}Producer", klass)
+        end
+
+        def call(outbox_item, payload)
+          new.publish(outbox_item, payload)
+        end
+      end
+
       option :producer, default: -> { KafkaProducers::SyncProducer }
       option :async_producer, default: -> { KafkaProducers::AsyncProducer }
       option :config, default: -> { Outbox.yaml_config }
 
-      def self.call(outbox_item, payload)
-        new.publish(outbox_item, payload)
-      end
-
-      # This method needs to be implemented in each of the responders
-      # @param _data [Object] anything that we want to use to send to Kafka
-      # @raise [NotImplementedError] This method needs to be implemented in a subclass
-      # def respond(data)
-      #   respond_to :topic, data.to_json
-      # end
-      def publish(_outbox_item, _payload)
-        raise NotImplementedError, "Implement this in a subclass"
+      def publish(outbox_item, payload)
+        publish_to_kafka(payload, outbox_item.options)
       end
 
       private

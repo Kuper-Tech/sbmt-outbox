@@ -30,6 +30,7 @@ end
 create_table :my_outbox_items do |t|
   t.string :uuid, null: false
   t.string :event_name, null: false # optional, use it when you have several events per one outbox table
+  t.string :event_key, null: false # optional, use it when you use compacted-log retry strategy
   t.jsonb :options
   t.binary :proto_payload, null: false
   t.integer :status, null: false, default: 0
@@ -40,48 +41,37 @@ end
 
 add_index :my_outbox_items, :uuid, unique: true
 add_index :my_outbox_items, :status
-add_index :my_outbox_items, :created_at
+add_index :my_outbox_items, [:event_name, :event_key]
 ```
 
 В модели необходимо определить метод `transports`.
 
 ```ruby
 # app/models/my_outbox_item.rb
-class MyOutboxItem < Sbmt::Outbox::Item
+class MyOutboxItem < Sbmt::Outbox::OutboxItem
+  PRODUCER = Sbmt::Outbox::BaseProducer[
+    name: 'order_created',
+    topic: Sbmt::Outbox.yaml_config.dig(:producer, :topics, :my_event_created)
+  ]
+
   def transports
-    [
-      MyEventCreatedProducer
-    ]
+    [ PRODUCER ]
   end
 end
 ```
 
-Мы почти у цели — осталось определить нужный нам продьюсер событий и пару конфигов.
-
-```ruby
-# app/producers/my_event_created_producer.rb
-
-class OrderCreatedProducer < Sbmt::Outbox::BaseProducer
-  option :topic, default: lambda {
-    config.dig(:producer, :topics, :my_event_created)
-  }
-
-  def publish(outbox_item, payload)
-    publish_to_kafka(payload, outbox_item.options)
-  end
-end
-```
+Мы почти у цели — осталось определить пару конфигов.
 
 ```yaml
 # config/outbox.yml
 
 default: &default
   ignore_kafka_errors: true
-  items:
+  outbox_items:
     my_outbox_item:
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
-      max_retries: 1 # default: 0
+      max_retries: 3 # default: 0
 
 development:
   <<: *default
@@ -102,8 +92,65 @@ production:
 # config/initializers/outbox.rb
 
 Rails.application.config.outbox.tap do |config|
-  config.item_classes << "MyOutboxItem"
+  config.outbox_item_classes << "MyOutboxItem"
   config.paths << Rails.root.join("config/outbox.yml").to_s
+end
+```
+
+### Inbox pattern
+
+Обратный процесс. Здесь мы принимаем наши события.
+
+Создаем таблицу в БД и модель.
+
+```ruby
+create_table :my_inbox_items do |t|
+  t.string :uuid, null: false
+  t.string :event_name, null: false # optional, use it when you have several events per one inbox table
+  t.string :event_key, null: false # optional
+  t.jsonb :options
+  t.binary :proto_payload, null: false
+  t.integer :status, null: false, default: 0
+  t.integer :errors_count, null: false, default: 0
+  t.timestamp :processed_at
+  t.timestamps
+end
+
+add_index :my_inbox_items, :uuid, unique: true
+add_index :my_inbox_items, :status
+add_index :my_inbox_items, [:event_name, :event_key]
+```
+
+В модели необходимо определить метод `transports`.
+
+```ruby
+# app/models/my_inbox_item.rb
+class MyInboxItem < Sbmt::Inbox::Item
+  HANDLER = ->(item, proto_payload) do
+    Success()
+  end
+
+  def transports
+    [ HANDLER ]
+  end
+end
+```
+
+```yaml
+# config/outbox.yml
+
+  inbox_items:
+    my_inbox_item:
+      retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
+      partition_size: 2 # default: 1
+      max_retries: 3 # default: 0
+```
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  config.inbox_item_classes << "MyInboxItem"
 end
 ```
 
@@ -116,7 +163,7 @@ end
 ```yaml
 # config/outbox.yml
 
-  items:
+  outbox_items:
     my_outbox_item:
       ...
       minimal_retry_interval: 10 # default: 10
@@ -141,7 +188,7 @@ add_index :my_outbox_items, [:event_key], where: "status = 2"
 ```yaml
 # config/outbox.yml
 
-  items:
+  outbox_items:
     my_outbox_item:
       ...
       retry_strategies:

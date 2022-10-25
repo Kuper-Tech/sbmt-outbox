@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe Sbmt::Outbox::Item do
+describe Sbmt::Outbox::BaseItem do
   describe "#max_retries_exceeded?" do
     let(:outbox_item) { Fabricate(:outbox_item) }
 

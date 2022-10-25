@@ -6,40 +6,40 @@ module Sbmt
       param :item_class, reader: :private
       param :item_id, reader: :private
 
-      delegate :log_success, to: "Sbmt::Outbox.logger"
+      delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
+      delegate :box_type, :box_name, to: :item_class
 
       def call
         log_success(
-          "Start processing outbox item.\n" \
-          "Record: #{item_class.name}##{item_id}",
-          outbox_name: item_class.outbox_name
+          "Start processing #{box_type} item.\n" \
+          "Record: #{item_class.name}##{item_id}"
         )
 
-        outbox_item = nil
+        item = nil
 
         item_class.transaction do
-          outbox_item = yield fetch_outbox_item
+          item = yield fetch_item
 
-          if outbox_item.processed_at?
-            outbox_item.config.retry_strategies.each do |retry_strategy|
-              yield check_retry_strategy(outbox_item, retry_strategy)
+          if item.processed_at?
+            item.config.retry_strategies.each do |retry_strategy|
+              yield check_retry_strategy(item, retry_strategy)
             end
           end
 
-          payload = yield build_payload(outbox_item)
-          transports = yield fetch_transports(outbox_item)
+          payload = yield build_payload(item)
+          transports = yield fetch_transports(item)
 
           transports.each do |transport|
-            yield process_item(transport, outbox_item, payload)
+            yield process_item(transport, item, payload)
           end
 
-          track_successed(outbox_item)
+          track_successed(item)
 
-          Success(outbox_item)
+          Success(item)
         rescue Dry::Monads::Do::Halt => e
           e.result
         rescue => e
-          track_failed(e, outbox_item)
+          track_failed(e, item)
           Failure(e.message)
         end
       ensure
@@ -49,19 +49,19 @@ module Sbmt
 
       private
 
-      def fetch_outbox_item
-        outbox_item = item_class
+      def fetch_item
+        item = item_class
           .for_processing
           .lock("FOR UPDATE")
           .find_by(id: item_id)
-        return Success(outbox_item) if outbox_item
+        return Success(item) if item
 
         track_failed("not found")
         Failure(:not_found)
       end
 
-      def check_retry_strategy(outbox_item, retry_strategy)
-        result = retry_strategy.call(outbox_item)
+      def check_retry_strategy(item, retry_strategy)
+        result = retry_strategy.call(item)
 
         return Success() if result.success?
 
@@ -69,43 +69,43 @@ module Sbmt
         when :skip_processing
           Failure(:skip_processing)
         when :discard_item
-          track_discarded(outbox_item)
+          track_discarded(item)
           Failure(:discard_item)
         else
-          track_failed("Retry stratagy returned unknown failure: #{result.failure}")
+          track_failed("retry stratagy returned unknown failure: #{result.failure}")
           Failure(:retry_strategy_failure)
         end
       end
 
-      def build_payload(outbox_item)
-        builder = outbox_item.payload_builder
+      def build_payload(item)
+        builder = item.payload_builder
 
         if builder
-          payload = outbox_item.payload_builder.call(outbox_item)
+          payload = item.payload_builder.call(item)
           return payload if payload.success?
 
-          track_failed("payload builder returned failure: #{payload.failure}", outbox_item)
+          track_failed("payload builder returned failure: #{payload.failure}", item)
           Failure(:payload_failure)
         else
-          Success(outbox_item.proto_payload)
+          Success(item.proto_payload)
         end
       end
 
-      def fetch_transports(outbox_item)
-        transports = outbox_item.transports
+      def fetch_transports(item)
+        transports = item.transports
         return Success(transports) if transports.present?
 
-        track_failed("missing transports", outbox_item)
+        track_failed("missing transports", item)
         Failure(:missing_transports)
       end
 
-      def process_item(transport, outbox_item, payload)
-        result = transport.call(outbox_item, payload)
+      def process_item(transport, item, payload)
+        result = transport.call(item, payload)
 
         case result
         when Dry::Monads::Result
           if result.failure?
-            track_failed("transport #{transport} returned failure: #{result.failure}", outbox_item)
+            track_failed("transport #{transport} returned failure: #{result.failure}", item)
             Failure(:transport_failure)
           else
             Success()
@@ -113,83 +113,82 @@ module Sbmt
         when true
           Success()
         else
-          track_failed("transport #{transport} returned #{result.inspect}", outbox_item)
+          track_failed("transport #{transport} returned #{result.inspect}", item)
           Failure(:transport_failure)
         end
       end
 
-      def track_failed(ex_or_msg, outbox_item = nil)
-        log_failure(ex_or_msg, outbox_item)
+      def track_failed(ex_or_msg, item = nil)
+        log_error(ex_or_msg, item)
 
-        outbox_item&.touch_processed_at
-        outbox_item&.increment_errors_counter
+        item&.touch_processed_at
+        item&.increment_errors_counter
 
-        if outbox_item.nil? || outbox_item.max_retries_exceeded?
+        if item.nil? || item.max_retries_exceeded?
           Outbox.error_tracker.error(
             ex_or_msg,
-            outbox_name: item_class.outbox_name,
+            box_name: item_class.box_name,
             item_class: item_class.name,
             item_id: item_id,
-            item_details: outbox_item&.log_details&.to_json
+            item_details: item&.log_details&.to_json
           )
           counters[:error_counter] += 1
-          outbox_item&.failed!
+          item&.failed!
         else
           counters[:retry_counter] += 1
-          outbox_item&.pending!
+          item&.pending!
         end
       end
 
-      def track_successed(outbox_item)
-        msg = "Outbox item successfully delivered.\n" \
+      def track_successed(item)
+        msg = "Successfully delivered #{box_type} item.\n" \
               "Record: #{item_class.name}##{item_id}.\n" \
-              "#{outbox_item.log_details.to_json}"
-        log_success(msg, outbox_name: item_class.outbox_name)
+              "#{item.log_details.to_json}"
+        log_success(msg)
 
-        outbox_item.touch_processed_at
-        outbox_item.delivered!
+        item.touch_processed_at
+        item.delivered!
 
         counters[:sent_counter] += 1
       end
 
-      def track_discarded(outbox_item)
-        msg = "Outbox item skipped and discarded.\n" \
+      def track_discarded(item)
+        msg = "Skipped and discarded #{box_type} item.\n" \
               "Record: #{item_class.name}##{item_id}.\n" \
-              "#{outbox_item.log_details.to_json}"
-        log_success(msg, outbox_name: item_class.outbox_name)
+              "#{item.log_details.to_json}"
+        log_success(msg)
 
-        outbox_item.touch_processed_at
-        outbox_item.discarded!
+        item.touch_processed_at
+        item.discarded!
 
         counters[:discarded_counter] += 1
       end
 
-      def log_failure(ex_or_msg, outbox_item = nil)
-        msg = "Outbox item failed with error: #{ex_or_msg}.\n" \
+      def log_error(ex_or_msg, item = nil)
+        msg = "Failed processing #{box_type} item with error: #{ex_or_msg}.\n" \
               "Record: #{item_class.name}##{item_id}.\n" \
-              "#{outbox_item&.log_details&.to_json}"
+              "#{item&.log_details&.to_json}"
 
         backtrace = ex_or_msg.backtrace.join("\n") if ex_or_msg.respond_to?(:backtrace)
 
-        Sbmt::Outbox.logger.log_failure(
-          msg,
-          outbox_name: item_class.outbox_name,
-          backtrace: backtrace
-        )
+        log_failure(msg, backtrace: backtrace)
       end
 
       def report_metrics
-        labels = {name: item_class.outbox_name}
+        labels = {name: box_name}
 
         %i[error_counter retry_counter sent_counter].each do |counter_name|
-          Yabeda.outbox
+          Yabeda
+            .send(box_type)
             .send(counter_name)
             .increment(labels, by: counters[counter_name])
         end
 
         return unless counters[:sent_counter] > 0
 
-        Yabeda.outbox.last_sent_event_id
+        Yabeda
+          .send(box_type)
+          .last_sent_event_id
           .set(labels, item_id)
       end
 

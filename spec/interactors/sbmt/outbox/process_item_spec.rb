@@ -6,10 +6,11 @@ describe Sbmt::Outbox::ProcessItem do
 
     let(:event_name) { "order_created" }
     let(:max_retries) { 0 }
+    let(:producer_class) { OutboxItem::PRODUCER }
 
     before do
-      allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_return(true)
-      allow_any_instance_of(Sbmt::Outbox::ItemConfig).to receive(:max_retries).and_return(max_retries)
+      allow_any_instance_of(producer_class).to receive(:publish).and_return(true)
+      allow_any_instance_of(Sbmt::Outbox::OutboxItemConfig).to receive(:max_retries).and_return(max_retries)
     end
 
     context "when outbox item is not found in db" do
@@ -18,7 +19,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "returns error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
-          .with("Outbox item failed with error: not found.\nRecord: OutboxItem#1.\n", outbox_name: "outbox_item", backtrace: nil)
+          .with(/Failed processing outbox item with error: not found/, backtrace: nil)
         expect(result).not_to be_success
         expect(result.failure).to eq :not_found
       end
@@ -92,7 +93,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_return(false)
+        allow_any_instance_of(producer_class).to receive(:publish).and_return(false)
       end
 
       it "returns error" do
@@ -143,7 +144,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_raise("boom")
+        allow_any_instance_of(producer_class).to receive(:publish).and_raise("boom")
       end
 
       it "returns error" do
@@ -158,7 +159,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "tracks error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
-          .with(/Outbox item failed with error: boom/, outbox_name: "outbox_item", backtrace: kind_of(String))
+          .with(/Failed processing outbox item with error: boom/, backtrace: kind_of(String))
         expect(result.failure).to eq "boom"
       end
 
@@ -177,7 +178,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(OrderCreatedProducer).to receive(:publish)
+        allow_any_instance_of(producer_class).to receive(:publish)
           .and_return(Dry::Monads::Result::Failure.new("some error"))
       end
 
@@ -199,7 +200,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(OutboxItem).to receive(:transports).and_return([OrderCreatedProducer, HttpOrderSender])
+        allow_any_instance_of(OutboxItem).to receive(:transports).and_return([producer_class, HttpOrderSender])
       end
 
       it "returns success" do
@@ -216,7 +217,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       it "returns success" do
-        expect(OrderCreatedProducer).to receive(:call).with(outbox_item, "custom-payload").and_return(true)
+        expect(producer_class).to receive(:call).with(outbox_item, "custom-payload").and_return(true)
 
         expect(result).to be_success
         expect(outbox_item.reload).to be_delivered
@@ -228,7 +229,7 @@ describe Sbmt::Outbox::ProcessItem do
       let(:max_retries) { 1 }
 
       before do
-        allow_any_instance_of(OrderCreatedProducer).to receive(:publish).and_return(false)
+        allow_any_instance_of(producer_class).to receive(:publish).and_return(false)
       end
 
       it "doesn't change status to failed" do

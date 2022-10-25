@@ -2,11 +2,9 @@
 
 module Sbmt
   module Outbox
-    class ItemConfig
-      delegate :yaml_config, to: "Sbmt::Outbox"
-
-      def initialize(outbox_name)
-        self.outbox_name = outbox_name
+    class BaseItemConfig
+      def initialize(box_name)
+        self.box_name = box_name
       end
 
       def partition_size
@@ -41,10 +39,14 @@ module Sbmt
 
       private
 
-      attr_accessor :outbox_name
+      attr_accessor :box_name
 
       def options
-        @options ||= Outbox.yaml_config.dig(:items, outbox_name) || {}
+        @options ||= lookup_config || {}
+      end
+
+      def lookup_config
+        raise NotImplementedError
       end
     end
   end

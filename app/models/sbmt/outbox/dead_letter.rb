@@ -18,7 +18,7 @@ module Sbmt
       end
 
       def outbox_name
-        @outbox_name ||= metadata.fetch("headers")[Item::OUTBOX_HEADER_NAME]
+        @outbox_name ||= metadata.fetch("headers")[OutboxItem::OUTBOX_HEADER_NAME]
       end
 
       def metric_labels

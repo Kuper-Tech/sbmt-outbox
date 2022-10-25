@@ -16,7 +16,7 @@ describe Sbmt::Outbox::ProcessDeadLetter do
       end
     end
 
-    it "works" do
+    it "handles and destroys dead letter" do
       expect(Sbmt::Outbox.logger).to receive(:log_success)
       expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
 
