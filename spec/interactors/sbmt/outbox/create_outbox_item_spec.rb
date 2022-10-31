@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe Sbmt::Outbox::CreateItem do
+describe Sbmt::Outbox::CreateOutboxItem do
   subject(:result) { described_class.call(OutboxItem, attributes: attributes) }
 
   let(:attributes) do

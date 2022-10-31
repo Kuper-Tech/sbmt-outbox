@@ -15,7 +15,23 @@ ActiveRecord::Schema.define do
 
   add_index :outbox_items, :uuid, unique: true
   add_index :outbox_items, :status
-  add_index :outbox_items, [:event_name, :event_key], where: "status = 2"
+  add_index :outbox_items, [:event_name, :event_key]
+
+  create_table :inbox_items do |t|
+    t.string :uuid, null: false
+    t.string :event_name, null: false
+    t.bigint :event_key, null: false
+    t.json :options
+    t.binary :proto_payload, null: false
+    t.integer :status, null: false, default: 0
+    t.integer :errors_count, null: false, default: 0
+    t.timestamp :processed_at
+    t.timestamps
+  end
+
+  add_index :inbox_items, :uuid, unique: true
+  add_index :inbox_items, :status
+  add_index :inbox_items, [:event_name, :event_key]
 
   create_table :dead_letters do |t|
     t.binary :proto_payload, null: false

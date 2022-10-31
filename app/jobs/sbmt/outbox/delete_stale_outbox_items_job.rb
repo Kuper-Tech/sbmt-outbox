@@ -2,8 +2,7 @@
 
 module Sbmt
   module Outbox
-    # TODO: Safely rename class to ProcessOutboxItemsJob
-    class ProcessItemsJob < Sbmt::Outbox::BaseProcessItemsJob
+    class DeleteStaleOutboxItemsJob < BaseDeleteStaleItemsJob
       sidekiq_options queue: :outbox
 
       class << self

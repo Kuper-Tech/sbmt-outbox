@@ -9,13 +9,17 @@ module Sbmt
 
       config.outbox = ActiveSupport::OrderedOptions.new.tap do |c|
         c.error_tracker = "Sbmt::Outbox::ErrorTracker"
+        # TODO: backward compatibility
         c.item_classes = []
+        c.outbox_item_classes = []
+        c.inbox_item_classes = []
         c.dead_letter_classes = []
         c.paths = []
+        c.redis_servers = [ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")]
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
           c.pooling_interval = 10
           c.queue_timeout = 60
-          c.general_timeout = 300
+          c.general_timeout = 150
           c.cutoff_timeout = 100
           c.batch_size = 100
         end

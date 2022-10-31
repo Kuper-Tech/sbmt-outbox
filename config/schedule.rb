@@ -7,6 +7,17 @@ every "#{Sbmt::Outbox.config.process_items.pooling_interval}s",
   Sbmt::Outbox::ProcessItemsJob.enqueue
 end
 
-every "1h", as: "Sbmt::Outbox::DeleteStaleItemsJob", overlap: false, timeout: "60s" do
-  Sbmt::Outbox::DeleteStaleItemsJob.enqueue
+every "#{Sbmt::Outbox.config.process_items.pooling_interval}s",
+  as: "Sbmt::Outbox::ProcessInboxItemsJob",
+  overlap: false,
+  timeout: "60s" do
+  Sbmt::Outbox::ProcessInboxItemsJob.enqueue
+end
+
+every "10m", as: "Sbmt::Outbox::DeleteStaleOutboxItemsJob", overlap: false, timeout: "60s" do
+  Sbmt::Outbox::DeleteStaleOutboxItemsJob.enqueue
+end
+
+every "10m", as: "Sbmt::Outbox::DeleteStaleInboxItemsJob", overlap: false, timeout: "60s" do
+  Sbmt::Outbox::DeleteStaleInboxItemsJob.enqueue
 end
