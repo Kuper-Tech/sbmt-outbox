@@ -27,7 +27,7 @@ module Sbmt
               yield check_retry_strategy(item, retry_strategy)
             end
           else
-            self.process_latency = Time.current - outbox_item.created_at
+            self.process_latency = Time.current - item.created_at
           end
 
           payload = yield build_payload(item)
