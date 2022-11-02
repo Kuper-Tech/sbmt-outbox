@@ -8,7 +8,7 @@ module Sbmt
 
       class << self
         def item_classes
-          Outbox.outbox_item_classes
+          @item_classes ||= Outbox.outbox_item_classes - Outbox.schked_ignore_outbox_item_classes
         end
       end
     end

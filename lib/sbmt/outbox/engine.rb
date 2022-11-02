@@ -12,7 +12,9 @@ module Sbmt
         # TODO: backward compatibility
         c.item_classes = []
         c.outbox_item_classes = []
+        c.schked_ignore_outbox_item_classes = []
         c.inbox_item_classes = []
+        c.schked_ignore_inbox_item_classes = []
         c.dead_letter_classes = []
         c.paths = []
         c.redis_servers = [ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")]

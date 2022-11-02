@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+ENV["RAILS_ENV"] = "test"
+
+ENGINE_ROOT = Pathname.new(File.expand_path("../..", __dir__))
+
+require "combustion"
+
+Dir.chdir(File.expand_path("../..", __dir__)) do
+  Combustion.initialize! :active_record, database_reset: false, load_schema: false, database_migrate: false do
+    config.logger = ActiveSupport::TaggedLogging.new(Logger.new($stdout))
+    config.log_level = :info
+  end
+end
+
+# require "fabrication"
+# Dir["#{ENGINE_ROOT}/spec/fabricators/**/*.rb"].sort.each { |f| require f }
+# Fabricate(:outbox_item)
+# Fabricate(:inbox_item)

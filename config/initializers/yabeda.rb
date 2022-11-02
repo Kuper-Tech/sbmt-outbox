@@ -35,6 +35,12 @@ Yabeda.configure do
   group :outbox, &box_counters
   group :inbox, &box_counters
 
+  group :box_worker do
+    counter :job_counter,
+      tags: %i[type name partition worker_number state],
+      comment: "The total number of processed messages"
+  end
+
   group :dead_letters do
     counter :error_counter,
       tags: %i[name topic],

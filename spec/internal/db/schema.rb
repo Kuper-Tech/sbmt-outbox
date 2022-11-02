@@ -5,6 +5,7 @@ ActiveRecord::Schema.define do
     t.string :uuid, null: false
     t.string :event_name, null: false
     t.bigint :event_key, null: false
+    t.bigint :partition_key, null: false, default: 1
     t.json :options
     t.binary :proto_payload, null: false
     t.integer :status, null: false, default: 0
@@ -21,6 +22,7 @@ ActiveRecord::Schema.define do
     t.string :uuid, null: false
     t.string :event_name, null: false
     t.bigint :event_key, null: false
+    t.bigint :partition_key, null: false, default: 1
     t.json :options
     t.binary :proto_payload, null: false
     t.integer :status, null: false, default: 0
