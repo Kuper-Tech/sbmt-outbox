@@ -9,6 +9,8 @@ module Sbmt
       delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
       delegate :box_type, :box_name, to: :item_class
 
+      attr_accessor :process_latency
+
       def call
         log_success(
           "Start processing #{box_type} item.\n" \
@@ -24,6 +26,8 @@ module Sbmt
             item.config.retry_strategies.each do |retry_strategy|
               yield check_retry_strategy(item, retry_strategy)
             end
+          else
+            self.process_latency = Time.current - item.created_at
           end
 
           payload = yield build_payload(item)
@@ -184,6 +188,8 @@ module Sbmt
             .increment(labels, by: counters[counter_name])
         end
 
+        track_process_latency(labels) if process_latency
+
         return unless counters[:sent_counter] > 0
 
         Yabeda
@@ -194,6 +200,10 @@ module Sbmt
 
       def counters
         @counters ||= Hash.new(0)
+      end
+
+      def track_process_latency(labels)
+        Yabeda.outbox.process_latency.measure(labels, process_latency.round(3))
       end
     end
   end

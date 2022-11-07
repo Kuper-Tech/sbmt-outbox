@@ -81,9 +81,10 @@ describe Sbmt::Outbox::ProcessItem do
         expect(outbox_item.reload).to be_delivered
       end
 
-      it "tracks Yabeda sent counter and last_sent_event_id" do
+      it "tracks Yabeda sent counter and last_sent_event_id and process_latency" do
         expect { result }.to increment_yabeda_counter(Yabeda.outbox.sent_counter)
           .and update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
+        expect { result }.to measure_yabeda_histogram(Yabeda.outbox.process_latency)
 
         result
       end
@@ -136,6 +137,14 @@ describe Sbmt::Outbox::ProcessItem do
           expect { result }.to increment_yabeda_counter(Yabeda.outbox.retry_counter)
 
           result
+        end
+      end
+
+      context "when retry process" do
+        let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name, processed_at: Time.current) }
+
+        it "do not track process_latency" do
+          expect { result }.not_to measure_yabeda_histogram(Yabeda.outbox.process_latency)
         end
       end
     end
