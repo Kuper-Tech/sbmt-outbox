@@ -29,7 +29,7 @@ module Sbmt
         self.mutex = Mutex.new
         self.lock_manager = Redlock::Client.new(config.redis_servers, retry_count: 0)
         # TODO: add connection pool? I cannot access to the `@servers` variable in RedLock
-        self.redis = Redis.new(url: config.redis_servers.first)
+        self.redis = build_redis(config.redis_servers.first)
         self.thread_workers = {}
       end
 
@@ -79,6 +79,17 @@ module Sbmt
       private
 
       attr_accessor :jobs, :concurrency, :mutex, :job_index, :lock_manager, :redis, :thread_workers, :started
+
+      def build_redis(server)
+        case server
+        when String
+          Redis.new(url: server)
+        when Hash
+          Redis.new(**server)
+        else
+          server
+        end
+      end
 
       def thread_pool
         @thread_pool ||= ThreadPool.new do

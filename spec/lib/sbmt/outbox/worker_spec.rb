@@ -101,7 +101,6 @@ describe Sbmt::Outbox::Worker do
       expect(worker).to receive(:process_job).with(kind_of(Sbmt::Outbox::Worker::Job), 1).ordered.and_call_original
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id) do |_klass, _id|
-        puts "Go to sleep for 3 secs"
         sleep 3
         processed << @item_1
       end.ordered
