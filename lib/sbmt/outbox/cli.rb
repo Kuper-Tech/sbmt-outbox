@@ -68,9 +68,9 @@ module Sbmt
       end
 
       def fetch_all_boxes
-        (Outbox.outbox_item_classes + Outbox.inbox_item_classes).index_with do |item_class|
-          Range.new(1, item_class.config.partition_size).to_a
-        end
+        (Outbox.outbox_item_classes + Outbox.inbox_item_classes).map do |item_class|
+          [item_class, Range.new(1, item_class.config.partition_size).to_a]
+        end.to_h
       end
 
       def extract_boxes(boxes)
