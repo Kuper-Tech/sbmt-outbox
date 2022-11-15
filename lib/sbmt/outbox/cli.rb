@@ -69,7 +69,7 @@ module Sbmt
 
       def fetch_all_boxes
         (Outbox.outbox_item_classes + Outbox.inbox_item_classes).map do |item_class|
-          [item_class, Range.new(1, item_class.config.partition_size).to_a]
+          [item_class, Range.new(0, item_class.config.partition_size - 1).to_a]
         end.to_h
       end
 
