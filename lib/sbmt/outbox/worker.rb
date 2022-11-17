@@ -44,12 +44,7 @@ module Sbmt
             lock_manager.lock("#{job.resource_path}:lock", general_timeout * 1000) do |locked|
               if locked
                 job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "processed"), by: 1)
-                start_id = redis.getdel("#{job.resource_path}:last_id").to_i + 1
-                logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
-
-                last_id = process_job_with_timeouts(job, start_id)
-
-                logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
+                process_job_with_errors(job, worker_number)
               else
                 job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "skipped"), by: 1)
                 logger.log_info("Skip processing already locked #{job.resource_key}")
@@ -149,6 +144,25 @@ module Sbmt
 
       def touch_thread_worker!
         thread_workers[thread_pool.worker_number] = Time.current
+      end
+
+      def process_job_with_errors(job, worker_number)
+        start_id = redis.getdel("#{job.resource_path}:last_id").to_i + 1
+
+        logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
+        last_id = process_job_with_timeouts(job, start_id)
+        logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
+      rescue => e
+        backtrace = e.backtrace.join("\n") if e.respond_to?(:backtrace)
+
+        logger.log_error(
+          "Failed processing #{job.resource_key} with error: #{e.message}",
+          backtrace: backtrace
+        )
+
+        job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "failed"), by: 1)
+
+        Outbox.error_tracker.error(e, **job.log_tags)
       end
 
       def process_job_with_timeouts(job, start_id)

@@ -117,4 +117,33 @@ describe Sbmt::Outbox::Worker do
       expect(processed).to eq [@item_1, @item_2]
     end
   end
+
+  describe "error while processing" do
+    let(:boxes) { {OutboxItem => [1]} }
+    let(:concurrency) { 1 }
+
+    # TODO: [Rails 5.1] Database transactions are shared between test threads
+    # rubocop:disable RSpec/BeforeAfterAll
+    before(:context) do
+      @item_1 = Fabricate(:outbox_item)
+    end
+
+    after(:context) do
+      @item_1.destroy
+    end
+    # rubocop:enable RSpec/BeforeAfterAll
+
+    it "does not fail" do
+      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).once do |_klass, _id|
+        worker.stop
+        raise "test error"
+      end.ordered
+
+      expect(Sbmt::Outbox.logger).to receive(:log_error)
+        .with(/test error/, hash_including(:backtrace))
+        .and_call_original
+
+      worker.start
+    end
+  end
 end
