@@ -20,4 +20,13 @@ describe Sbmt::Outbox::BaseItem do
       end
     end
   end
+
+  describe "#options" do
+    let(:outbox_item) { Fabricate(:outbox_item) }
+    let(:dispatched_at_header_name) { Sbmt::Outbox::OutboxItem::DISPATCH_TIME_HEADER_NAME }
+
+    it "has 'Dispatched-At' header" do
+      expect(outbox_item.options[:headers].has_key?(dispatched_at_header_name)).to be(true)
+    end
+  end
 end

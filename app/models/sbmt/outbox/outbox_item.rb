@@ -9,6 +9,7 @@ module Sbmt
       SEQUENCE_HEADER_NAME = "Sequence-ID"
       EVENT_TIME_HEADER_NAME = "Created-At"
       OUTBOX_HEADER_NAME = "Outbox-Name"
+      DISPATCH_TIME_HEADER_NAME = "Dispatched-At"
 
       class << self
         alias_method :outbox_name, :box_name
@@ -32,7 +33,8 @@ module Sbmt
             OUTBOX_HEADER_NAME => outbox_name,
             IDEMPOTENCY_HEADER_NAME => uuid,
             SEQUENCE_HEADER_NAME => id.to_s,
-            EVENT_TIME_HEADER_NAME => created_at&.to_datetime&.rfc3339(6)
+            EVENT_TIME_HEADER_NAME => created_at&.to_datetime&.rfc3339(6),
+            DISPATCH_TIME_HEADER_NAME => Time.current.to_datetime.rfc3339(6)
           }
         }
       end
