@@ -26,9 +26,11 @@ tests:
     POSTGRES_HOST_AUTH_METHOD: trust
     DATABASE_URL: postgres://postgres:secret@postgres:5432
     REDIS_URL: redis://redis:6379/0
-  script:
-    - gem update --system > /dev/null # We want the latest Bundler until we update the base Ruby image
+  before_script:
+    - gem update --system
+    - gem install bundler -v 2.3
     - bin/setup
+  script:
     - bundle exec appraisal rspec --format RspecJunitFormatter --out test-results/rspec_$RUBY_VERSION.xml --format documentation
   artifacts:
     reports:
