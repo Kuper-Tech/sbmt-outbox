@@ -34,7 +34,7 @@ Yabeda.configure do
     histogram :process_latency,
       tags: %i[name],
       unit: :seconds,
-      buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120].freeze,
+      buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600].freeze,
       comment: "A histogram outbox process latency"
   end
 
@@ -44,7 +44,14 @@ Yabeda.configure do
   group :box_worker do
     counter :job_counter,
       tags: %i[type name partition worker_number state],
-      comment: "The total number of processed messages"
+      comment: "The total number of processed jobs"
+
+    histogram :job_execution_runtime,
+      comment: "A histogram of the job execution time",
+      unit: :seconds,
+      per: :job,
+      tags: %i[type name partition worker_number],
+      buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300]
   end
 
   group :dead_letters do

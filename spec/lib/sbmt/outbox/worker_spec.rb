@@ -41,38 +41,38 @@ describe Sbmt::Outbox::Worker do
       expect(worker).to receive(:process_job).exactly(4).times.and_call_original
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @outbox_item_1.id) do |_klass, _id|
-        sleep 0.5
+        sleep 3
         thread_1 = thread_pool.worker_number
-        processed << @outbox_item_1
-        processed_by_thread[thread_pool.worker_number] << @outbox_item_1
+        processed << @outbox_item_1.partition_key
+        processed_by_thread[thread_pool.worker_number] << @outbox_item_1.partition_key
       end
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @outbox_item_2.id) do |_klass, _id|
-        sleep 3
+        sleep 5
         thread_2 = thread_pool.worker_number
-        processed << @outbox_item_2
-        processed_by_thread[thread_pool.worker_number] << @outbox_item_2
+        processed << @outbox_item_2.partition_key
+        processed_by_thread[thread_pool.worker_number] << @outbox_item_2.partition_key
       end
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(InboxItem, @inbox_item_3.id) do |_klass, _id|
-        sleep 0.5
-        processed << @inbox_item_3
-        processed_by_thread[thread_pool.worker_number] << @inbox_item_3
+        processed << @inbox_item_3.partition_key
+        processed_by_thread[thread_pool.worker_number] << @inbox_item_3.partition_key
       end
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(InboxItem, @inbox_item_4.id) do |_klass, _id|
-        sleep 0.5
-        processed << @inbox_item_4
-        processed_by_thread[thread_pool.worker_number] << @inbox_item_4
-
         worker.stop
+
+        processed << @inbox_item_4.partition_key
+        processed_by_thread[thread_pool.worker_number] << @inbox_item_4.partition_key
       end
 
       worker.start
 
-      expect(processed).to eq [@outbox_item_1, @inbox_item_3, @inbox_item_4, @outbox_item_2]
-      expect(processed_by_thread[thread_1]).to eq [@outbox_item_1, @inbox_item_3, @inbox_item_4]
-      expect(processed_by_thread[thread_2]).to eq [@outbox_item_2]
+      puts processed.inspect
+
+      expect(processed).to eq [1, 3, 4, 2]
+      expect(processed_by_thread[thread_1]).to eq [1, 3, 4]
+      expect(processed_by_thread[thread_2]).to eq [2]
     end
   end
 
