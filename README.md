@@ -20,11 +20,11 @@ end
 
 ## Configuration
 
+Gem реализован как самостоятельный демон.
+
 ### Outbox pattern
 
-Асинхронный процесс, который отслеживает изменения запускается по расписанию в [Schked](https://github.com/bibendi/schked).
-
-Чтобы этот процесс увидел ваши откладываемые события, вам нужно реализовать таблицу в БД и модель.
+Чтобы процесс увидел ваши откладываемые события, вам нужно реализовать таблицу в БД и модель.
 
 ```ruby
 create_table :my_outbox_items do |t|
@@ -93,6 +93,7 @@ production:
 
 Rails.application.config.outbox.tap do |config|
   config.outbox_item_classes << "MyOutboxItem"
+  config.schked_ignore_outbox_item_classes << "MyOutboxItem"
   config.paths << Rails.root.join("config/outbox.yml").to_s
 end
 ```
@@ -151,6 +152,7 @@ end
 
 Rails.application.config.outbox.tap do |config|
   config.inbox_item_classes << "MyInboxItem"
+  config.schked_ignore_outbox_item_classes << "MyInboxItem"
 end
 ```
 
@@ -198,46 +200,7 @@ add_index :my_outbox_items, [:event_key], where: "status = 2"
 
 Если вы хотите (и должны хотеть) использовать вместе с `exponential_backoff`, то у убедитесь в том, что `compacted_log` идет последней, для минимизации запросов в БД.
 
-### Dead letters pattern
-
-Если наш Kafka consumer не смог обработать сообщение, то оно откладывается в специальную таблицу в базе данных.
-
-```ruby
-  create_table :my_dead_letters, id: :bigint do |t|
-    t.binary :proto_payload, null: false
-    t.json :metadata
-    t.string :topic_name, null: false
-    t.text :error
-    t.timestamps
-  end
-```
-
-В модели необходимо определить методы `handler` и `payload`.
-
-```ruby
-# app/models/my_dead_letter.rb
-class MyDeadLetter < Sbmt::Outbox::DeadLetter
-  def handler
-    MyConsumerHandler
-  end
-
-  def payload
-    MyDecoder.decode(proto_payload)
-  end
-end
-```
-
-```ruby
-# config/initializers/outbox.rb
-
-Rails.application.config.outbox.tap do |config|
-  ...
-  config.dead_letter_classes << 'MyDeadLetter'
-end
-```
-
 ## Usage
-
 
 ### Create outbox item
 
@@ -250,28 +213,85 @@ transaction do
 end
 ```
 
-### Create inbox dead letter
+## Example run in PAAS
 
-```ruby
-result = handle(message.payload)
-return if result.success?
+### Example run Inbox (SHP)
 
-result = Sbmt::Outbox::CreateDeadLetter.call(
-  MyDeadLetter,
-  proto_payload: message.raw_payload,
-  topic_name: message.metadata.topic,
-  metadata: message.metadata,
-  error: error
-)
+```yaml
+# config/values.yml
 
-raise result.failure unless result.success?
+  deployments:
+    ...
+    - name: inbox-orders
+    command:
+      - /bin/sh
+      - -c
+      - exec bundle exec outbox start --boxes order/inbox_item:0-8 --concurrency 5
+    replicas:
+      prod: 2
+      stage: 1
+    <<: *outbox-ports
+    <<: *outbox-probes
+    <<: *outbox-resources
+    <<: *outbox-monitoring
+
 ```
 
-Для повторения процессинга событий, существует rake task:
+```yaml
+# configs/alerts.yaml
 
-```sh
-rake outbox:process_dead_letters[MyDeadLetter,1,2,3,8]
+  outbox-worker-missing-activity: &outbox-worker-missing-activity
+    name: OutboxWorkerMissingActivity
+    summary: "Outbox daemon doesn't process some jobs"
+    description: "Отсутствие активности Outbox daemon для некоторых партиций"
+    expr: sum by (name, partition) (rate(box_worker_job_counter{state='processed'}[5m])) == 0
+    for: 5m
+    runbook: https://wiki.sbmt.io/pages/viewpage.action?pageId=3053201983
+    dashboard: https://grafana.sbmt.io/d/vMyPDav4z/service-ruby-outbox-inbox-worker
+    severity: error
+    slack: dev-alerts-m11s-transformation
+    labels:
+      app: "paas-content-shopper"
 ```
+
+### Example run Outbox (retail-onboarding)
+
+```yaml
+# configs/values.yaml
+
+  developments:
+    ...
+    - name: outbox
+    replicas:
+      _default: 1
+    command:
+      - /bin/bash
+      - "-c"
+      - "bundle exec outbox start"
+    readinessProbe:
+      httpGet:
+        path: /readiness/outbox
+        port: health-check
+    livenessProbe:
+      httpGet:
+        path: /liveness/outbox
+        port: health-check
+    resources:
+      prod:
+        requests:
+          cpu: "500m"
+          memory: "256MI"
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+```
+
+## Options
+
+| Key                   | Description                                                               |
+|-----------------------|---------------------------------------------------------------------------|
+| `--boxes or -b`       | Outbox/Inbox processors to start in format `foo_name:1,2,n bar_name:1,2,n`|
+| `--concurrency or -c` | Number of threads. Default 10.                                            |
 
 ## Development & Test
 
