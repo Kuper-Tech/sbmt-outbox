@@ -18,6 +18,10 @@ Yabeda.configure do
       tags: %i[name],
       comment: "The total number of discarded messages"
 
+    counter :fetch_error_counter,
+      tags: %i[name],
+      comment: "Errors that occurred while fetching messages"
+
     counter :requeue_counter,
       tags: %i[name partition_key],
       comment: "Requeue of a sidekiq job that occurred while processing outbox messages"

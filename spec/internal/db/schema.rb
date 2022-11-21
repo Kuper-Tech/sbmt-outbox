@@ -10,6 +10,7 @@ ActiveRecord::Schema.define do
     t.binary :proto_payload, null: false
     t.integer :status, null: false, default: 0
     t.integer :errors_count, null: false, default: 0
+    t.text :error_log
     t.timestamp :processed_at
     t.timestamps
   end
@@ -27,6 +28,7 @@ ActiveRecord::Schema.define do
     t.binary :proto_payload, null: false
     t.integer :status, null: false, default: 0
     t.integer :errors_count, null: false, default: 0
+    t.text :error_log
     t.timestamp :processed_at
     t.timestamps
   end

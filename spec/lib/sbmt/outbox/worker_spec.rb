@@ -68,8 +68,6 @@ describe Sbmt::Outbox::Worker do
 
       worker.start
 
-      puts processed.inspect
-
       expect(processed).to eq [1, 3, 4, 2]
       expect(processed_by_thread[thread_1]).to eq [1, 3, 4]
       expect(processed_by_thread[thread_2]).to eq [2]

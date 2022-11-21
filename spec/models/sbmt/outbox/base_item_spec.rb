@@ -29,4 +29,24 @@ describe Sbmt::Outbox::BaseItem do
       expect(outbox_item.options[:headers].has_key?(dispatched_at_header_name)).to be(true)
     end
   end
+
+  describe "#add_error" do
+    let(:outbox_item) { Fabricate(:outbox_item) }
+
+    it "saves exception message to record" do
+      error = StandardError.new("test-error")
+      outbox_item.add_error(error)
+      outbox_item.save!
+      outbox_item.reload
+
+      expect(outbox_item.error_log).to include("test-error")
+
+      error = StandardError.new("another-error")
+      outbox_item.add_error(error)
+      outbox_item.save!
+      outbox_item.reload
+
+      expect(outbox_item.error_log).to include("another-error")
+    end
+  end
 end
