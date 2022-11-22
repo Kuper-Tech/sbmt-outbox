@@ -72,6 +72,22 @@ module Sbmt
         increment(:errors_count)
       end
 
+      def add_error(ex_or_msg)
+        increment_errors_counter
+
+        return unless has_attribute?(:error_log)
+
+        self.error_log ||= ""
+        error_log << "-----\n#{Time.zone.now} - attempt: #{errors_count}\n"
+        error_log << "#{ex_or_msg}\n"
+
+        return unless ex_or_msg.respond_to?(:backtrace)
+        return if ex_or_msg.backtrace.nil?
+
+        error_log << ex_or_msg.backtrace.first(10).join("\n")
+        error_log << "\n"
+      end
+
       private
 
       def default_options

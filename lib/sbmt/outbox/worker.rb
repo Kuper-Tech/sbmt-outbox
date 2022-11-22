@@ -9,7 +9,6 @@ module Sbmt
       Job = Struct.new(
         :item_class,
         :partition,
-        :working,
         :log_tags,
         :yabeda_labels,
         :resource_key,
@@ -20,13 +19,13 @@ module Sbmt
       delegate :config, :logger, to: "Sbmt::Outbox"
       delegate :stop, to: :thread_pool
       delegate :general_timeout, :cutoff_timeout, :batch_size, to: "Sbmt::Outbox.config.process_items"
-      delegate :job_counter, to: "Yabeda.box_worker"
+      delegate :job_counter, :job_execution_runtime, to: "Yabeda.box_worker"
 
       def initialize(boxes: {}, concurrency: 10)
-        self.jobs = build_jobs(boxes)
-        self.concurrency = [concurrency, jobs.size].min
-        self.job_index = -1
-        self.mutex = Mutex.new
+        self.queue = Queue.new
+        build_jobs(boxes).each { |job| queue << job }
+        self.thread_pool = ThreadPool.new { queue.pop }
+        self.concurrency = [concurrency, queue.size].min
         self.lock_manager = Redlock::Client.new(config.redis_servers, retry_count: 0)
         # TODO: add connection pool? I cannot access to the `@servers` variable in RedLock
         self.redis = build_redis(config.redis_servers.first)
@@ -42,22 +41,21 @@ module Sbmt
           touch_thread_worker!
           logger.with_tags(**job.log_tags) do
             lock_manager.lock("#{job.resource_path}:lock", general_timeout * 1000) do |locked|
+              labels = job.yabeda_labels.merge(worker_number: worker_number)
+
               if locked
-                job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "processed"), by: 1)
-                start_id = redis.getdel("#{job.resource_path}:last_id").to_i + 1
-                logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
-
-                last_id = process_job_with_timeouts(job, start_id)
-
-                logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
+                job_execution_runtime.measure(labels) do
+                  process_job_with_errors(job, worker_number)
+                end
               else
-                job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "skipped"), by: 1)
                 logger.log_info("Skip processing already locked #{job.resource_key}")
               end
+
+              job_counter.increment(labels.merge(state: locked ? "processed" : "skipped"), by: 1)
             end
           end
         ensure
-          job.working = false
+          queue << job
         end
       ensure
         self.started = false
@@ -78,7 +76,7 @@ module Sbmt
 
       private
 
-      attr_accessor :jobs, :concurrency, :mutex, :job_index, :lock_manager, :redis, :thread_workers, :started
+      attr_accessor :queue, :thread_pool, :concurrency, :lock_manager, :redis, :thread_workers, :started
 
       def build_redis(server)
         case server
@@ -91,36 +89,6 @@ module Sbmt
         end
       end
 
-      def thread_pool
-        @thread_pool ||= ThreadPool.new do
-          job = pop_job || ThreadPool::BREAK
-          logger.log_info("Got job #{job.resource_key}", **job.log_tags)
-          job
-        end
-      end
-
-      def pop_job
-        mutex.synchronize do
-          next_index = job_index + 1
-          if next_index >= jobs.size
-            next_index = 0
-            sleep 2
-          end
-
-          while (job = jobs[next_index]).working
-            next_index += 1
-            next_index = 0 if next_index >= jobs.size
-            sleep 0.5
-          end
-
-          self.job_index = next_index
-
-          job.working = true
-
-          job
-        end
-      end
-
       def build_jobs(boxes)
         boxes.map do |item_class, partitions|
           partitions.to_a.map do |partition|
@@ -129,7 +97,6 @@ module Sbmt
             Job.new(
               item_class: item_class,
               partition: partition,
-              working: false,
               log_tags: {
                 box_type: item_class.box_type,
                 box_name: item_class.box_name,
@@ -151,6 +118,23 @@ module Sbmt
         thread_workers[thread_pool.worker_number] = Time.current
       end
 
+      def process_job_with_errors(job, worker_number)
+        start_id = redis.getdel("#{job.resource_path}:last_id").to_i + 1
+        logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
+        process_job_with_timeouts(job, start_id)
+      rescue => e
+        backtrace = e.backtrace.join("\n") if e.respond_to?(:backtrace)
+
+        logger.log_error(
+          "Failed processing #{job.resource_key} with error: #{e.message}",
+          backtrace: backtrace
+        )
+
+        job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "failed"), by: 1)
+
+        Outbox.error_tracker.error(e, **job.log_tags)
+      end
+
       def process_job_with_timeouts(job, start_id)
         lock_timer = Cutoff.new(general_timeout)
         requeue_timer = Cutoff.new(cutoff_timeout)
@@ -162,7 +146,7 @@ module Sbmt
           requeue_timer.checkpoint!
         end
 
-        last_id
+        logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
       rescue Cutoff::CutoffExceededError
         msg = if lock_timer.exceeded?
           "Lock timeout"
@@ -173,8 +157,6 @@ module Sbmt
         raise "Unknown timer has been timed out" unless msg
 
         logger.log_info("#{msg} while processing #{job.resource_key} at id #{last_id}")
-
-        last_id
       end
 
       def process_job(job, start_id)

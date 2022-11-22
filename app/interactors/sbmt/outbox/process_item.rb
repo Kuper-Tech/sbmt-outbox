@@ -6,6 +6,8 @@ module Sbmt
       param :item_class, reader: :private
       param :item_id, reader: :private
 
+      METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter].freeze
+
       delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
       delegate :box_type, :box_name, to: :item_class
 
@@ -126,21 +128,18 @@ module Sbmt
         log_error(ex_or_msg, item)
 
         item&.touch_processed_at
-        item&.increment_errors_counter
+        item&.add_error(ex_or_msg)
 
-        if item.nil? || item.max_retries_exceeded?
-          Outbox.error_tracker.error(
-            ex_or_msg,
-            box_name: item_class.box_name,
-            item_class: item_class.name,
-            item_id: item_id,
-            item_details: item&.log_details&.to_json
-          )
+        if item.nil?
+          report_error(ex_or_msg)
+          counters[:fetch_error_counter] += 1
+        elsif item.max_retries_exceeded?
+          report_error(ex_or_msg, item)
           counters[:error_counter] += 1
-          item&.failed!
+          item.failed!
         else
           counters[:retry_counter] += 1
-          item&.pending!
+          item.pending!
         end
       end
 
@@ -178,10 +177,20 @@ module Sbmt
         log_failure(msg, backtrace: backtrace)
       end
 
+      def report_error(ex_or_msg, item = nil)
+        Outbox.error_tracker.error(
+          ex_or_msg,
+          box_name: item_class.box_name,
+          item_class: item_class.name,
+          item_id: item_id,
+          item_details: item&.log_details&.to_json
+        )
+      end
+
       def report_metrics
         labels = {name: box_name}
 
-        %i[error_counter retry_counter sent_counter].each do |counter_name|
+        METRICS_COUNTERS.each do |counter_name|
           Yabeda
             .send(box_type)
             .send(counter_name)

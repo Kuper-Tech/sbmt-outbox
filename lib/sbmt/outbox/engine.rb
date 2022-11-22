@@ -25,6 +25,10 @@ module Sbmt
           c.cutoff_timeout = 100
           c.batch_size = 100
         end
+        c.worker = ActiveSupport::OrderedOptions.new.tap do |c|
+          c.rate_limit = 40
+          c.rate_interval = 60
+        end
       end
 
       rake_tasks do

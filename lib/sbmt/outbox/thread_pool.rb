@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "sbmt/outbox/throttler"
+
 module Sbmt
   module Outbox
     class ThreadPool
@@ -54,8 +56,17 @@ module Sbmt
 
         in_threads(count: count) do |worker_num|
           self.worker_number = worker_num
+          # We don't want to start all threads at the same time
+          random_sleep = rand * (worker_num + 1)
 
-          while !exception && (item = next_task)
+          throttler = Throttler.new(
+            limit: Outbox.config.worker.rate_limit,
+            interval: Outbox.config.worker.rate_interval + random_sleep
+          )
+
+          sleep(random_sleep)
+
+          while !exception && throttler.wait && (item = next_task)
             begin
               yield item
             rescue Exception => e # rubocop:disable Lint/RescueException

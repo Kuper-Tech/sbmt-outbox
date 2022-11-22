@@ -5,7 +5,8 @@ services:
       dockerfile: Dockerfile
       args:
         RUBY_VERSION: ${RUBY_VERSION:-3.1}
-    image: outbox-dev:0.1.0-ruby_${RUBY_VERSION:-3.1}
+        BUNDLER_VERSION: 2.3
+    image: outbox-dev:0.2.0-ruby_${RUBY_VERSION:-3.1}
     environment:
       HISTFILE: /app/tmp/.bash_history
       BUNDLE_PATH: /usr/local/bundle
