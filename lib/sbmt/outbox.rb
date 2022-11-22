@@ -67,10 +67,6 @@ module Sbmt
       @item_classes_by_name ||= (outbox_item_classes + inbox_item_classes).index_by(&:box_name)
     end
 
-    def dead_letter_classes
-      @dead_letter_classes ||= config.dead_letter_classes.map(&:constantize)
-    end
-
     def yaml_config
       @yaml_config ||= config.paths.each_with_object({}.with_indifferent_access) do |path, memo|
         memo.deep_merge!(

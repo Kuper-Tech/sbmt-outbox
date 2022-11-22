@@ -15,7 +15,6 @@ module Sbmt
         c.schked_ignore_outbox_item_classes = []
         c.inbox_item_classes = []
         c.schked_ignore_inbox_item_classes = []
-        c.dead_letter_classes = []
         c.paths = []
         c.redis_servers = [ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")]
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
@@ -35,7 +34,6 @@ module Sbmt
         load "sbmt/outbox/tasks/process_outbox_items.rake"
         load "sbmt/outbox/tasks/retry_failed_outbox_items.rake"
         load "sbmt/outbox/tasks/delete_failed_outbox_items.rake"
-        load "sbmt/outbox/tasks/process_dead_letters.rake"
       end
     end
   end
