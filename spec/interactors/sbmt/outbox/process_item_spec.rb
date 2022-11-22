@@ -23,6 +23,10 @@ describe Sbmt::Outbox::ProcessItem do
         expect(result).not_to be_success
         expect(result.failure).to eq :not_found
       end
+
+      it "tracks Yabeda error counter" do
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.fetch_error_counter).by(1)
+      end
     end
 
     context "when outbox item is not in pending state" do
@@ -82,7 +86,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       it "tracks Yabeda sent counter and last_sent_event_id and process_latency" do
-        expect { result }.to increment_yabeda_counter(Yabeda.outbox.sent_counter)
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.sent_counter).by(1)
           .and update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
         expect { result }.to measure_yabeda_histogram(Yabeda.outbox.process_latency)
 
@@ -117,9 +121,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       it "tracks Yabeda error counter" do
-        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter)
-
-        result
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter).by(1)
       end
 
       context "when has one retry available" do
@@ -134,9 +136,7 @@ describe Sbmt::Outbox::ProcessItem do
         end
 
         it "tracks Yabeda retry counter" do
-          expect { result }.to increment_yabeda_counter(Yabeda.outbox.retry_counter)
-
-          result
+          expect { result }.to increment_yabeda_counter(Yabeda.outbox.retry_counter).by(1)
         end
       end
 
@@ -177,9 +177,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       it "tracks Yabeda error counter" do
-        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter)
-
-        result
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter).by(1)
       end
     end
 
