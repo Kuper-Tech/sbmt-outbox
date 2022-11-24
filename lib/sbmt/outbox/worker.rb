@@ -119,20 +119,24 @@ module Sbmt
       end
 
       def process_job_with_errors(job, worker_number)
-        start_id = redis.getdel("#{job.resource_path}:last_id").to_i + 1
+        attempt ||= 1
+        start_id ||= redis.getdel("#{job.resource_path}:last_id").to_i + 1
         logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
         process_job_with_timeouts(job, start_id)
+      rescue ActiveRecord::StatementInvalid => e
+        attempt += 1
+        log_fatal(e, job, worker_number)
+
+        if attempt > 3
+          track_fatal(e, job, worker_number)
+          raise e # exit with error
+        end
+
+        ::ActiveRecord::Base.clear_active_connections!
+        retry
       rescue => e
-        backtrace = e.backtrace.join("\n") if e.respond_to?(:backtrace)
-
-        logger.log_error(
-          "Failed processing #{job.resource_key} with error: #{e.message}",
-          backtrace: backtrace
-        )
-
-        job_counter.increment(job.yabeda_labels.merge(worker_number: worker_number, state: "failed"), by: 1)
-
-        Outbox.error_tracker.error(e, **job.log_tags)
+        log_fatal(e, job, worker_number)
+        track_fatal(e, job, worker_number)
       end
 
       def process_job_with_timeouts(job, start_id)
@@ -173,6 +177,25 @@ module Sbmt
           ProcessItem.call(job.item_class, item.id)
           yield item
         end
+      end
+
+      def log_fatal(e, job, worker_number)
+        backtrace = e.backtrace.join("\n") if e.respond_to?(:backtrace)
+
+        logger.log_error(
+          "Failed processing #{job.resource_key} with error: #{e.message}",
+          backtrace: backtrace
+        )
+      end
+
+      def track_fatal(e, job, worker_number)
+        job_counter
+          .increment(
+            job.yabeda_labels.merge(worker_number: worker_number, state: "failed"),
+            by: 1
+          )
+
+        Outbox.error_tracker.error(e, **job.log_tags)
       end
     end
   end

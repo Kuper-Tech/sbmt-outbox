@@ -144,4 +144,34 @@ describe Sbmt::Outbox::Worker do
       worker.start
     end
   end
+
+  describe "db connection error while processing" do
+    let(:boxes) { {OutboxItem => [1]} }
+    let(:concurrency) { 1 }
+
+    # TODO: [Rails 5.1] Database transactions are shared between test threads
+    # rubocop:disable RSpec/BeforeAfterAll
+    before(:context) do
+      @item_1 = Fabricate(:outbox_item)
+    end
+
+    after(:context) do
+      @item_1.destroy
+    end
+    # rubocop:enable RSpec/BeforeAfterAll
+
+    it "does not fail" do
+      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).exactly(3).times do |_klass, _id|
+        worker.stop
+        raise ActiveRecord::StatementInvalid
+      end.ordered
+
+      expect(Sbmt::Outbox.logger).to receive(:log_error)
+        .with(/Failed processing/, hash_including(:backtrace))
+        .exactly(3).times
+        .and_call_original
+
+      expect { worker.start }.to raise_error(ActiveRecord::StatementInvalid)
+    end
+  end
 end
