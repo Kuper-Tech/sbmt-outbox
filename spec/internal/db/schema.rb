@@ -36,12 +36,4 @@ ActiveRecord::Schema.define do
   add_index :inbox_items, :uuid, unique: true
   add_index :inbox_items, :status
   add_index :inbox_items, [:event_name, :event_key]
-
-  create_table :dead_letters do |t|
-    t.binary :proto_payload, null: false
-    t.json :metadata
-    t.string :topic_name, null: false
-    t.text :error
-    t.timestamps
-  end
 end
