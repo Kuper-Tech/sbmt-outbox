@@ -39,6 +39,7 @@ module Sbmt
 
         thread_pool.start(concurrency: concurrency) do |worker_number, job|
           touch_thread_worker!
+          result = ThreadPool::PROCESSED
           logger.with_tags(**job.log_tags) do
             lock_manager.lock("#{job.resource_path}:lock", general_timeout * 1000) do |locked|
               labels = job.yabeda_labels.merge(worker_number: worker_number)
@@ -48,12 +49,15 @@ module Sbmt
                   process_job_with_errors(job, worker_number)
                 end
               else
+                result = ThreadPool::SKIPPED
                 logger.log_info("Skip processing already locked #{job.resource_key}")
               end
 
               job_counter.increment(labels.merge(state: locked ? "processed" : "skipped"), by: 1)
             end
           end
+
+          result
         ensure
           queue << job
         end

@@ -6,6 +6,8 @@ module Sbmt
   module Outbox
     class ThreadPool
       BREAK = Object.new.freeze
+      SKIPPED = Object.new.freeze
+      PROCESSED = Object.new.freeze
 
       def initialize(&block)
         self.task_source = block
@@ -66,9 +68,14 @@ module Sbmt
 
           sleep(random_sleep)
 
-          while !exception && throttler.wait && (item = next_task)
+          last_result = nil
+          until exception
+            throttler.wait if Outbox.config.worker.always_throttle || last_result == PROCESSED
+            item = next_task
+            break unless item
+
             begin
-              yield item
+              last_result = yield item
             rescue Exception => e # rubocop:disable Lint/RescueException
               exception = e
             end
