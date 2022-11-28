@@ -25,8 +25,9 @@ module Sbmt
           c.batch_size = 100
         end
         c.worker = ActiveSupport::OrderedOptions.new.tap do |c|
-          c.rate_limit = 40
+          c.rate_limit = 30
           c.rate_interval = 60
+          c.always_throttle = true
         end
       end
 
