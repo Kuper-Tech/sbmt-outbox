@@ -20,6 +20,7 @@ require_relative "outbox/version"
 require_relative "outbox/errors"
 require_relative "outbox/error_tracker"
 require_relative "outbox/logger"
+require_relative "outbox/database_switcher"
 require_relative "outbox/kafka_producers/delivery_boy"
 require_relative "outbox/kafka_producers/async_producer"
 require_relative "outbox/kafka_producers/sync_producer"
@@ -43,6 +44,10 @@ module Sbmt
 
     def error_tracker
       @error_tracker ||= config.error_tracker.constantize
+    end
+
+    def database_switcher
+      @database_switcher ||= config.database_switcher.constantize
     end
 
     def outbox_item_classes

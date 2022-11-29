@@ -29,6 +29,7 @@ module Sbmt
           c.rate_interval = 60
           c.always_throttle = true
         end
+        c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
       end
 
       rake_tasks do
