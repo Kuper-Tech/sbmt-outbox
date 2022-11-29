@@ -168,18 +168,22 @@ module Sbmt
       end
 
       def process_job(job, start_id)
-        scope = job.item_class.for_processing.select(:id)
+        Outbox.database_switcher.use_slave do
+          scope = job.item_class.for_processing.select(:id)
 
-        if job.item_class.has_attribute?(:partition_key)
-          scope = scope.where(partition_key: job.partition)
-        elsif job.partition > 1
-          raise "Could not filter by partition #{job.resource_key}"
-        end
+          if job.item_class.has_attribute?(:partition_key)
+            scope = scope.where(partition_key: job.partition)
+          elsif job.partition > 1
+            raise "Could not filter by partition #{job.resource_key}"
+          end
 
-        scope.find_each(start: start_id, batch_size: batch_size) do |item|
-          touch_thread_worker!
-          ProcessItem.call(job.item_class, item.id)
-          yield item
+          scope.find_each(start: start_id, batch_size: batch_size) do |item|
+            touch_thread_worker!
+            Outbox.database_switcher.use_master do
+              ProcessItem.call(job.item_class, item.id)
+            end
+            yield item
+          end
         end
       end
 
