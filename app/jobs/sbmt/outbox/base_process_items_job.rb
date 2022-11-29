@@ -91,14 +91,18 @@ module Sbmt
       end
 
       def process_items(start_id)
-        scope = item_class.for_processing.select(:id)
-        scope = scope.where(partition_key: partition_key) if item_class.config.partition_size > 1
+        Outbox.database_switcher.use_slave do
+          scope = item_class.for_processing.select(:id)
+          scope = scope.where(partition_key: partition_key) if item_class.config.partition_size > 1
 
-        scope.find_each(start: start_id, batch_size: config.process_items.batch_size) do |item|
-          # TODO: check result object and use circuit breaker
-          #       take into account :skip_processing failure
-          Sbmt::Outbox::ProcessItem.call(item_class, item.id)
-          yield item.id
+          scope.find_each(start: start_id, batch_size: config.process_items.batch_size) do |item|
+            # TODO: check result object and use circuit breaker
+            #       take into account :skip_processing failure
+            Outbox.database_switcher.use_master do
+              Sbmt::Outbox::ProcessItem.call(item_class, item.id)
+            end
+            yield item.id
+          end
         end
       end
 
