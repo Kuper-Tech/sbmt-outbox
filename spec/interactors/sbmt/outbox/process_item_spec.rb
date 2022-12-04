@@ -169,7 +169,7 @@ describe Sbmt::Outbox::ProcessItem do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
           .with(/Failed processing outbox item with error: boom/, backtrace: kind_of(String))
-        expect(result.failure).to eq "boom"
+        expect(result.failure).to eq :transport_failure
       end
 
       it "does not remove outbox item" do

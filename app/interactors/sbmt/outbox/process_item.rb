@@ -106,7 +106,19 @@ module Sbmt
       end
 
       def process_item(transport, item, payload)
-        result = transport.call(item, payload)
+        transport_error = nil
+
+        result = item_class.transaction(requires_new: true) do
+          transport.call(item, payload)
+        rescue => e
+          transport_error = e
+          raise ActiveRecord::Rollback
+        end
+
+        if transport_error
+          track_failed(transport_error, item)
+          return Failure(:transport_failure)
+        end
 
         case result
         when Dry::Monads::Result
