@@ -7,7 +7,8 @@ describe Sbmt::Outbox::CreateInboxItem do
     {
       event_name: "order_created",
       proto_payload: "test",
-      event_key: 10
+      event_key: 10,
+      partition_key: 15
     }
   end
 

@@ -19,7 +19,11 @@ module Sbmt
       delegate :config, :logger, to: "Sbmt::Outbox"
       delegate :stop, to: :thread_pool
       delegate :general_timeout, :cutoff_timeout, :batch_size, to: "Sbmt::Outbox.config.process_items"
-      delegate :job_counter, :job_execution_runtime, to: "Yabeda.box_worker"
+      delegate :job_counter,
+        :job_execution_runtime,
+        :item_execution_runtime,
+        :job_items_counter,
+        to: "Yabeda.box_worker"
 
       def initialize(boxes: {}, concurrency: 10)
         self.queue = Queue.new
@@ -46,7 +50,7 @@ module Sbmt
 
               if locked
                 job_execution_runtime.measure(labels) do
-                  process_job_with_errors(job, worker_number)
+                  process_job_with_errors(job, worker_number, labels)
                 end
               else
                 result = ThreadPool::SKIPPED
@@ -122,11 +126,11 @@ module Sbmt
         thread_workers[thread_pool.worker_number] = Time.current
       end
 
-      def process_job_with_errors(job, worker_number)
+      def process_job_with_errors(job, worker_number, labels)
         attempt ||= 1
         start_id ||= redis.getdel("#{job.resource_path}:last_id").to_i + 1
         logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
-        process_job_with_timeouts(job, start_id)
+        process_job_with_timeouts(job, start_id, labels)
       rescue ActiveRecord::StatementInvalid => e
         attempt += 1
         log_fatal(e, job, worker_number)
@@ -143,16 +147,20 @@ module Sbmt
         track_fatal(e, job, worker_number)
       end
 
-      def process_job_with_timeouts(job, start_id)
+      def process_job_with_timeouts(job, start_id, labels)
         lock_timer = Cutoff.new(general_timeout)
         requeue_timer = Cutoff.new(cutoff_timeout)
 
         last_id = nil
-        process_job(job, start_id) do |item|
+        count = 0
+        process_job(job, start_id, labels) do |item|
           last_id = item.id
+          count += 1
           lock_timer.checkpoint!
           requeue_timer.checkpoint!
         end
+
+        job_items_counter.increment(labels, by: count)
 
         logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
       rescue Cutoff::CutoffExceededError
@@ -167,7 +175,7 @@ module Sbmt
         logger.log_info("#{msg} while processing #{job.resource_key} at id #{last_id}")
       end
 
-      def process_job(job, start_id)
+      def process_job(job, start_id, labels)
         Outbox.database_switcher.use_slave do
           scope = job.item_class.for_processing.select(:id)
 
@@ -179,10 +187,12 @@ module Sbmt
 
           scope.find_each(start: start_id, batch_size: batch_size) do |item|
             touch_thread_worker!
-            Outbox.database_switcher.use_master do
-              ProcessItem.call(job.item_class, item.id)
+            item_execution_runtime.measure(labels) do
+              Outbox.database_switcher.use_master do
+                ProcessItem.call(job.item_class, item.id)
+              end
+              yield item
             end
-            yield item
           end
         end
       end

@@ -49,4 +49,12 @@ describe Sbmt::Outbox::BaseItem do
       expect(outbox_item.error_log).to include("another-error")
     end
   end
+
+  describe "#partition" do
+    let(:outbox_item) { Fabricate.build(:outbox_item, partition_key: 15) }
+
+    it "returns valid partition" do
+      expect(outbox_item.partition).to eq 15
+    end
+  end
 end

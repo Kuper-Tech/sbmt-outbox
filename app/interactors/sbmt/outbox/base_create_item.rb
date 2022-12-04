@@ -12,7 +12,7 @@ module Sbmt
         record = item_class.new(attributes)
 
         if record.save
-          track_last_stored_id(record.id)
+          track_last_stored_id(record.id, record.partition)
 
           Success(record)
         else
@@ -22,12 +22,12 @@ module Sbmt
 
       private
 
-      def track_last_stored_id(item_id)
+      def track_last_stored_id(item_id, partition)
         after_commit do
           Yabeda
             .send(box_type)
             .last_stored_event_id
-            .set({name: box_name}, item_id)
+            .set({name: box_name, partition: partition}, item_id)
         end
       end
     end

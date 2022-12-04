@@ -88,6 +88,14 @@ module Sbmt
         error_log << "\n"
       end
 
+      def partition
+        if has_attribute?(:partition_key)
+          partition_key
+        else
+          0
+        end
+      end
+
       private
 
       def default_options
