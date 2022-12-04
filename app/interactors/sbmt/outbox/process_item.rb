@@ -6,7 +6,7 @@ module Sbmt
       param :item_class, reader: :private
       param :item_id, reader: :private
 
-      METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter].freeze
+      METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter discarded_counter].freeze
 
       delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
       delegate :box_type, :box_name, to: :item_class
@@ -49,7 +49,7 @@ module Sbmt
           Failure(e.message)
         end
       ensure
-        report_metrics
+        report_metrics(item)
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
@@ -106,7 +106,19 @@ module Sbmt
       end
 
       def process_item(transport, item, payload)
-        result = transport.call(item, payload)
+        transport_error = nil
+
+        result = item_class.transaction(requires_new: true) do
+          transport.call(item, payload)
+        rescue => e
+          transport_error = e
+          raise ActiveRecord::Rollback
+        end
+
+        if transport_error
+          track_failed(transport_error, item)
+          return Failure(:transport_failure)
+        end
 
         case result
         when Dry::Monads::Result
@@ -187,8 +199,8 @@ module Sbmt
         )
       end
 
-      def report_metrics
-        labels = {name: box_name}
+      def report_metrics(item)
+        labels = {name: box_name, partition: item&.partition}
 
         METRICS_COUNTERS.each do |counter_name|
           Yabeda
