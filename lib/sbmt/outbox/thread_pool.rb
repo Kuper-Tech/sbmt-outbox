@@ -70,7 +70,7 @@ module Sbmt
 
           last_result = nil
           until exception
-            throttler.wait if Outbox.config.worker.always_throttle || last_result == PROCESSED
+            throttler.wait if last_result == PROCESSED
             item = next_task
             break unless item
 

@@ -51,21 +51,13 @@ module Sbmt
     end
 
     def outbox_item_classes
-      @outbox_item_classes ||= config.item_classes.map(&:constantize) + config.outbox_item_classes.map(&:constantize)
-    end
-
-    def schked_ignore_outbox_item_classes
-      @schked_ignore_outbox_item_classes ||= config.schked_ignore_outbox_item_classes.map(&:constantize)
+      @outbox_item_classes ||= config.outbox_item_classes.map(&:constantize)
     end
 
     alias_method :item_classes, :outbox_item_classes
 
     def inbox_item_classes
       @item_classes ||= config.inbox_item_classes.map(&:constantize)
-    end
-
-    def schked_ignore_inbox_item_classes
-      @schked_ignore_inbox_item_classes ||= config.schked_ignore_inbox_item_classes.map(&:constantize)
     end
 
     def item_classes_by_name

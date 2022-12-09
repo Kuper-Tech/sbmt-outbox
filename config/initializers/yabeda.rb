@@ -1,49 +1,46 @@
 # frozen_string_literal: true
 
 Yabeda.configure do
-  box_counters = -> do
+  group :outbox do
     counter :sent_counter,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "The total number of processed messages"
 
     counter :error_counter,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "Errors (excepting retries) that occurred while processing messages"
 
     counter :retry_counter,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "Retries that occurred while processing messages"
 
     counter :discarded_counter,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "The total number of discarded messages"
 
     counter :fetch_error_counter,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "Errors that occurred while fetching messages"
 
     counter :requeue_counter,
-      tags: %i[name partition_key],
+      tags: %i[type name partition_key],
       comment: "Requeue of a sidekiq job that occurred while processing outbox messages"
 
     gauge :last_stored_event_id,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "The ID of the last stored event"
 
     gauge :last_sent_event_id,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       comment: "The ID of the last sent event. " \
                 "If the message order is not preserved, the value may be inaccurate"
 
     histogram :process_latency,
-      tags: %i[name partition],
+      tags: %i[type name partition],
       unit: :seconds,
       buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600].freeze,
       comment: "A histogram outbox process latency"
   end
-
-  group :outbox, &box_counters
-  group :inbox, &box_counters
 
   group :box_worker do
     counter :job_counter,

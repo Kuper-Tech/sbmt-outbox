@@ -200,11 +200,11 @@ module Sbmt
       end
 
       def report_metrics(item)
-        labels = {name: box_name, partition: item&.partition}
+        labels = {type: box_type, name: box_name, partition: item&.partition}
 
         METRICS_COUNTERS.each do |counter_name|
           Yabeda
-            .send(box_type)
+            .outbox
             .send(counter_name)
             .increment(labels, by: counters[counter_name])
         end
@@ -214,7 +214,7 @@ module Sbmt
         return unless counters[:sent_counter] > 0
 
         Yabeda
-          .send(box_type)
+          .outbox
           .last_sent_event_id
           .set(labels, item_id)
       end

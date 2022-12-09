@@ -17,6 +17,26 @@ module Sbmt
         def config
           @config ||= lookup_config.new(box_name)
         end
+
+        def partition_buckets
+          @partition_buckets ||=
+            (0...config.partition_size)
+              .to_a
+              .each_with_object({}) do |x, m|
+                m[x] = (0...config.bucket_size)
+                  .to_a
+                  .select { |p| p % config.partition_size == x }
+              end
+        end
+
+        def bucket_partitions
+          @bucket_partitions ||=
+            partition_buckets.each_with_object({}) do |(partition, buckets), m|
+              buckets.each do |bucket|
+                m[bucket] = partition
+              end
+            end
+        end
       end
 
       enum status: {
@@ -89,11 +109,7 @@ module Sbmt
       end
 
       def partition
-        if has_attribute?(:partition_key)
-          partition_key
-        else
-          0
-        end
+        self.class.bucket_partitions.fetch(bucket, 0)
       end
 
       private

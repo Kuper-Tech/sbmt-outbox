@@ -10,17 +10,23 @@ describe Sbmt::Outbox::Worker do
     )
   end
 
+  around do |block|
+    Timeout.timeout(15, &block)
+  rescue Timeout::Error
+    worker.stop
+  end
+
   describe "threads concurrency" do
-    let(:boxes) { {OutboxItem => 1..2, InboxItem => 3..4} }
+    let(:boxes) { [OutboxItem, InboxItem] }
     let(:concurrency) { 2 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
     # rubocop:disable RSpec/BeforeAfterAll
     before(:context) do
-      @outbox_item_1 = Fabricate(:outbox_item, partition_key: 1)
-      @outbox_item_2 = Fabricate(:outbox_item, partition_key: 2)
-      @inbox_item_3 = Fabricate(:inbox_item, partition_key: 3)
-      @inbox_item_4 = Fabricate(:inbox_item, partition_key: 4)
+      @outbox_item_1 = Fabricate(:outbox_item, event_key: 1, bucket: 0)
+      @outbox_item_2 = Fabricate(:outbox_item, event_key: 2, bucket: 1)
+      @inbox_item_3 = Fabricate(:inbox_item, event_key: 3, bucket: 0)
+      @inbox_item_4 = Fabricate(:inbox_item, event_key: 4, bucket: 1)
     end
 
     after(:context) do
@@ -43,27 +49,27 @@ describe Sbmt::Outbox::Worker do
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @outbox_item_1.id) do |_klass, _id|
         sleep 3
         thread_1 = thread_pool.worker_number
-        processed << @outbox_item_1.partition_key
-        processed_by_thread[thread_pool.worker_number] << @outbox_item_1.partition_key
+        processed << @outbox_item_1.event_key
+        processed_by_thread[thread_pool.worker_number] << @outbox_item_1.event_key
       end
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @outbox_item_2.id) do |_klass, _id|
         sleep 5
         thread_2 = thread_pool.worker_number
-        processed << @outbox_item_2.partition_key
-        processed_by_thread[thread_pool.worker_number] << @outbox_item_2.partition_key
+        processed << @outbox_item_2.event_key
+        processed_by_thread[thread_pool.worker_number] << @outbox_item_2.event_key
       end
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(InboxItem, @inbox_item_3.id) do |_klass, _id|
-        processed << @inbox_item_3.partition_key
-        processed_by_thread[thread_pool.worker_number] << @inbox_item_3.partition_key
+        processed << @inbox_item_3.event_key
+        processed_by_thread[thread_pool.worker_number] << @inbox_item_3.event_key
       end
 
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(InboxItem, @inbox_item_4.id) do |_klass, _id|
         worker.stop
 
-        processed << @inbox_item_4.partition_key
-        processed_by_thread[thread_pool.worker_number] << @inbox_item_4.partition_key
+        processed << @inbox_item_4.event_key
+        processed_by_thread[thread_pool.worker_number] << @inbox_item_4.event_key
       end
 
       worker.start
@@ -75,7 +81,7 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "cutoff timeout" do
-    let(:boxes) { {OutboxItem => [1]} }
+    let(:boxes) { {OutboxItem => 1} }
     let(:concurrency) { 1 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
@@ -117,7 +123,7 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "error while processing" do
-    let(:boxes) { {OutboxItem => [1]} }
+    let(:boxes) { {OutboxItem => 1} }
     let(:concurrency) { 1 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
@@ -146,7 +152,7 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "db connection error while processing" do
-    let(:boxes) { {OutboxItem => [1]} }
+    let(:boxes) { {OutboxItem => 1} }
     let(:concurrency) { 1 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads

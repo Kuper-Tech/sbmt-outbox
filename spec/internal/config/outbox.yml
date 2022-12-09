@@ -1,9 +1,13 @@
 test:
+  bucket_size: 4
+
   kafka:
     required_acks: -1
 
   outbox_items:
     outbox_item:
+      partition_size: 2
+      partition_strategy: number
       retention: P1W
       retry_strategies:
         - exponential_backoff
@@ -11,6 +15,8 @@ test:
 
   inbox_items:
     inbox_item:
+      partition_size: 2
+      partition_strategy: number
       retention: P1W
       retry_strategies:
         - exponential_backoff

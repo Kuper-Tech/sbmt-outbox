@@ -3,12 +3,19 @@
 module Sbmt
   module Outbox
     class BaseItemConfig
+      DEFAULT_BUCKET_SIZE = 16
+      DEFAULT_PARTITION_STRATEGY = :number
+
       def initialize(box_name)
         self.box_name = box_name
       end
 
+      def bucket_size
+        @bucket_size ||= (options[:bucket_size] || Outbox.yaml_config.fetch(:bucket_size, DEFAULT_BUCKET_SIZE)).to_i
+      end
+
       def partition_size
-        (options[:partition_size] || 1).to_i
+        @partition_size ||= (options[:partition_size] || 1).to_i
       end
 
       def retention
@@ -16,25 +23,32 @@ module Sbmt
       end
 
       def max_retries
-        (options[:max_retries] || 0).to_i
+        @max_retries ||= (options[:max_retries] || 0).to_i
       end
 
       def minimal_retry_interval
-        (options[:minimal_retry_interval] || 10).to_i
+        @minimal_retry_interval ||= (options[:minimal_retry_interval] || 10).to_i
       end
 
       def maximal_retry_interval
-        (options[:maximal_retry_interval] || 600).to_i
+        @maximal_retry_interval ||= (options[:maximal_retry_interval] || 600).to_i
       end
 
       def multiplier_retry_interval
-        (options[:multiplier_retry_interval] || 2).to_i
+        @multiplier_retry_interval ||= (options[:multiplier_retry_interval] || 2).to_i
       end
 
       def retry_strategies
         @retry_strategies ||= Array.wrap(options[:retry_strategies]).map do |str_name|
           "Sbmt::Outbox::RetryStrategies::#{str_name.classify}".constantize
         end
+      end
+
+      def partition_strategy
+        return @partition_strategy if defined?(@partition_strategy)
+
+        str_name = options.fetch(:partition_strategy, DEFAULT_PARTITION_STRATEGY)
+        @partition_strategy = "Sbmt::Outbox::PartitionStrategies::#{str_name.classify}Partitioning".constantize
       end
 
       private

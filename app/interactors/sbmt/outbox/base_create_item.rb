@@ -11,6 +11,14 @@ module Sbmt
       def call
         record = item_class.new(attributes)
 
+        return Failure(:missing_event_key) unless attributes.key?(:event_key)
+        event_key = attributes.fetch(:event_key)
+
+        res = item_class.config.partition_strategy
+          .new(event_key, item_class.config.bucket_size)
+          .call
+        record.bucket = res.value! if res.success?
+
         if record.save
           track_last_stored_id(record.id, record.partition)
 
@@ -25,9 +33,9 @@ module Sbmt
       def track_last_stored_id(item_id, partition)
         after_commit do
           Yabeda
-            .send(box_type)
+            .outbox
             .last_stored_event_id
-            .set({name: box_name, partition: partition}, item_id)
+            .set({type: box_type, name: box_name, partition: partition}, item_id)
         end
       end
     end

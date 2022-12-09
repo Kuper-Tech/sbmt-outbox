@@ -9,6 +9,7 @@ module Sbmt
       Job = Struct.new(
         :item_class,
         :partition,
+        :buckets,
         :log_tags,
         :yabeda_labels,
         :resource_key,
@@ -25,7 +26,7 @@ module Sbmt
         :job_items_counter,
         to: "Yabeda.box_worker"
 
-      def initialize(boxes: {}, concurrency: 10)
+      def initialize(boxes:, concurrency: 10)
         self.queue = Queue.new
         build_jobs(boxes).each { |job| queue << job }
         self.thread_pool = ThreadPool.new { queue.pop }
@@ -44,7 +45,7 @@ module Sbmt
         thread_pool.start(concurrency: concurrency) do |worker_number, job|
           touch_thread_worker!
           result = ThreadPool::PROCESSED
-          logger.with_tags(**job.log_tags) do
+          logger.with_tags(**job.log_tags.merge(worker: worker_number)) do
             lock_manager.lock("#{job.resource_path}:lock", general_timeout * 1000) do |locked|
               labels = job.yabeda_labels.merge(worker_number: worker_number)
 
@@ -98,13 +99,16 @@ module Sbmt
       end
 
       def build_jobs(boxes)
+        boxes = boxes.zip([]).to_h if boxes.is_a?(Array)
         boxes.map do |item_class, partitions|
-          partitions.to_a.map do |partition|
-            resource_key = "#{item_class.box_name}:#{partition}"
+          format_partitions(item_class, partitions).map do |partition|
+            buckets = item_class.partition_buckets.fetch(partition)
+            resource_key = "#{item_class.box_name}/#{partition}:{#{buckets.join(",")}}"
 
             Job.new(
               item_class: item_class,
               partition: partition,
+              buckets: buckets,
               log_tags: {
                 box_type: item_class.box_type,
                 box_name: item_class.box_name,
@@ -120,6 +124,24 @@ module Sbmt
             )
           end
         end.flatten
+      end
+
+      def format_partitions(item_class, partitions)
+        partitions = [] if partitions.nil?
+        case partitions
+        when Integer
+          (0...partitions).to_a
+        when Range
+          partitions.to_a
+        when Array
+          if partitions.empty? || (partitions.size == 1 && partitions.first == -1)
+            (0...item_class.config.partition_size).to_a
+          else
+            partitions
+          end
+        else
+          partitions.to_a
+        end
       end
 
       def touch_thread_worker!
@@ -177,13 +199,12 @@ module Sbmt
 
       def process_job(job, start_id, labels)
         Outbox.database_switcher.use_slave do
-          scope = job.item_class.for_processing.select(:id)
+          item_class = job.item_class
 
-          if job.item_class.has_attribute?(:partition_key)
-            scope = scope.where(partition_key: job.partition)
-          elsif job.partition > 1
-            raise "Could not filter by partition #{job.resource_key}"
-          end
+          scope = item_class
+            .for_processing
+            .select(:id)
+            .where(bucket: job.buckets)
 
           scope.find_each(start: start_id, batch_size: batch_size) do |item|
             touch_thread_worker!

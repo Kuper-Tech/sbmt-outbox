@@ -75,19 +75,24 @@ module Sbmt
 
       def extract_boxes(boxes)
         boxes.each_with_object({}) do |(name, partitions), acc|
-          key = Sbmt::Outbox.item_classes_by_name[name]
-          raise "Cannot locate box #{name}" unless key
+          item_class = Sbmt::Outbox.item_classes_by_name[name]
+          raise "Cannot locate box #{name}" unless item_class
 
           val = partitions
             .split(",")
             .map! do |x|
-              from, to = x.split("-", 2)
+              if x == "all"
+                from, to = 0, item_class.config.partition_size - 1
+              else
+                from, to = x.split("-", 2)
+              end
+
               Range.new(Integer(from), [Integer(to || 0), Integer(from)].max).to_a
             end.flatten
 
           raise "Pass valid partition numbers" if val.empty?
 
-          acc[key] = val.sort!
+          acc[item_class] = val.sort!
         end
       end
 

@@ -7,14 +7,14 @@ describe Sbmt::Outbox::CreateOutboxItem do
     {
       event_name: "order_created",
       proto_payload: "test",
-      event_key: 10,
-      partition_key: 15
+      event_key: 10
     }
   end
 
   it "creates a record" do
     expect { result }.to change(OutboxItem, :count).by(1)
     expect(result).to be_success
+    expect(result.value!).to have_attributes(bucket: 2)
   end
 
   it "tracks Yabeda metrics" do
