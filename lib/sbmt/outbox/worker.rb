@@ -170,19 +170,17 @@ module Sbmt
       end
 
       def process_job_with_timeouts(job, start_id, labels)
+        count = 0
+        last_id = nil
         lock_timer = Cutoff.new(general_timeout)
         requeue_timer = Cutoff.new(cutoff_timeout)
 
-        last_id = nil
-        count = 0
         process_job(job, start_id, labels) do |item|
           last_id = item.id
           count += 1
           lock_timer.checkpoint!
           requeue_timer.checkpoint!
         end
-
-        job_items_counter.increment(labels, by: count)
 
         logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
       rescue Cutoff::CutoffExceededError
@@ -195,6 +193,8 @@ module Sbmt
         raise "Unknown timer has been timed out" unless msg
 
         logger.log_info("#{msg} while processing #{job.resource_key} at id #{last_id}")
+      ensure
+        job_items_counter.increment(labels, by: count)
       end
 
       def process_job(job, start_id, labels)
