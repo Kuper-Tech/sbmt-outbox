@@ -21,6 +21,7 @@ module Sbmt
 
         if record.save
           track_last_stored_id(record.id, record.partition)
+          track_counter(record.id, record.partition)
 
           Success(record)
         else
@@ -36,6 +37,15 @@ module Sbmt
             .outbox
             .last_stored_event_id
             .set({type: box_type, name: box_name, partition: partition}, item_id)
+        end
+      end
+
+      def track_counter(item_id, partition)
+        after_commit do
+          Yabeda
+            .outbox
+            .created_counter
+            .increment({type: box_type, name: box_name, partition: partition}, by: 1)
         end
       end
     end

@@ -2,6 +2,10 @@
 
 Yabeda.configure do
   group :outbox do
+    counter :created_counter,
+      tags: %i[type name partition],
+      comment: "The total number of created messages"
+
     counter :sent_counter,
       tags: %i[type name partition],
       comment: "The total number of processed messages"
