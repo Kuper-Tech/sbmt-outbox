@@ -26,10 +26,6 @@ Yabeda.configure do
       tags: %i[type name partition],
       comment: "Errors that occurred while fetching messages"
 
-    counter :requeue_counter,
-      tags: %i[type name partition_key],
-      comment: "Requeue of a sidekiq job that occurred while processing outbox messages"
-
     gauge :last_stored_event_id,
       tags: %i[type name partition],
       comment: "The ID of the last stored event"
@@ -50,6 +46,10 @@ Yabeda.configure do
     counter :job_counter,
       tags: %i[type name partition worker_number state],
       comment: "The total number of processed jobs"
+
+    counter :job_timeout_counter,
+      tags: %i[type name partition_key worker_number],
+      comment: "Requeue of a job that occurred while processing the batch"
 
     counter :job_items_counter,
       tags: %i[type name partition worker_number],

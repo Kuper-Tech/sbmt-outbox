@@ -24,6 +24,7 @@ module Sbmt
         :job_execution_runtime,
         :item_execution_runtime,
         :job_items_counter,
+        :job_timeout_counter,
         to: "Yabeda.box_worker"
 
       def initialize(boxes:, concurrency: 10)
@@ -176,6 +177,7 @@ module Sbmt
         requeue_timer = Cutoff.new(cutoff_timeout)
 
         process_job(job, start_id, labels) do |item|
+          job_items_counter.increment(labels, by: 1)
           last_id = item.id
           count += 1
           lock_timer.checkpoint!
@@ -184,6 +186,8 @@ module Sbmt
 
         logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
       rescue Cutoff::CutoffExceededError
+        job_timeout_counter.increment(labels, by: 1)
+
         msg = if lock_timer.exceeded?
           "Lock timeout"
         elsif requeue_timer.exceeded?
@@ -193,8 +197,6 @@ module Sbmt
         raise "Unknown timer has been timed out" unless msg
 
         logger.log_info("#{msg} while processing #{job.resource_key} at id #{last_id}")
-      ensure
-        job_items_counter.increment(labels, by: count)
       end
 
       def process_job(job, start_id, labels)
