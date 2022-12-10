@@ -56,6 +56,10 @@ module Sbmt
         self.uuid ||= SecureRandom.uuid if has_attribute?(:uuid)
       end
 
+      def for_processing?
+        pending?
+      end
+
       def options
         options = (self[:options] || {})
         options = options.deep_merge(default_options).deep_merge(extra_options)
