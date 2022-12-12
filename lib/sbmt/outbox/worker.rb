@@ -100,9 +100,9 @@ module Sbmt
       end
 
       def build_jobs(boxes)
-        boxes = boxes.zip([]).to_h if boxes.is_a?(Array)
-        boxes.map do |item_class, partitions|
-          format_partitions(item_class, partitions).map do |partition|
+        res = boxes.map do |item_class|
+          partitions = (0...item_class.config.partition_size).to_a
+          partitions.map do |partition|
             buckets = item_class.partition_buckets.fetch(partition)
             resource_key = "#{item_class.box_name}/#{partition}:{#{buckets.join(",")}}"
 
@@ -125,24 +125,9 @@ module Sbmt
             )
           end
         end.flatten
-      end
 
-      def format_partitions(item_class, partitions)
-        partitions = [] if partitions.nil?
-        case partitions
-        when Integer
-          (0...partitions).to_a
-        when Range
-          partitions.to_a
-        when Array
-          if partitions.empty? || (partitions.size == 1 && partitions.first == -1)
-            (0...item_class.config.partition_size).to_a
-          else
-            partitions
-          end
-        else
-          partitions.to_a
-        end
+        res.shuffle! if Outbox.config.worker.shuffle_jobs
+        res
       end
 
       def touch_thread_worker!

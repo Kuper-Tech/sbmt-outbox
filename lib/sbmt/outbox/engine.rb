@@ -21,6 +21,7 @@ module Sbmt
         c.worker = ActiveSupport::OrderedOptions.new.tap do |c|
           c.rate_limit = 20
           c.rate_interval = 60
+          c.shuffle_jobs = true
         end
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
       end

@@ -249,7 +249,7 @@ end
     command:
       - /bin/sh
       - -c
-      - exec bundle exec outbox start --boxes order/inbox_item:all --concurrency 4
+      - exec bundle exec outbox start --boxes order/inbox_item --concurrency 4
     replicas:
       prod: 2
       stage: 1
@@ -313,7 +313,7 @@ end
 
 | Key                   | Description                                                               |
 |-----------------------|---------------------------------------------------------------------------|
-| `--boxes or -b`       | Outbox/Inbox processors to start in format `foo_name:1,2,n bar_name:0-3 baz_name:all`|
+| `--boxes or -b`       | Outbox/Inbox processors to start`                                         |
 | `--concurrency or -c` | Number of threads. Default 10.                                            |
 
 ## Development & Test

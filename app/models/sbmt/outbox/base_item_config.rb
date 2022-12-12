@@ -8,6 +8,8 @@ module Sbmt
 
       def initialize(box_name)
         self.box_name = box_name
+
+        validate!
       end
 
       def bucket_size
@@ -61,6 +63,10 @@ module Sbmt
 
       def lookup_config
         raise NotImplementedError
+      end
+
+      def validate!
+        raise ConfigError, "Bucket size should be greater or equal to partition size" if partition_size > bucket_size
       end
     end
   end

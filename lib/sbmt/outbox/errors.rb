@@ -5,7 +5,7 @@ module Sbmt
     class Error < StandardError
     end
 
-    class ProcessItemError < Error
+    class ConfigError < Error
     end
   end
 end

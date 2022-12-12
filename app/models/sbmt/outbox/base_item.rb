@@ -113,7 +113,7 @@ module Sbmt
       end
 
       def partition
-        self.class.bucket_partitions.fetch(bucket, 0)
+        self.class.bucket_partitions.fetch(bucket)
       end
 
       private

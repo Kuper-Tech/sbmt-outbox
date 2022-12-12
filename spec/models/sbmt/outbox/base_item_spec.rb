@@ -56,14 +56,6 @@ describe Sbmt::Outbox::BaseItem do
     it "returns valid partition" do
       expect(outbox_item.partition).to eq 1
     end
-
-    context "when bucket out of bucket size" do
-      let(:outbox_item) { Fabricate.build(:outbox_item, bucket: 999) }
-
-      it "returns first partition" do
-        expect(outbox_item.partition).to eq 0
-      end
-    end
   end
 
   describe ".partition_buckets" do

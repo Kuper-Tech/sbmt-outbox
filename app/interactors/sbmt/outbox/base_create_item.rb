@@ -5,6 +5,7 @@ module Sbmt
     class BaseCreateItem < Outbox::DryInteractor
       param :item_class, reader: :private
       option :attributes, reader: :private
+      option :partition_by, reader: :private, optional: true, default: -> { attributes[:event_key] }
 
       delegate :box_type, :box_name, to: :item_class
 
@@ -12,10 +13,10 @@ module Sbmt
         record = item_class.new(attributes)
 
         return Failure(:missing_event_key) unless attributes.key?(:event_key)
-        event_key = attributes.fetch(:event_key)
+        return Failure(:missing_partition_by) unless partition_by
 
         res = item_class.config.partition_strategy
-          .new(event_key, item_class.config.bucket_size)
+          .new(partition_by, item_class.config.bucket_size)
           .call
         record.bucket = res.value! if res.success?
 

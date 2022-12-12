@@ -81,7 +81,7 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "cutoff timeout" do
-    let(:boxes) { {OutboxItem => 1} }
+    let(:boxes) { [OutboxItem] }
     let(:concurrency) { 1 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
@@ -96,6 +96,10 @@ describe Sbmt::Outbox::Worker do
       @item_2.destroy
     end
     # rubocop:enable RSpec/BeforeAfterAll
+
+    before do
+      allow(OutboxItem.config).to receive(:partition_size).and_return(1)
+    end
 
     it "requeues job to start processing from last id" do
       processed = []
@@ -123,7 +127,7 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "error while processing" do
-    let(:boxes) { {OutboxItem => 1} }
+    let(:boxes) { [OutboxItem] }
     let(:concurrency) { 1 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
@@ -136,6 +140,10 @@ describe Sbmt::Outbox::Worker do
       @item_1.destroy
     end
     # rubocop:enable RSpec/BeforeAfterAll
+
+    before do
+      allow(OutboxItem.config).to receive(:partition_size).and_return(1)
+    end
 
     it "does not fail" do
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).once do |_klass, _id|
@@ -152,7 +160,7 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "db connection error while processing" do
-    let(:boxes) { {OutboxItem => 1} }
+    let(:boxes) { [OutboxItem] }
     let(:concurrency) { 1 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
@@ -165,6 +173,10 @@ describe Sbmt::Outbox::Worker do
       @item_1.destroy
     end
     # rubocop:enable RSpec/BeforeAfterAll
+
+    before do
+      allow(OutboxItem.config).to receive(:partition_size).and_return(1)
+    end
 
     it "does not fail" do
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).exactly(3).times do |_klass, _id|
