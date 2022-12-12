@@ -59,22 +59,12 @@ describe Sbmt::Outbox::BaseItem do
   end
 
   describe ".partition_buckets" do
-    before do
-      allow(OutboxItem.config).to receive(:bucket_size).and_return(4)
-      allow(OutboxItem.config).to receive(:partition_size).and_return(2)
-    end
-
     it "returns buckets of partitions" do
       expect(OutboxItem.partition_buckets).to eq(0 => [0, 2], 1 => [1, 3])
     end
   end
 
   describe ".bucket_partitions" do
-    before do
-      allow(OutboxItem.config).to receive(:bucket_size).and_return(4)
-      allow(OutboxItem.config).to receive(:partition_size).and_return(2)
-    end
-
     it "returns buckets of partitions" do
       expect(OutboxItem.bucket_partitions).to eq(0 => 0, 1 => 1, 2 => 0, 3 => 1)
     end
