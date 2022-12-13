@@ -22,7 +22,7 @@ module Sbmt
 
         if record.save
           track_last_stored_id(record.id, record.partition)
-          track_counter(record.id, record.partition)
+          track_counter(record.partition)
 
           Success(record)
         else
@@ -41,7 +41,7 @@ module Sbmt
         end
       end
 
-      def track_counter(item_id, partition)
+      def track_counter(partition)
         after_commit do
           Yabeda
             .outbox
