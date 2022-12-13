@@ -11,6 +11,7 @@ describe "rake outbox:retry_failed_items" do
     task.reenable
   end
 
+  # rubocop:disable RSpec/PendingWithoutReason
   it "sets pending state for all failed items" do
     expect { task.invoke("OutboxItem") }
       .to change(OutboxItem.pending, :count).from(0).to(2)
@@ -32,4 +33,5 @@ describe "rake outbox:retry_failed_items" do
         .to change(OutboxItem.where(errors_count: 0), :count).from(1).to(2)
     end
   end
+  # rubocop:enable RSpec/PendingWithoutReason
 end
