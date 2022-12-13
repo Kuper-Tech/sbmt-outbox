@@ -54,7 +54,10 @@ module Sbmt
 
         item_class
           .where("created_at < ?", waterline)
-          .delete_all
+          .in_batches(of: 1000) do |scope|
+            scope.delete_all
+            sleep 1
+          end
 
         logger.log_info("Successfully deleted #{box_type} items for #{box_name} older than #{waterline}")
       end
