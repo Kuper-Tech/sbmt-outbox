@@ -54,14 +54,16 @@ module Sbmt
       @outbox_item_classes ||= config.outbox_item_classes.map(&:constantize)
     end
 
-    alias_method :item_classes, :outbox_item_classes
-
     def inbox_item_classes
-      @item_classes ||= config.inbox_item_classes.map(&:constantize)
+      @inbox_item_classes ||= config.inbox_item_classes.map(&:constantize)
+    end
+
+    def item_classes
+      @item_classes ||= outbox_item_classes + inbox_item_classes
     end
 
     def item_classes_by_name
-      @item_classes_by_name ||= (outbox_item_classes + inbox_item_classes).index_by(&:box_name)
+      @item_classes_by_name ||= item_classes.index_by(&:box_name)
     end
 
     def yaml_config

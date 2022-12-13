@@ -5,7 +5,7 @@ namespace :outbox do
   # rake 'outbox:retry_failed_items[Retail::Onboarding::OutboxItem,1,2,3,4,5]'
   task :retry_failed_items, %i[] => :environment do |_, args|
     item_class_name, *ids = args.extras
-    raise "Invalid item name" unless Sbmt::Outbox.outbox_item_classes.map(&:to_s).include?(item_class_name)
+    raise "Invalid item name" unless Sbmt::Outbox.item_classes.map(&:to_s).include?(item_class_name)
     item_class = item_class_name.constantize
 
     scope = item_class.failed
