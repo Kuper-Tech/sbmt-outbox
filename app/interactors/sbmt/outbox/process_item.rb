@@ -57,13 +57,21 @@ module Sbmt
 
       def fetch_item
         item = item_class
-          .for_processing
           .lock("FOR UPDATE")
           .find_by(id: item_id)
-        return Success(item) if item
 
-        track_failed("not found")
-        Failure(:not_found)
+        unless item
+          track_failed("not found")
+          return Failure(:not_found)
+        end
+
+        unless item.for_processing?
+          log_error("already processed")
+          counters[:fetch_error_counter] += 1
+          return Failure(:already_processed)
+        end
+
+        Success(item)
       end
 
       def check_retry_strategy(item, retry_strategy)
@@ -200,11 +208,11 @@ module Sbmt
       end
 
       def report_metrics(item)
-        labels = {name: box_name, partition: item&.partition}
+        labels = {type: box_type, name: box_name, partition: item&.partition}
 
         METRICS_COUNTERS.each do |counter_name|
           Yabeda
-            .send(box_type)
+            .outbox
             .send(counter_name)
             .increment(labels, by: counters[counter_name])
         end
@@ -214,7 +222,7 @@ module Sbmt
         return unless counters[:sent_counter] > 0
 
         Yabeda
-          .send(box_type)
+          .outbox
           .last_sent_event_id
           .set(labels, item_id)
       end

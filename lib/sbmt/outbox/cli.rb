@@ -13,9 +13,8 @@ module Sbmt
       default_command :start
 
       desc "start", "Start outbox worker"
-      option :boxes,
+      option :box,
         aliases: "-b",
-        type: :hash,
         repeatable: true,
         desc: "Outbox/Inbox processors to start in format foo_name:1,2,n bar_name:1,2,n"
       option :concurrency,
@@ -27,7 +26,7 @@ module Sbmt
         load_environment
 
         worker = Sbmt::Outbox::Worker.new(
-          boxes: format_boxes(options[:boxes]),
+          boxes: format_boxes(options[:box]),
           concurrency: options[:concurrency]
         )
 
@@ -68,26 +67,14 @@ module Sbmt
       end
 
       def fetch_all_boxes
-        (Outbox.outbox_item_classes + Outbox.inbox_item_classes).map do |item_class|
-          [item_class, Range.new(0, item_class.config.partition_size - 1).to_a]
-        end.to_h
+        Outbox.outbox_item_classes + Outbox.inbox_item_classes
       end
 
       def extract_boxes(boxes)
-        boxes.each_with_object({}) do |(name, partitions), acc|
-          key = Sbmt::Outbox.item_classes_by_name[name]
-          raise "Cannot locate box #{name}" unless key
-
-          val = partitions
-            .split(",")
-            .map! do |x|
-              from, to = x.split("-", 2)
-              Range.new(Integer(from), [Integer(to || 0), Integer(from)].max).to_a
-            end.flatten
-
-          raise "Pass valid partition numbers" if val.empty?
-
-          acc[key] = val.sort!
+        boxes.map do |name, acc|
+          item_class = Sbmt::Outbox.item_classes_by_name[name]
+          raise "Cannot locate box #{name}" unless item_class
+          item_class
         end
       end
 

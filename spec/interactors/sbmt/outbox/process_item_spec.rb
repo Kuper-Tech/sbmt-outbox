@@ -38,11 +38,11 @@ describe Sbmt::Outbox::ProcessItem do
         )
       end
 
-      it "returns error" do
-        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+      it "doesn't report error" do
+        expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
         expect(result).not_to be_success
-        expect(result.failure).to eq :not_found
+        expect(result.failure).to eq :already_processed
       end
     end
 

@@ -5,14 +5,24 @@ module Sbmt
     class BaseCreateItem < Outbox::DryInteractor
       param :item_class, reader: :private
       option :attributes, reader: :private
+      option :partition_by, reader: :private, optional: true, default: -> { attributes[:event_key] }
 
       delegate :box_type, :box_name, to: :item_class
 
       def call
         record = item_class.new(attributes)
 
+        return Failure(:missing_event_key) unless attributes.key?(:event_key)
+        return Failure(:missing_partition_by) unless partition_by
+
+        res = item_class.config.partition_strategy
+          .new(partition_by, item_class.config.bucket_size)
+          .call
+        record.bucket = res.value! if res.success?
+
         if record.save
           track_last_stored_id(record.id, record.partition)
+          track_counter(record.partition)
 
           Success(record)
         else
@@ -25,9 +35,18 @@ module Sbmt
       def track_last_stored_id(item_id, partition)
         after_commit do
           Yabeda
-            .send(box_type)
+            .outbox
             .last_stored_event_id
-            .set({name: box_name, partition: partition}, item_id)
+            .set({type: box_type, name: box_name, partition: partition}, item_id)
+        end
+      end
+
+      def track_counter(partition)
+        after_commit do
+          Yabeda
+            .outbox
+            .created_counter
+            .increment({type: box_type, name: box_name, partition: partition}, by: 1)
         end
       end
     end

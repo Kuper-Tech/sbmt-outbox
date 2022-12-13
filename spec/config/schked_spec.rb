@@ -13,34 +13,6 @@ describe Schked do
     end
   end
 
-  describe "Sbmt::Outbox::ProcessItemsJob" do
-    let(:job) { worker.job("Sbmt::Outbox::ProcessItemsJob") }
-    let(:start_time) { Time.zone.local(2008, 9, 1, 2, 30, 10) }
-    let(:next_ten_sec) { Time.zone.local(2008, 9, 1, 2, 30, 20) }
-
-    it "executes every 10 sec" do
-      expect(job.next_time.to_local_time).to eq(next_ten_sec)
-    end
-
-    it "enqueues job" do
-      expect { job.call(false) }.to change { Sbmt::Outbox::ProcessItemsJob.jobs.size }.by(1)
-    end
-  end
-
-  describe "Sbmt::Outbox::ProcessInboxItemsJob" do
-    let(:job) { worker.job("Sbmt::Outbox::ProcessInboxItemsJob") }
-    let(:start_time) { Time.zone.local(2008, 9, 1, 2, 30, 10) }
-    let(:next_ten_sec) { Time.zone.local(2008, 9, 1, 2, 30, 20) }
-
-    it "executes every 10 sec" do
-      expect(job.next_time.to_local_time).to eq(next_ten_sec)
-    end
-
-    it "enqueues job" do
-      expect { job.call(false) }.to change { Sbmt::Outbox::ProcessInboxItemsJob.jobs.size }.by(1)
-    end
-  end
-
   describe "Sbmt::Outbox::DeleteStaleOutboxItemsJob" do
     let(:job) { worker.job("Sbmt::Outbox::DeleteStaleOutboxItemsJob") }
     let(:start_time) { Time.zone.local(2008, 9, 1, 2, 30, 10) }

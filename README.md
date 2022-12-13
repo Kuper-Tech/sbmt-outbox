@@ -30,18 +30,21 @@ Gem реализован как самостоятельный демон.
 create_table :my_outbox_items do |t|
   t.string :uuid, null: false
   t.string :event_name, null: false # optional, use it when you have several events per one outbox table
-  t.string :event_key, null: false # optional, use it when you use compacted-log retry strategy
+  t.string :event_key, null: false
+  t.integer :bucket, null: false
+  t.integer :status, null: false, default: 0
   t.jsonb :options
   t.binary :proto_payload, null: false
-  t.integer :status, null: false, default: 0
   t.integer :errors_count, null: false, default: 0
+  t.text :error_log
   t.timestamp :processed_at
   t.timestamps
 end
 
 add_index :my_outbox_items, :uuid, unique: true
-add_index :my_outbox_items, :status
+add_index :my_outbox_items, [:status, :bucket]
 add_index :my_outbox_items, [:event_name, :event_key]
+add_index :my_outbox_items, :created_at
 ```
 
 В модели необходимо определить метод `transports`.
@@ -66,7 +69,6 @@ end
 # config/outbox.yml
 
 default: &default
-  ignore_kafka_errors: true
   outbox_items:
     my_outbox_item:
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
@@ -81,11 +83,9 @@ test:
 
 staging:
   <<: *default
-  ignore_kafka_errors: false
 
 production:
   <<: *default
-  ignore_kafka_errors: false
 ```
 
 ```ruby
@@ -93,7 +93,6 @@ production:
 
 Rails.application.config.outbox.tap do |config|
   config.outbox_item_classes << "MyOutboxItem"
-  config.schked_ignore_outbox_item_classes << "MyOutboxItem"
   config.paths << Rails.root.join("config/outbox.yml").to_s
 end
 ```
@@ -108,18 +107,21 @@ end
 create_table :my_inbox_items do |t|
   t.string :uuid, null: false
   t.string :event_name, null: false # optional, use it when you have several events per one inbox table
-  t.string :event_key, null: false # optional
+  t.string :event_key, null: false
+  t.integer :bucket, null: false
+  t.integer :status, null: false, default: 0
   t.jsonb :options
   t.binary :proto_payload, null: false
-  t.integer :status, null: false, default: 0
   t.integer :errors_count, null: false, default: 0
+  t.text :error_log
   t.timestamp :processed_at
   t.timestamps
 end
 
 add_index :my_inbox_items, :uuid, unique: true
-add_index :my_inbox_items, :status
+add_index :my_inbox_items, [:status, :bucket]
 add_index :my_inbox_items, [:event_name, :event_key]
+add_index :my_inbox_items, :created_at
 ```
 
 В модели необходимо определить метод `transports`.
@@ -152,7 +154,6 @@ end
 
 Rails.application.config.outbox.tap do |config|
   config.inbox_item_classes << "MyInboxItem"
-  config.schked_ignore_outbox_item_classes << "MyInboxItem"
 end
 ```
 
@@ -179,14 +180,6 @@ end
 
 Данная стратегия необходима, если используется [Kafka log compaction](https://habr.com/ru/company/sberbank/blog/590045/).
 
-```ruby
-change_table :my_outbox_items do |t|
-  t.bigint :event_key, null: false
-end
-
-add_index :my_outbox_items, [:event_key], where: "status = 2"
-```
-
 ```yaml
 # config/outbox.yml
 
@@ -199,6 +192,36 @@ add_index :my_outbox_items, [:event_key], where: "status = 2"
 ```
 
 Если вы хотите (и должны хотеть) использовать вместе с `exponential_backoff`, то у убедитесь в том, что `compacted_log` идет последней, для минимизации запросов в БД.
+
+#### Partition strategies
+
+В зависимости от того, какой типа данных используется в `event_key` необходимо выбрать правильную стратегию для выбора партиции.
+
+##### Number partitioning
+
+Используется когда типа данных число или строка, содержащая число, например `some-chars-123`. В случае строки все нечисловые символы вырезаются и остаются только цифры. Стратегия используется по умолчанию.
+
+```yaml
+# config/outbox.yml
+
+  outbox_items:
+    my_outbox_item:
+      ...
+      partition_strategy: number
+```
+
+##### Hash partitioning
+
+Стратегия полезна в случае использования uuid в качестве типа данных для `event_key`.
+
+```yaml
+# config/outbox.yml
+
+  outbox_items:
+    my_outbox_item:
+      ...
+      partition_strategy: hash
+```
 
 ## Usage
 
@@ -226,7 +249,7 @@ end
     command:
       - /bin/sh
       - -c
-      - exec bundle exec outbox start --boxes order/inbox_item:0-8 --concurrency 5
+      - exec bundle exec outbox start --boxes order/inbox_item --concurrency 4
     replicas:
       prod: 2
       stage: 1
@@ -290,7 +313,7 @@ end
 
 | Key                   | Description                                                               |
 |-----------------------|---------------------------------------------------------------------------|
-| `--boxes or -b`       | Outbox/Inbox processors to start in format `foo_name:1,2,n bar_name:1,2,n`|
+| `--boxes or -b`       | Outbox/Inbox processors to start`                                         |
 | `--concurrency or -c` | Number of threads. Default 10.                                            |
 
 ## Development & Test
