@@ -62,6 +62,25 @@ describe Sbmt::Outbox::BaseItem do
     it "returns buckets of partitions" do
       expect(OutboxItem.partition_buckets).to eq(0 => [0, 2], 1 => [1, 3])
     end
+
+    context "when the number of partitions is not a multiple of the number of buckets" do
+      before do
+        if OutboxItem.instance_variable_defined?(:@partition_buckets)
+          OutboxItem.remove_instance_variable(:@partition_buckets)
+        end
+
+        allow(OutboxItem.config).to receive(:partition_size).and_return(2)
+        allow(OutboxItem.config).to receive(:bucket_size).and_return(5)
+      end
+
+      after do
+        OutboxItem.remove_instance_variable(:@partition_buckets)
+      end
+
+      it "returns buckets of partitions" do
+        expect(OutboxItem.partition_buckets).to eq(0 => [0, 2, 4], 1 => [1, 3])
+      end
+    end
   end
 
   describe ".bucket_partitions" do
