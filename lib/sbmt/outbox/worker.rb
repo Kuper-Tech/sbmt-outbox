@@ -191,7 +191,12 @@ module Sbmt
           scope = item_class
             .for_processing
             .select(:id)
-            .where(bucket: job.buckets)
+
+          if item_class.has_attribute?(:bucket)
+            scope = scope.where(bucket: job.buckets)
+          elsif job.partition > 1
+            raise "Could not filter by partition #{job.resource_key}"
+          end
 
           scope.find_each(start: start_id, batch_size: batch_size) do |item|
             touch_thread_worker!
