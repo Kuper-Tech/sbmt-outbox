@@ -17,7 +17,11 @@ module Sbmt
         keyword_init: true
       )
 
-      delegate :config, :logger, to: "Sbmt::Outbox"
+      delegate :config,
+        :logger,
+        :batch_process_middlewares,
+        :item_process_middlewares,
+        to: "Sbmt::Outbox"
       delegate :stop, to: :thread_pool
       delegate :general_timeout, :cutoff_timeout, :batch_size, to: "Sbmt::Outbox.config.process_items"
       delegate :job_counter,
@@ -113,7 +117,8 @@ module Sbmt
               log_tags: {
                 box_type: item_class.box_type,
                 box_name: item_class.box_name,
-                box_partition: partition
+                box_partition: partition,
+                trace_id: nil
               },
               yabeda_labels: {
                 type: item_class.box_type,
@@ -160,13 +165,16 @@ module Sbmt
         last_id = nil
         lock_timer = Cutoff.new(general_timeout)
         requeue_timer = Cutoff.new(cutoff_timeout)
+        middlewares = Middleware::Builder.new(batch_process_middlewares)
 
-        process_job(job, start_id, labels) do |item|
-          job_items_counter.increment(labels, by: 1)
-          last_id = item.id
-          count += 1
-          lock_timer.checkpoint!
-          requeue_timer.checkpoint!
+        middlewares.call(job) do
+          process_job(job, start_id, labels) do |item|
+            job_items_counter.increment(labels, by: 1)
+            last_id = item.id
+            count += 1
+            lock_timer.checkpoint!
+            requeue_timer.checkpoint!
+          end
         end
 
         logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")
@@ -187,6 +195,7 @@ module Sbmt
       def process_job(job, start_id, labels)
         Outbox.database_switcher.use_slave do
           item_class = job.item_class
+          middlewares = Middleware::Builder.new(item_process_middlewares)
 
           scope = item_class
             .for_processing
@@ -202,7 +211,9 @@ module Sbmt
             touch_thread_worker!
             item_execution_runtime.measure(labels) do
               Outbox.database_switcher.use_master do
-                ProcessItem.call(job.item_class, item.id)
+                middlewares.call(job, item.id) do
+                  ProcessItem.call(job.item_class, item.id)
+                end
               end
               yield item
             end

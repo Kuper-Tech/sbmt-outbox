@@ -223,6 +223,67 @@ end
       partition_strategy: hash
 ```
 
+#### Middlewares
+
+Обработку событий можно обвернуть в мидлвары.
+Чтобы добавить мидлвару для процесса обработки партиции, неоходимо указать в конфиге классы ваших мидлваров
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  config.batch_process_middlewares.push(
+    'MyBatchMiddleware'
+  )
+end
+
+# my_batch_middleware.rb
+
+class MyBatchMiddleware
+  def call(job)
+    # your code
+    yield
+    # your code
+  end
+end
+```
+
+Также возможно обернуть обработку каждого события в отдельные мидлвары
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  config.item_process_middlewares.push(
+    'MyItemMiddleware'
+  )
+end
+
+# my_item_middleware.rb
+
+class MyItemMiddleware
+  def call(job, item_id)
+    # your code
+    yield
+    # your code
+  end
+end
+```
+
+В обоих случаях, при добавление двух и более мидлваров,
+порядок выполнения зависит от порядка, заданного в конфигурации гема.
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  config.item_process_middlewares.push(
+    'MyFirstItemMiddleware', # выполнится первым
+    'MySecondItemMiddleware' # выполнится вторым
+  )
+end
+```
+
 ## Usage
 
 ### Create outbox item
