@@ -24,6 +24,8 @@ module Sbmt
           c.shuffle_jobs = true
         end
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
+        c.batch_process_middlewares = []
+        c.item_process_middlewares = []
       end
 
       rake_tasks do

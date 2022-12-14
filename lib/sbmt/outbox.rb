@@ -25,6 +25,8 @@ require_relative "outbox/kafka_producers/delivery_boy"
 require_relative "outbox/kafka_producers/async_producer"
 require_relative "outbox/kafka_producers/sync_producer"
 require_relative "outbox/engine"
+require_relative "outbox/middleware/builder"
+require_relative "outbox/middleware/runner"
 
 module Sbmt
   module Outbox
@@ -84,6 +86,14 @@ module Sbmt
       data
         .with_indifferent_access
         .fetch(Rails.env, {})
+    end
+
+    def batch_process_middlewares
+      @batch_process_middlewares ||= config.batch_process_middlewares.map(&:constantize)
+    end
+
+    def item_process_middlewares
+      @item_process_middlewares ||= config.item_process_middlewares.map(&:constantize)
     end
   end
 end
