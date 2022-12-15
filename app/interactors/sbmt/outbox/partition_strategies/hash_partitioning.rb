@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "digest/sha1"
+
 module Sbmt
   module Outbox
     module PartitionStrategies
@@ -9,7 +11,7 @@ module Sbmt
 
         def call
           Success(
-            key.to_s.hash % bucket_size
+            Digest::SHA1.hexdigest(key.to_s).to_i(16) % bucket_size
           )
         end
       end
