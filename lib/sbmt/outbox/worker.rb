@@ -203,7 +203,7 @@ module Sbmt
 
           if item_class.has_attribute?(:bucket)
             scope = scope.where(bucket: job.buckets)
-          elsif job.partition > 1
+          elsif job.partition > 0
             raise "Could not filter by partition #{job.resource_key}"
           end
 
