@@ -52,10 +52,7 @@ add_index :my_outbox_items, :created_at
 ```ruby
 # app/models/my_outbox_item.rb
 class MyOutboxItem < Sbmt::Outbox::OutboxItem
-  PRODUCER = Sbmt::Outbox::BaseProducer[
-    name: 'order_created',
-    topic: Sbmt::Outbox.yaml_config.dig(:producer, :topics, :my_event_created)
-  ]
+  PRODUCER = ApplicationProducer.new(topic: 'my_outbox_item_topic')
 
   def transports
     [ PRODUCER ]

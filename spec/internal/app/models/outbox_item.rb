@@ -3,10 +3,7 @@
 class OutboxItem < Sbmt::Outbox::OutboxItem
   validates :event_name, :proto_payload, presence: true
 
-  PRODUCER = Sbmt::Outbox::BaseProducer[
-    name: "order_created",
-    topic: Sbmt::Outbox.yaml_config.dig(:producer, :topics, :order_created)
-  ]
+  PRODUCER = Producer.new(topic: "outbox_item_topic")
 
   def transports
     [PRODUCER]

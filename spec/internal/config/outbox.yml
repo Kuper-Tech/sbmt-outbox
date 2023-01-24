@@ -20,7 +20,3 @@ test:
       retention: P1W
       retry_strategies:
         - exponential_backoff
-
-  producer:
-    topics:
-      order_created: orders
