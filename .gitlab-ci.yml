@@ -27,7 +27,7 @@ tests:
     DATABASE_URL: postgres://postgres:secret@postgres:5432
     REDIS_URL: redis://redis:6379/0
   before_script:
-    - gem update --system
+    - gem update --system 3.3.26
     - gem install bundler -v 2.3
     - bin/setup
   script:
