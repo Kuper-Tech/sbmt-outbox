@@ -6,10 +6,10 @@ describe Sbmt::Outbox::ProcessItem do
 
     let(:event_name) { "order_created" }
     let(:max_retries) { 0 }
-    let(:producer_class) { OutboxItem::PRODUCER }
+    let(:producer) { OutboxItem::PRODUCER }
 
     before do
-      allow_any_instance_of(producer_class).to receive(:publish).and_return(true)
+      allow(producer).to receive(:publish).and_return(true)
       allow_any_instance_of(Sbmt::Outbox::OutboxItemConfig).to receive(:max_retries).and_return(max_retries)
     end
 
@@ -98,7 +98,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(producer_class).to receive(:publish).and_return(false)
+        allow(producer).to receive(:publish).and_return(false)
       end
 
       it "returns error" do
@@ -153,7 +153,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(producer_class).to receive(:publish).and_raise("boom")
+        allow(producer).to receive(:publish).and_raise("boom")
       end
 
       it "returns error" do
@@ -185,7 +185,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(producer_class).to receive(:publish)
+        allow(producer).to receive(:publish)
           .and_return(Dry::Monads::Result::Failure.new("some error"))
       end
 
@@ -207,7 +207,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do
-        allow_any_instance_of(OutboxItem).to receive(:transports).and_return([producer_class, HttpOrderSender])
+        allow_any_instance_of(OutboxItem).to receive(:transports).and_return([producer, HttpOrderSender])
       end
 
       it "returns success" do
@@ -224,7 +224,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       it "returns success" do
-        expect(producer_class).to receive(:call).with(outbox_item, "custom-payload").and_return(true)
+        expect(producer).to receive(:call).with(outbox_item, "custom-payload").and_return(true)
 
         expect(result).to be_success
         expect(outbox_item.reload).to be_delivered
@@ -236,7 +236,7 @@ describe Sbmt::Outbox::ProcessItem do
       let(:max_retries) { 1 }
 
       before do
-        allow_any_instance_of(producer_class).to receive(:publish).and_return(false)
+        allow(producer).to receive(:publish).and_return(false)
       end
 
       it "doesn't change status to failed" do
