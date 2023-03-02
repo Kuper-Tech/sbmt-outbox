@@ -6,7 +6,7 @@ inherit_mode:
 
 AllCops:
   TargetRubyVersion: 2.5
-  TargetRailsVersion: 5.0
+  TargetRailsVersion: 5.1
   NewCops: enable
   SuggestExtensions: false
 

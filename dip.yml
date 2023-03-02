@@ -35,8 +35,6 @@ interaction:
     subcommands:
       all:
         command: bundle exec appraisal rspec
-      rails-5.0:
-        command: bundle exec appraisal rails-5.0 rspec
       rails-5.1:
         command: bundle exec appraisal rails-5.1 rspec
       rails-5.2:
