@@ -17,7 +17,7 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
   describe ".enqueue" do
     it "enqueue all item classes" do
       expect { job_class.enqueue }.to change { job_class.jobs.size }.by(1)
-      expect(job_class.jobs.last["args"]).to match_array(["OutboxItem"])
+      expect(job_class.jobs.last["args"]).to contain_exactly("OutboxItem")
     end
   end
 

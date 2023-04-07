@@ -1,3 +1,5 @@
+inherit_from: .rubocop_todo.yml
+
 # We want Exclude directives from different
 # config files to get merged, not overwritten
 inherit_mode:
