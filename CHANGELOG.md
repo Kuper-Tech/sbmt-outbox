@@ -14,3 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Drop supporting of Rails 5.0
 
 ### Fixed
+
+## [4.0.1] - 2023-04-07
+
+### Changed
+
+- Changed gem specifiers for sidekiq and sidekiq-unique-jobs from `~>` to `>=`
