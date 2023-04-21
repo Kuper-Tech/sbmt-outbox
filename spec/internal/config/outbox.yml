@@ -1,9 +1,6 @@
 test:
   bucket_size: 4
 
-  kafka:
-    required_acks: -1
-
   outbox_items:
     outbox_item:
       partition_size: 2
@@ -12,6 +9,11 @@ test:
       retry_strategies:
         - exponential_backoff
         - compacted_log
+      transports:
+        kafka_producer:
+          topic: "outbox_item_topic"
+          kafka:
+            required_acks: -1
 
   inbox_items:
     inbox_item:
@@ -20,3 +22,6 @@ test:
       retention: P1W
       retry_strategies:
         - exponential_backoff
+      transports:
+        import_order:
+          source: "kafka_consumer"

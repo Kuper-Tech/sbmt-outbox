@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 class ImportOrder < Sbmt::Outbox::DryInteractor
-  param :outbox_item
-  param :payload
+  option :source
 
-  def call
+  def call(outbox_item, payload)
     Success()
   end
 end

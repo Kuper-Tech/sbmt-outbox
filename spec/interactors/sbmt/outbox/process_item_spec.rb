@@ -6,7 +6,7 @@ describe Sbmt::Outbox::ProcessItem do
 
     let(:event_name) { "order_created" }
     let(:max_retries) { 0 }
-    let(:producer) { OutboxItem::PRODUCER }
+    let(:producer) { OutboxItem.config.transports.first }
 
     before do
       allow(producer).to receive(:publish).and_return(true)
@@ -74,7 +74,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
     end
 
-    context "when outbox item produce to kafka successfully" do
+    context "when outbox item produce to transport successfully" do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       it "returns success" do
@@ -94,7 +94,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
     end
 
-    context "when outbox item produce to kafka unsuccessfully" do
+    context "when outbox item produce to transport unsuccessfully" do
       let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
 
       before do

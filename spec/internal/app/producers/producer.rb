@@ -2,6 +2,7 @@
 
 class Producer < Sbmt::Outbox::DryInteractor
   param :topic
+  param :kafka, optional: true
 
   def call(item, payload)
     publish

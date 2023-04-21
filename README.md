@@ -47,15 +47,17 @@ add_index :my_outbox_items, [:event_name, :event_key]
 add_index :my_outbox_items, :created_at
 ```
 
-В модели необходимо определить метод `transports`.
-
 ```ruby
 # app/models/my_outbox_item.rb
 class MyOutboxItem < Sbmt::Outbox::OutboxItem
-  PRODUCER = ApplicationProducer.new(topic: 'my_outbox_item_topic')
+end
 
-  def transports
-    [ PRODUCER ]
+# app/producers/kafka_producer.rb
+class KafkaProducer
+  def initialize(topic:, kafka: {})
+  end
+
+  def call(outbox_item, payload)
   end
 end
 ```
@@ -71,14 +73,16 @@ default: &default
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
       max_retries: 3 # default: 0
+      transports:
+        kafka_producer:
+          topic: "my-topic-name"
+          kafka:
+            required_acks: -1
 
 development:
   <<: *default
 
 test:
-  <<: *default
-
-staging:
   <<: *default
 
 production:
@@ -121,17 +125,17 @@ add_index :my_inbox_items, [:event_name, :event_key]
 add_index :my_inbox_items, :created_at
 ```
 
-В модели необходимо определить метод `transports`.
-
 ```ruby
 # app/models/my_inbox_item.rb
 class MyInboxItem < Sbmt::Inbox::Item
-  HANDLER = ->(item, proto_payload) do
-    Success()
+end
+
+# app/services/import_order.rb
+class ImportOrder
+  def initialize(source:)
   end
 
-  def transports
-    [ HANDLER ]
+  def call(outbox_item, payload)
   end
 end
 ```
@@ -144,6 +148,9 @@ end
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
       max_retries: 3 # default: 0
+      transports:
+        import_order:
+          source: "kafka"
 ```
 
 ```ruby
