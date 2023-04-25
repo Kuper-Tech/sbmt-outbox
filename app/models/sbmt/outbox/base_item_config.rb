@@ -53,6 +53,20 @@ module Sbmt
         @partition_strategy = "Sbmt::Outbox::PartitionStrategies::#{str_name.classify}Partitioning".constantize
       end
 
+      def transports
+        @transports ||= options.fetch(:transports, {}).each_with_object([]) do |(key, params), memo|
+          namespace = key.to_s.classify
+          raise ArgumentError, "Transport name cannot be blank" if namespace.blank?
+
+          factory = "#{namespace}::OutboxTransportFactory".safe_constantize
+          memo << if factory
+            factory.build(**params.symbolize_keys)
+          else
+            namespace.constantize.new(**params.symbolize_keys)
+          end
+        end
+      end
+
       private
 
       attr_accessor :box_name

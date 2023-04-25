@@ -88,4 +88,27 @@ describe Sbmt::Outbox::BaseItem do
       expect(OutboxItem.bucket_partitions).to eq(0 => 0, 1 => 1, 2 => 0, 3 => 1)
     end
   end
+
+  describe "#transports" do
+    context "when transport was built by factory" do
+      let(:outbox_item) { Fabricate.build(:outbox_item) }
+
+      it "returns valid transports" do
+        expect(outbox_item.transports.size).to eq 1
+        expect(outbox_item.transports.first).to be_a(Producer)
+        expect(outbox_item.transports.first.topic).to eq "outbox_item_topic"
+        expect(outbox_item.transports.first.kafka).to include("required_acks" => -1)
+      end
+    end
+
+    context "when transport was built by name" do
+      let(:inbox_item) { Fabricate.build(:inbox_item) }
+
+      it "returns valid transports" do
+        expect(inbox_item.transports.size).to eq 1
+        expect(inbox_item.transports.first).to be_a(ImportOrder)
+        expect(inbox_item.transports.first.source).to eq "kafka_consumer"
+      end
+    end
+  end
 end

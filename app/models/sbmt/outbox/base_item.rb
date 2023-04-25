@@ -67,7 +67,11 @@ module Sbmt
       end
 
       def transports
-        raise NotImplementedError
+        if config.transports.empty?
+          raise Error, "Transport is not defined"
+        end
+
+        config.transports
       end
 
       def log_details
