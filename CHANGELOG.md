@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [4.0.1] - 2023-04-07
 
+### Fixed
+
+- Use `camelize` instead of `classify` to constantize classes from a string
+
+## [4.0.1] - 2023-04-07
+
 ### Changed
 
 - Drop supporting of Rails 5.0

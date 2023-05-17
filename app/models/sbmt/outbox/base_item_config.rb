@@ -42,7 +42,7 @@ module Sbmt
 
       def retry_strategies
         @retry_strategies ||= Array.wrap(options[:retry_strategies]).map do |str_name|
-          "Sbmt::Outbox::RetryStrategies::#{str_name.classify}".constantize
+          "Sbmt::Outbox::RetryStrategies::#{str_name.camelize}".constantize
         end
       end
 
@@ -50,12 +50,12 @@ module Sbmt
         return @partition_strategy if defined?(@partition_strategy)
 
         str_name = options.fetch(:partition_strategy, DEFAULT_PARTITION_STRATEGY)
-        @partition_strategy = "Sbmt::Outbox::PartitionStrategies::#{str_name.classify}Partitioning".constantize
+        @partition_strategy = "Sbmt::Outbox::PartitionStrategies::#{str_name.camelize}Partitioning".constantize
       end
 
       def transports
         @transports ||= options.fetch(:transports, {}).each_with_object([]) do |(key, params), memo|
-          namespace = key.to_s.classify
+          namespace = key.to_s.camelize
           raise ArgumentError, "Transport name cannot be blank" if namespace.blank?
 
           factory = "#{namespace}::OutboxTransportFactory".safe_constantize
