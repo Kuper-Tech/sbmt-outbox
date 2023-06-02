@@ -3,7 +3,7 @@
 module KafkaProducer
   class OutboxTransportFactory
     def self.build(topic:, kafka: {})
-      ::Producer.new("outbox_item_topic", kafka)
+      ::Producer.new(topic: topic, kafka: kafka)
     end
   end
 end

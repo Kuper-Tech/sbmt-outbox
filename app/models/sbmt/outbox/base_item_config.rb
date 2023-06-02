@@ -54,12 +54,25 @@ module Sbmt
       end
 
       def transports
-        @transports ||= options.fetch(:transports, {}).each_with_object([]) do |(key, params), memo|
-          namespace = key.to_s.camelize
+        return @transports if defined?(@transports)
+
+        values = options.fetch(:transports, [])
+
+        if values.is_a?(Hash)
+          values = values.each_with_object([]) do |(key, params), memo|
+            memo << params.merge!(class: key)
+          end
+        end
+
+        @transports = values.each_with_object({}) do |params, memo|
+          params = params.symbolize_keys
+          event_name = params.delete(:event_name) || :_all_
+          memo[event_name] ||= []
+          namespace = params.delete(:class)&.camelize
           raise ArgumentError, "Transport name cannot be blank" if namespace.blank?
 
           factory = "#{namespace}::OutboxTransportFactory".safe_constantize
-          memo << if factory
+          memo[event_name] << if factory
             factory.build(**params.symbolize_keys)
           else
             namespace.constantize.new(**params.symbolize_keys)

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Producer < Sbmt::Outbox::DryInteractor
-  param :topic
-  param :kafka, optional: true
+  option :topic
+  option :kafka, optional: true
 
   def call(item, payload)
     publish

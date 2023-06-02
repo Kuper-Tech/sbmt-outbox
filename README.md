@@ -47,20 +47,16 @@ add_index :my_outbox_items, [:event_name, :event_key]
 add_index :my_outbox_items, :created_at
 ```
 
+Вы можете объединить несколько событий через одну таблицу, для этого нужно объявить колонку `event_name`. Такой подход оправдан только в случае, когда предполагается, что событий будет не очень много, а также у таких событий будет одинаковые политики retention и retry.
+
 ```ruby
 # app/models/my_outbox_item.rb
 class MyOutboxItem < Sbmt::Outbox::OutboxItem
-end
-
-# app/producers/kafka_producer.rb
-class KafkaProducer
-  def initialize(topic:, kafka: {})
-  end
-
-  def call(outbox_item, payload)
-  end
+  validates :event_name, presence: true # optional
 end
 ```
+
+Если вы используете Кафку в качестве транспорта, то рекомендуется использовать для этого гем sbmt-kafka_producer.
 
 Мы почти у цели — осталось определить пару конфигов.
 
@@ -68,25 +64,41 @@ end
 # config/outbox.yml
 
 default: &default
+  bucket_size: 16
+
   outbox_items:
     my_outbox_item:
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
       max_retries: 3 # default: 0
       transports:
-        kafka_producer:
+        sbmt/kafka_producer:
           topic: "my-topic-name"
-          kafka:
-            required_acks: -1
 
 development:
   <<: *default
 
 test:
   <<: *default
+  bucket_size: 2
 
 production:
   <<: *default
+  bucket_size: 256
+```
+
+Если в событиях используется `event_name` то транспорты указываются в таком формате:
+
+```yaml
+outbox_items:
+  my_outbox_item:
+    transports:
+      - class: sbmt/kafka_producer
+        event_name: "order_created"
+        topic: "order_created_topic"
+      - class: sbmt/kafka_producer
+        event_name: "orders_completed"
+        topic: "orders_completed_topic"
 ```
 
 ```ruby
@@ -95,6 +107,17 @@ production:
 Rails.application.config.outbox.tap do |config|
   config.outbox_item_classes << "MyOutboxItem"
   config.paths << Rails.root.join("config/outbox.yml").to_s
+
+  config.process_items.tap do |x|
+    x[:general_timeout] = 180 # максимальное время обработки батча, после которого батч будет считаться зависшим и обработка будет прервана
+    x[:cutoff_timeout] = 60 # максимально время обработки батча, после которого обработка батча будет прервана в текущем потоке, а следующий подхвативший поток начнет обработку батча с того же места
+    x[:batch_size] = 200 # размер батча
+  end
+
+  config.worker.tap do |worker|
+    worker[:rate_limit] = 10 # количество батчей, которое один поток обработает за rate_interval
+    worker[:rate_interval] = 60 # секунды
+  end
 end
 ```
 
@@ -124,6 +147,8 @@ add_index :my_inbox_items, [:status, :bucket]
 add_index :my_inbox_items, [:event_name, :event_key]
 add_index :my_inbox_items, :created_at
 ```
+
+Вы можете объединить несколько событий через одну таблицу, для этого нужно объявить колонку `event_name`. Такой подход оправдан только в случае, когда предполагается, что событий будет не очень много, а также у таких событий будет одинаковые политики retention и retry.
 
 ```ruby
 # app/models/my_inbox_item.rb

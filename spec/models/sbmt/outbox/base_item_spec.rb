@@ -110,5 +110,15 @@ describe Sbmt::Outbox::BaseItem do
         expect(inbox_item.transports.first.source).to eq "kafka_consumer"
       end
     end
+
+    context "when transports were selected by event name" do
+      let(:outbox_item) { Fabricate.build(:combined_outbox_item, event_name: "orders_completed") }
+
+      it "returns valid transports" do
+        expect(outbox_item.transports.size).to eq 1
+        expect(outbox_item.transports.first).to be_a(Producer)
+        expect(outbox_item.transports.first.topic).to eq "orders_completed_topic"
+      end
+    end
   end
 end

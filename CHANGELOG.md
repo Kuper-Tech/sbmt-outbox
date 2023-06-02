@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.2.0] - 02-06-2023
+
+### Added
+
+- Select transports by event name
+
 ## [4.0.1] - 2023-04-07
 
 ### Fixed

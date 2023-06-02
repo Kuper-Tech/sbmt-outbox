@@ -48,7 +48,7 @@ module Sbmt
 
       scope :for_processing, -> { where(status: :pending) }
 
-      validates :uuid, presence: true
+      validates :uuid, :event_key, :bucket, :proto_payload, presence: true
 
       delegate :box_name, :config, to: "self.class"
 
@@ -68,10 +68,14 @@ module Sbmt
 
       def transports
         if config.transports.empty?
-          raise Error, "Transport is not defined"
+          raise Error, "Transports are not defined"
         end
 
-        config.transports
+        if has_attribute?(:event_name)
+          config.transports.fetch(event_name)
+        else
+          config.transports.fetch(:_all_)
+        end
       end
 
       def log_details
