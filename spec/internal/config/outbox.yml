@@ -15,6 +15,23 @@ test:
           kafka:
             required_acks: -1
 
+    combined_outbox_item:
+      partition_size: 2
+      partition_strategy: hash
+      retention: P1W
+      retry_strategies:
+        - exponential_backoff
+        - compacted_log
+      transports:
+        - class: kafka_producer
+          event_name: "order_created"
+          topic: "order_created_topic"
+          kafka:
+            required_acks: -1
+        - class: kafka_producer
+          event_name: "orders_completed"
+          topic: "orders_completed_topic"
+
   inbox_items:
     inbox_item:
       partition_size: 2

@@ -4,9 +4,8 @@ describe Sbmt::Outbox::ProcessItem do
   describe "#call" do
     subject(:result) { described_class.call(OutboxItem, outbox_item.id) }
 
-    let(:event_name) { "order_created" }
     let(:max_retries) { 0 }
-    let(:producer) { OutboxItem.config.transports.first }
+    let(:producer) { OutboxItem.config.transports[:_all_].first }
 
     before do
       allow(producer).to receive(:publish).and_return(true)
@@ -33,7 +32,6 @@ describe Sbmt::Outbox::ProcessItem do
       let(:outbox_item) do
         Fabricate(
           :outbox_item,
-          event_name: event_name,
           status: Sbmt::Outbox::Item.statuses[:failed]
         )
       end
@@ -46,8 +44,8 @@ describe Sbmt::Outbox::ProcessItem do
       end
     end
 
-    context "when there is no producer for defined event_name" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+    context "when there is no any transport" do
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
         allow_any_instance_of(OutboxItem).to receive(:transports).and_return(nil)
@@ -75,7 +73,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when outbox item produce to transport successfully" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       it "returns success" do
         expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
@@ -95,7 +93,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when outbox item produce to transport unsuccessfully" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
         allow(producer).to receive(:publish).and_return(false)
@@ -141,7 +139,7 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       context "when retry process" do
-        let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name, processed_at: Time.current) }
+        let!(:outbox_item) { Fabricate(:outbox_item, processed_at: Time.current) }
 
         it "do not track process_latency" do
           expect { result }.not_to measure_yabeda_histogram(Yabeda.outbox.process_latency)
@@ -150,7 +148,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when item processing raised exception" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
         allow(producer).to receive(:publish).and_raise("boom")
@@ -182,7 +180,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when item processing returning failure" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
         allow(producer).to receive(:publish)
@@ -204,7 +202,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when outbox item has many transports" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
         allow_any_instance_of(OutboxItem).to receive(:transports).and_return([producer, HttpOrderSender])
@@ -217,7 +215,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when outbox item has custom payload builder" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
         allow_any_instance_of(OutboxItem).to receive(:payload_builder).and_return(PayloadRenderer)
@@ -232,7 +230,7 @@ describe Sbmt::Outbox::ProcessItem do
     end
 
     context "when checking retry strategies" do
-      let!(:outbox_item) { Fabricate(:outbox_item, event_name: event_name) }
+      let!(:outbox_item) { Fabricate(:outbox_item) }
       let(:max_retries) { 1 }
 
       before do
@@ -250,7 +248,7 @@ describe Sbmt::Outbox::ProcessItem do
 
       context "with the next processing time is greater than the current time" do
         let!(:outbox_item) do
-          Fabricate(:outbox_item, event_name: event_name, processed_at: 1.hour.from_now)
+          Fabricate(:outbox_item, processed_at: 1.hour.from_now)
         end
 
         it "doesn't increment errors count" do
@@ -264,7 +262,7 @@ describe Sbmt::Outbox::ProcessItem do
 
       context "with the next processing time is less than the current time" do
         let!(:outbox_item) do
-          Fabricate(:outbox_item, event_name: event_name, processed_at: 1.hour.ago)
+          Fabricate(:outbox_item, processed_at: 1.hour.ago)
         end
 
         it "increment errors count" do
@@ -278,11 +276,11 @@ describe Sbmt::Outbox::ProcessItem do
 
       context "when retry strategy discards item" do
         let!(:outbox_item) do
-          Fabricate(:outbox_item, event_name: event_name, processed_at: 1.hour.ago)
+          Fabricate(:outbox_item, processed_at: 1.hour.ago)
         end
 
         let!(:outbox_item_2) do
-          Fabricate(:outbox_item, status: :delivered, event_name: event_name, event_key: outbox_item.event_key)
+          Fabricate(:outbox_item, status: :delivered, event_key: outbox_item.event_key)
         end
 
         it "discards processing" do
@@ -293,7 +291,7 @@ describe Sbmt::Outbox::ProcessItem do
 
       context "when retry strategy returns unknown error" do
         let!(:outbox_item) do
-          Fabricate(:outbox_item, event_name: event_name, processed_at: 1.hour.ago)
+          Fabricate(:outbox_item, processed_at: 1.hour.ago)
         end
 
         before do
