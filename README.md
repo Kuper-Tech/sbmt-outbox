@@ -152,7 +152,7 @@ add_index :my_inbox_items, :created_at
 
 ```ruby
 # app/models/my_inbox_item.rb
-class MyInboxItem < Sbmt::Inbox::Item
+class MyInboxItem < Sbmt::Inbox::InboxItem
 end
 
 # app/services/import_order.rb
