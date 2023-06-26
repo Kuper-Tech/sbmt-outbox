@@ -28,6 +28,14 @@ Gem::Specification.new do |s|
       "public gem pushes."
   end
 
+  s.post_install_message = "
+  Outbox gem starting 4.3.0 uses internal Sentry-tracing middlewares for job instrumentation.
+
+  \e[1;33mIMPORTANT:\e[0m SentryTracingItemProcessMiddleware / SentryTracingBatchProcessMiddleware \e[1;33mSHOULD BE REMOVED\e[0m from your application's codebase!
+  If your application uses custom Outbox-middlewares for instrumentation, please check there are no functionality interferences.
+
+  "
+
   s.add_dependency "after_commit_everywhere", "~> 1.2"
   s.add_dependency "cutoff", "~> 0.5"
   s.add_dependency "dry-initializer", "~> 3.0"
@@ -57,4 +65,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rubocop-performance"
   s.add_development_dependency "standard", ">= 1.7"
   s.add_development_dependency "zeitwerk"
+  s.add_development_dependency "sentry-rails", "> 5.2.0"
 end

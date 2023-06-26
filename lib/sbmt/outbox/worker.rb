@@ -141,9 +141,13 @@ module Sbmt
 
       def process_job_with_errors(job, worker_number, labels)
         attempt ||= 1
-        start_id ||= redis.getdel("#{job.resource_path}:last_id").to_i + 1
-        logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
-        process_job_with_timeouts(job, start_id, labels)
+        middlewares = Middleware::Builder.new(batch_process_middlewares)
+
+        middlewares.call(job) do
+          start_id ||= redis.getdel("#{job.resource_path}:last_id").to_i + 1
+          logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
+          process_job_with_timeouts(job, start_id, labels)
+        end
       rescue ActiveRecord::StatementInvalid => e
         attempt += 1
         log_fatal(e, job, worker_number)
@@ -165,16 +169,13 @@ module Sbmt
         last_id = nil
         lock_timer = Cutoff.new(general_timeout)
         requeue_timer = Cutoff.new(cutoff_timeout)
-        middlewares = Middleware::Builder.new(batch_process_middlewares)
 
-        middlewares.call(job) do
-          process_job(job, start_id, labels) do |item|
-            job_items_counter.increment(labels, by: 1)
-            last_id = item.id
-            count += 1
-            lock_timer.checkpoint!
-            requeue_timer.checkpoint!
-          end
+        process_job(job, start_id, labels) do |item|
+          job_items_counter.increment(labels, by: 1)
+          last_id = item.id
+          count += 1
+          lock_timer.checkpoint!
+          requeue_timer.checkpoint!
         end
 
         logger.log_info("Finish processing #{job.resource_key} at id #{last_id}")

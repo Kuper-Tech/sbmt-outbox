@@ -13,6 +13,15 @@ require "after_commit_everywhere"
 require "exponential_backoff"
 require "cutoff"
 
+begin
+  require "sentry-rails"
+
+  require_relative "outbox/middleware/sentry/tracing_batch_process_middleware"
+  require_relative "outbox/middleware/sentry/tracing_item_process_middleware"
+rescue LoadError
+  # optional dependency
+end
+
 require_relative "outbox/version"
 require_relative "outbox/errors"
 require_relative "outbox/error_tracker"
