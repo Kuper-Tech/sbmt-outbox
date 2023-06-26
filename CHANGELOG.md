@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.3.1] - 26-06-2023
+
+### Fixed
+
+- sentry middlewares autoloading issue
+
 ## [4.3.0] - 23-06-2023
 
 ### Added
