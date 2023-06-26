@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.3.0] - 23-06-2023
+
+### Added
+
+- sentry tracing middlewares with optional Sentry dependency
+- use wider context for job instrumentation
+
 ## [4.2.0] - 02-06-2023
 
 ### Added
