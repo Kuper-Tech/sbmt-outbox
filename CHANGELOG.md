@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.4.0] - 28-06-2023
+
+### Added
+
+- configured HttpHealthCheck with default port 5555
+
 ## [4.3.1] - 26-06-2023
 
 ### Fixed

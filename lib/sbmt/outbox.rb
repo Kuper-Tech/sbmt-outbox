@@ -12,6 +12,7 @@ require "yabeda"
 require "after_commit_everywhere"
 require "exponential_backoff"
 require "cutoff"
+require "http_health_check"
 
 begin
   require "sentry-rails"
@@ -30,6 +31,7 @@ require_relative "outbox/database_switcher"
 require_relative "outbox/engine"
 require_relative "outbox/middleware/builder"
 require_relative "outbox/middleware/runner"
+require_relative "outbox/probes/probe"
 
 module Sbmt
   module Outbox
