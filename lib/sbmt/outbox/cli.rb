@@ -37,6 +37,8 @@ module Sbmt
         $stdout.puts AsciiArt.logo
         $stdout.puts "Outbox/Inbox worker has been started"
         $stdout.puts "Version: #{VERSION}"
+        $stdout.puts "Starting probes..."
+        Sbmt::Outbox::Probes::Probe.run_probes
 
         worker.start
       end

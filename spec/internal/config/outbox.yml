@@ -1,5 +1,7 @@
 test:
   bucket_size: 4
+  probes:
+    port: 5555
 
   outbox_items:
     outbox_item:

@@ -65,6 +65,8 @@ end
 
 default: &default
   bucket_size: 16
+  probes: 
+    port: 5555 # default: 5555
 
   outbox_items:
     my_outbox_item:
@@ -86,6 +88,8 @@ production:
   <<: *default
   bucket_size: 256
 ```
+
+**NOTE:**  `HttpHealthCheck` запускается всегда при старте демона, если в конфиге отсутствует ключ `probes` используется дефолтный порт `5555` для их запуска
 
 Если в событиях используется `event_name` то транспорты указываются в таком формате:
 
