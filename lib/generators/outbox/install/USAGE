@@ -1,0 +1,12 @@
+Description:
+    Generates initial environment for Outbox
+
+Example:
+    bin/rails generate install
+
+    This will create:
+      Outboxfile
+      config/initializers/outbox.rb
+      config/outbox.yml
+    This will modify:
+      configs/alerts.yaml

@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+<% module_namespacing do -%>
+class <%= namespaced_item_class_name %> < Sbmt::Outbox::OutboxItem
+  self.table_name = "<%= migration_table_name %>"
+
+  private
+
+  def extra_options
+    {
+      # Kafka partition key
+      key: event_key
+    }
+  end
+end
+<% end -%>

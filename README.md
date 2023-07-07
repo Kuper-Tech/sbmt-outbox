@@ -10,6 +10,8 @@ Read more about Outbox patter at https://microservices.io/patterns/data/transact
 
 PaaS implementation https://gitlab.sbmt.io/paas/rfc/-/blob/master/text/paas-2219-outbox/README.md
 
+Gem реализован как самостоятельный демон.
+
 ## Installation
 
 ```ruby
@@ -18,9 +20,47 @@ source "https://nexus.sbmt.io/repository/ruby-gems-sbermarket/" do
 end
 ```
 
-## Configuration
+```shell
+bundle install
+```
 
-Gem реализован как самостоятельный демон.
+## Auto configuration
+
+Для упрощения настройки и создания inbox/outbox items реализованы rails-генераторы
+
+### Настройка первоначальной конфигурации гема
+
+Если вы подключаете outbox в свое приложения впервые, можно сгенерировать первоначальную базовую конфигурацию:
+
+```shell
+bundle exec rails g outbox:install
+```
+
+В результате будут созданы основные конфиги гема, более подробно ознакомиться с перечнем опций можно так:
+
+```shell
+bundle exec rails g outbox:install --help
+```
+
+### Создание inbox/outbox-items
+
+Сгенерировать inbox/outbox-item можно следующим образом:
+
+```shell
+bundle exec rails g outbox:inbox_item MaybeNamespaced::Model::InboxItem
+bundle exec rails g outbox:outbox_item MaybeNamespaced::Model::OutboxItem
+```
+
+В результате будут созданы: миграция, модель, преднастроены файлы конфигурации гема для использования создаваемого item 
+
+Более подробно перечень опций генератора можно посмотреть в help:
+
+```shell
+bundle exec rails g outbox:inbox_item --help
+bundle exec rails g outbox:outbox_item --help
+```
+
+## Manual configuration
 
 ### Outbox pattern
 

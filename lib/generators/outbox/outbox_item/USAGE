@@ -1,0 +1,12 @@
+Description:
+    Generates Outbox item (model, migration, patches outbox.yml, etc)
+
+Example:
+    bin/rails generate outbox:item Model::OutboxItem
+
+    This will create:
+        app/models/model/outbox_item.rb
+        db/migrations/XXX_create_model_outbox_items.rb
+    This will modify:
+        configs/values.yml
+        config/outbox.yml

@@ -1,0 +1,48 @@
+default: &default
+  bucket_size: 16
+
+  probes:
+      port: SET-UP-YOUR-HEALTHCHECK-PORT-HERE
+
+  kafka:
+    required_acks: -1
+    max_retries: 1
+
+#  outbox_items:
+#    outbox_item:
+#      partition_size: 2
+#      partition_strategy: number
+#      retention: P1W
+#      retry_strategies:
+#        - exponential_backoff
+#        - compacted_log
+#      transports:
+#        kafka_producer:
+#          topic: "outbox_item_topic"
+#          kafka:
+#            required_acks: -1
+
+#  inbox_items:
+#    inbox_item:
+#      partition_size: 2
+#      partition_strategy: number
+#      retention: P1W
+#      retry_strategies:
+#        - exponential_backoff
+#      transports:
+#        import_order:
+#          source: "kafka_consumer"
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+  bucket_size: 2
+
+staging:
+  <<: *default
+
+production:
+  <<: *default
+  bucket_size: 256

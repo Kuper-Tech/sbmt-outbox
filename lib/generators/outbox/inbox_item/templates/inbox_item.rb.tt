@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+<% module_namespacing do -%>
+class <%= namespaced_item_class_name %> < Sbmt::Outbox::InboxItem
+  self.table_name = "<%= migration_table_name %>"
+end
+<% end -%>
