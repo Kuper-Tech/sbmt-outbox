@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.5.0] - 29-06-2023
+
+### Added
+
+- rails generator for initial configuration 
+- rails generator for inbox/outbox item creation 
+
 ## [4.4.0] - 28-06-2023
 
 ### Added
