@@ -2,7 +2,7 @@
 
 ActiveRecord::Schema.define do
   create_table :outbox_items do |t|
-    t.string :uuid, null: false
+    t.uuid :uuid, null: false
     t.bigint :event_key, null: false
     t.bigint :bucket, null: false
     t.json :options
@@ -20,7 +20,7 @@ ActiveRecord::Schema.define do
   add_index :outbox_items, :created_at
 
   create_table :combined_outbox_items do |t|
-    t.string :uuid, null: false
+    t.uuid :uuid, null: false
     t.string :event_name, null: false
     t.bigint :event_key, null: false
     t.bigint :bucket, null: false
@@ -39,7 +39,7 @@ ActiveRecord::Schema.define do
   add_index :combined_outbox_items, :created_at
 
   create_table :inbox_items do |t|
-    t.string :uuid, null: false
+    t.uuid :uuid, null: false
     t.bigint :event_key, null: false
     t.bigint :bucket, null: false
     t.json :options

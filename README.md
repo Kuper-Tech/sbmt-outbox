@@ -68,7 +68,7 @@ bundle exec rails g outbox:outbox_item --help
 
 ```ruby
 create_table :my_outbox_items do |t|
-  t.string :uuid, null: false
+  t.uuid :uuid, null: false
   t.string :event_name, null: false # optional, use it when you have several events per one outbox table
   t.string :event_key, null: false
   t.integer :bucket, null: false
@@ -173,7 +173,7 @@ end
 
 ```ruby
 create_table :my_inbox_items do |t|
-  t.string :uuid, null: false
+  t.uuid :uuid, null: false
   t.string :event_name, null: false # optional, use it when you have several events per one inbox table
   t.string :event_key, null: false
   t.integer :bucket, null: false
@@ -375,7 +375,7 @@ end
 ### Example run Inbox (SHP)
 
 ```yaml
-# config/values.yml
+# configs/values.yml
 
   deployments:
     ...

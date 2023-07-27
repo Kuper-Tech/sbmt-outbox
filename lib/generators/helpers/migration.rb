@@ -31,7 +31,7 @@ module Outbox
 
           template_data = <<~RUBY
             create_table :#{table_name} do |t|
-              t.string :uuid, null: false
+              t.uuid :uuid, null: false
               t.string :event_key, null: false
               t.integer :bucket, null: false
               t.integer :status, null: false, default: 0
