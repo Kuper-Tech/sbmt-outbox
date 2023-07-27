@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.5.1] - 27-07-2023
+
+### Changed
+
+- changed field 'uuid' type to uuid
+
 ## [4.5.0] - 29-06-2023
 
 ### Added
