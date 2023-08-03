@@ -83,8 +83,7 @@ describe Sbmt::Outbox::BaseItem do
           OutboxItem.remove_instance_variable(:@partition_buckets)
         end
 
-        allow(OutboxItem.config).to receive(:partition_size).and_return(2)
-        allow(OutboxItem.config).to receive(:bucket_size).and_return(5)
+        allow(OutboxItem.config).to receive_messages(partition_size: 2, bucket_size: 5)
       end
 
       after do
