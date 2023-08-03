@@ -62,7 +62,7 @@ module Sbmt
 
       def options
         options = (self[:options] || {})
-        options = options.deep_merge(default_options).deep_merge(extra_options)
+        options = default_options.deep_merge(extra_options).deep_merge(options)
         options.symbolize_keys
       end
 

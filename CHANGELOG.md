@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [4.5.1] - 27-07-2023
 
+### Fixed
+
+- correct merge ordering of default options
+
 ### Changed
 
 - changed field 'uuid' type to uuid
@@ -23,8 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- rails generator for initial configuration 
-- rails generator for inbox/outbox item creation 
+- rails generator for initial configuration
+- rails generator for inbox/outbox item creation
 
 ## [4.4.0] - 28-06-2023
 
