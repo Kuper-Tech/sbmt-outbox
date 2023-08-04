@@ -25,6 +25,20 @@ describe Sbmt::Outbox::BaseItem do
     let(:outbox_item) { Fabricate(:outbox_item) }
     let(:dispatched_at_header_name) { Sbmt::Outbox::OutboxItem::DISPATCH_TIME_HEADER_NAME }
 
+    it "returns valid options" do
+      def outbox_item.extra_options
+        {
+          foo: true,
+          bar: true
+        }
+      end
+
+      outbox_item.options = {bar: false}
+
+      expect(outbox_item.options).to include(:headers, :foo, :bar)
+      expect(outbox_item.options[:bar]).to be false
+    end
+
     it "has 'Dispatched-At' header" do
       expect(outbox_item.options[:headers].has_key?(dispatched_at_header_name)).to be(true)
     end
@@ -69,8 +83,7 @@ describe Sbmt::Outbox::BaseItem do
           OutboxItem.remove_instance_variable(:@partition_buckets)
         end
 
-        allow(OutboxItem.config).to receive(:partition_size).and_return(2)
-        allow(OutboxItem.config).to receive(:bucket_size).and_return(5)
+        allow(OutboxItem.config).to receive_messages(partition_size: 2, bucket_size: 5)
       end
 
       after do
