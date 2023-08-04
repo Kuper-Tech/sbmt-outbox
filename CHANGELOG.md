@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.5.2] - 04-07-2023
+
+### Fixed
+
+- merge symbolized keys in options
+
 ## [4.5.1] - 27-07-2023
 
 ### Fixed
