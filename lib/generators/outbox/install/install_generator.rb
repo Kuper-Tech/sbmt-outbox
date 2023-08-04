@@ -12,40 +12,27 @@ module Outbox
       class_option :skip_config, type: :boolean, default: false, desc: "Skip creating config/outbox.yml"
       class_option :skip_alerts, type: :boolean, default: false, desc: "Skip patching configs/alerts.yaml"
 
-      def check_installed
-        if config_exists?
-          return if no?("outbox.yml already exists, continue?")
-        end
-
-        create_outboxfile
-        create_initializer
-        create_config
-        patch_alerts
-      end
-
-      private
-
       def create_outboxfile
         return if options[:skip_outboxfile]
 
-        create_outboxfile_with_template("Outboxfile")
+        copy_file "Outboxfile", "Outboxfile"
       end
 
       def create_initializer
         return if options[:skip_initializer]
 
-        create_initializer_with_template("outbox.rb")
+        copy_file "outbox.rb", OUTBOX_INITIALIZER_PATH
       end
 
       def create_config
         return if options[:skip_config]
 
-        create_config_with_template("outbox.yml")
+        copy_file "outbox.yml", CONFIG_PATH
       end
 
       def patch_alerts
-        return unless paas_app?
         return if options[:skip_alerts]
+        return unless paas_app?
 
         patch_alerts_with_template_data
       end

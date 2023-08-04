@@ -2,25 +2,25 @@
 
 Rails.application.config.outbox.tap do |config|
   # setup custom ErrorTracker
-  # config.error_tracker = 'ErrorTracker'
+  # config.error_tracker = "ErrorTracker"
 
   # customize redis
   # config.redis_servers = [ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")]
 
   # default config paths
-  config.paths << Rails.root.join('config/outbox.yml').to_s
+  config.paths << Rails.root.join("config/outbox.yml").to_s
 
   # setup inbox item classes
-  # config.inbox_item_classes << 'MyInboxItem'
+  # config.inbox_item_classes << "MyInboxItem"
 
   # setup outbox item classes
-  # config.outbox_item_classes << 'MyOutboxItem'
+  # config.outbox_item_classes << "MyOutboxItem"
 
   # setup custom batch process middlewares
-  # config.batch_process_middlewares << 'MyBatchProcessMiddleware'
+  # config.batch_process_middlewares << "MyBatchProcessMiddleware"
 
   # setup custom item process middlewares
-  # config.item_process_middlewares << 'MyItemProcessMiddleware'
+  # config.item_process_middlewares << "MyItemProcessMiddleware"
 
   # setup timeouts
   config.process_items.tap do |x|

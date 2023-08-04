@@ -82,14 +82,6 @@ module Outbox
             append_to_file ALERTS_PATH, optimize_indentation(alert_initial_data, 0)
           end
         end
-
-        def migration_class_name
-          "Create" + namespaced_item_class_name.gsub("::", "").pluralize
-        end
-
-        def migration_table_name
-          namespaced_item_class_name.tableize.tr("/", "_")
-        end
       end
     end
   end
