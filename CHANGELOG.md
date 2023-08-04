@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.5.3] - 04-08-2023
+
+### Added
+
+- `bin/rails g outbox:transport` generator
+
+### Changed
+
+- `bin/rails g outbox:inbox_item` and `bin/rails g outbox:outbox_item` are now replaced with `bin/rails g outbox:item`
+
 ## [4.5.2] - 04-07-2023
 
 ### Fixed

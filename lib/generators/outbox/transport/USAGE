@@ -1,0 +1,19 @@
+Description:
+    Configures a transport inside the config/outbox.yml file
+    Arguments:
+        - item name, either CamelCased or under_scored, required
+        - transport name, i.e. sbmt/kafka_producer or import_order, required
+    Options:
+        - --kind inbox/outbox - transport type, required
+        - --topic, i.e. my-topic-name, optional
+        - --event_name, i.e. order_created, affects only outbox transports, optional
+        - --source, i.e. kafka, affects only inbox transports, optional
+        - --target, i.e order, affects only inbox transports, optional
+
+Example:
+    bin/rails g outbox:transport MyOutboxItem sbmt/kafka_producer --kind outbox
+
+    The following lines will be inserted to config/outbox.yml under the `outbox_items/my_outbox_item` section:
+      transports:
+        sbmt/kafka_producer:
+          topic: "need to add a topic"

@@ -1,0 +1,10 @@
+<%- topic = options[:topic].presence || "need to add a topic" -%>
+transports:
+  <%- if options[:event_name].present? -%>
+  - class: "<%= transport.underscore %>"
+  event_name: "<%= options[:event_name] %>"
+  topic: "<%= topic %>"
+  <%- else -%>
+  <%= transport.underscore %>:
+    topic: "<%= topic %>"
+  <%- end -%>

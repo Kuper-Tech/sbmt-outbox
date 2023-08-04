@@ -47,8 +47,8 @@ bundle exec rails g outbox:install --help
 Сгенерировать inbox/outbox-item можно следующим образом:
 
 ```shell
-bundle exec rails g outbox:inbox_item MaybeNamespaced::Model::InboxItem
-bundle exec rails g outbox:outbox_item MaybeNamespaced::Model::OutboxItem
+bundle exec rails g outbox:item MaybeNamespaced::Model::InboxItem --kind inbox
+bundle exec rails g outbox:item MaybeNamespaced::Model::OutboxItem --kind outbox
 ```
 
 В результате будут созданы: миграция, модель, преднастроены файлы конфигурации гема для использования создаваемого item 
@@ -56,9 +56,23 @@ bundle exec rails g outbox:outbox_item MaybeNamespaced::Model::OutboxItem
 Более подробно перечень опций генератора можно посмотреть в help:
 
 ```shell
-bundle exec rails g outbox:inbox_item --help
-bundle exec rails g outbox:outbox_item --help
+bundle exec rails g outbox:item --help
 ```
+
+### Добавление транспорта
+
+Чтобы добавить транспорт, выполните
+
+```shell
+bin/rails g outbox:transport MaybeNamespaced::Model::OutboxItem some/transport/name --kind outbox
+bin/rails g outbox:transport MaybeNamespaced::Model::InboxItem some/transport/name --kind inbox
+```
+
+Подробнее см.
+```shell
+bin/rails g outbox:transport -h
+```
+
 
 ## Manual configuration
 

@@ -1,0 +1,9 @@
+transports:
+  <%= transport.underscore %>:
+  <%- if options[:source].present? -%>
+    source: "<%= options[:source] %>"
+  <%- elsif options[:target].present? -%>
+    target: "<%= options[:target] %>"
+  <%- else -%>
+    # configure source, target and other options here
+  <%- end -%>

@@ -4,48 +4,24 @@ module Outbox
   module Generators
     module Helpers
       module Config
-        OUTBOX_CONFIG_PATH = "config/outbox.yml"
+        CONFIG_PATH = "config/outbox.yml"
 
         private
 
         def config_exists?
-          File.exist?(OUTBOX_CONFIG_PATH)
+          File.exist?(CONFIG_PATH)
         end
 
-        def create_config_with_template(template_name)
-          template template_name, File.join(OUTBOX_CONFIG_PATH)
-        end
+        def check_config!
+          return if config_exists?
 
-        def add_inbox_item_to_config(item_path)
-          item_template_data = <<~RUBY
-            #{item_path}:
-              partition_size: 1
-              partition_strategy: hash
-              retention: P1W
-              max_retries: 7
-              retry_strategies:
-                - exponential_backoff
-            #  see README to learn more about transport configuration
-            #  transports: {}
-          RUBY
-
-          add_item_to_config("inbox_items", item_template_data)
-        end
-
-        def add_outbox_item_to_config(item_path)
-          item_template_data = <<~RUBY
-            #{item_path}:
-              partition_size: 1
-              partition_strategy: number
-              retention: P3D
-              max_retries: 7
-              retry_strategies:
-                - exponential_backoff
-            #  see README to learn more about transport configuration
-            #  transports: {}
-          RUBY
-
-          add_item_to_config("outbox_items", item_template_data)
+          if yes?("Seems like `config/outbox.yml` doesn't exist. Would you like to generate it?")
+            generate "outbox:install"
+          else
+            raise Rails::Generators::Error, "Something went wrong: `config/outbox.yml` is missing. " \
+                                        "Please generate one by running `bin/rails g outbox:install` " \
+                                        "or add it manually."
+          end
         end
 
         def add_item_to_config(config_block_name, item_template_data)
@@ -54,14 +30,15 @@ module Outbox
             #{optimize_indentation(item_template_data, 2)}
           RUBY
 
-          if File.binread(OUTBOX_CONFIG_PATH).match?(/^\s*#{config_block_name}:/)
+          data, after = if File.binread(CONFIG_PATH).match?(/^\s*#{config_block_name}:/)
             # if config already contains non-empty/non-commented-out inbox_items/outbox_items block
-            inject_into_file OUTBOX_CONFIG_PATH, optimize_indentation(item_template_data, 4), after: /^\s*#{config_block_name}:\s*\n/
+            [optimize_indentation(item_template_data, 4), /^\s*#{config_block_name}:\s*\n/]
           else
             # there is no config for our items
             # so we just set it up initially
-            inject_into_file OUTBOX_CONFIG_PATH, optimize_indentation(template_data_with_parent, 2), after: /^default:.+?\n/
+            [optimize_indentation(template_data_with_parent, 2), /^default:.+?\n/]
           end
+          inject_into_file CONFIG_PATH, data, after: after
         end
       end
     end

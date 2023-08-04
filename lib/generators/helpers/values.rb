@@ -8,20 +8,6 @@ module Outbox
 
         private
 
-        def add_inbox_item_to_values(item_path)
-          # e.g. order/inbox_item => inbox-order-inbox-items
-          deployment_name = "inbox-" + dasherize_item(item_path)
-
-          add_item_to_values(deployment_name.pluralize, item_path)
-        end
-
-        def add_outbox_item_to_values(item_path)
-          # e.g. order/outbox_item => outbox-order-outbox-items
-          deployment_name = "outbox-" + dasherize_item(item_path)
-
-          add_item_to_values(deployment_name.pluralize, item_path)
-        end
-
         def add_item_to_values(deployment_name, item_path)
           template_data = <<~RUBY
             #{deployment_name}:

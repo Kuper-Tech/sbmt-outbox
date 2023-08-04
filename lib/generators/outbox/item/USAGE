@@ -2,7 +2,7 @@ Description:
     Generates Outbox item (model, migration, patches outbox.yml, etc)
 
 Example:
-    bin/rails generate outbox:inbox_item Model::InboxItem
+    bin/rails generate outbox:item Model::InboxItem --kind inbox
 
     This will create:
         app/models/model/inbox_item.rb
