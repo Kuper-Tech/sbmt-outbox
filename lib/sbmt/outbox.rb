@@ -3,7 +3,6 @@
 require "ruby2_keywords"
 require "rails"
 require "sidekiq"
-require "sidekiq-unique-jobs"
 require "dry-initializer"
 require "dry-monads"
 require "dry/monads/do"

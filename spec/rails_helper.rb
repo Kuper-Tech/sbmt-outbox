@@ -43,7 +43,6 @@ require "rspec/rails"
 # Add additional requires below this line. Rails is not loaded until this point!
 require "fabrication"
 require "sidekiq/testing"
-require "sidekiq_unique_jobs/testing"
 require "yabeda/rspec"
 
 Dir[Sbmt::Outbox::Engine.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
