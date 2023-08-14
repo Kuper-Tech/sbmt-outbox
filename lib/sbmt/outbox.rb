@@ -12,6 +12,7 @@ require "after_commit_everywhere"
 require "exponential_backoff"
 require "cutoff"
 require "http_health_check"
+require "redis"
 
 begin
   require "sentry-rails"

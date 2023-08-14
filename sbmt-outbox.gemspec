@@ -48,6 +48,7 @@ Gem::Specification.new do |s|
   s.add_dependency "yabeda", "~> 0.8"
   s.add_dependency "thor"
   s.add_dependency "redlock"
+  s.add_dependency "redis"
   s.add_dependency "http_health_check"
 
   s.add_development_dependency "appraisal"
