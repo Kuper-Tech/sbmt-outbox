@@ -31,7 +31,7 @@ module Sbmt
 
         lock_manager = Redlock::Client.new(config.redis_servers, retry_count: 0)
 
-        lock_manager.lock("lock:#{self.class.name}:#{args.join(":")}", 1) do |locked|
+        lock_manager.lock("lock:#{self.class.name}:#{args.join(":")}", 2000) do |locked|
           if locked
             duration = item_class.config.retention
 
