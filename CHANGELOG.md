@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.6.0] - 15-08-2023
+
+### Changed
+
+- use gem `redlock` instead of gem `sidekiq-uniq-job`
+
 ## [4.5.3] - 04-08-2023
 
 ### Added
