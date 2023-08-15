@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- use gem `redlock` instead of gem `sidekiq-uniq-job`
+- use gem `redlock` instead of gem `sidekiq-uniq-jobs`
 
 ## [4.5.3] - 04-08-2023
 
