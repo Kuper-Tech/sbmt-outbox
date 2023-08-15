@@ -8,6 +8,7 @@ module Sbmt
       include Sidekiq::Worker
 
       MIN_RETENTION_PERIOD = 1.day
+      LOCK_TTL = 10_800_000
 
       class << self
         def enqueue
@@ -31,7 +32,7 @@ module Sbmt
 
         lock_manager = Redlock::Client.new(config.redis_servers, retry_count: 0)
 
-        lock_manager.lock("#{self.class.name}:lock", 10_800_000) do |locked|
+        lock_manager.lock("#{self.class.name}:lock", LOCK_TTL) do |locked|
           if locked
             duration = item_class.config.retention
 
