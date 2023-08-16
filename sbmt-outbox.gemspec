@@ -44,11 +44,11 @@ Gem::Specification.new do |s|
   s.add_dependency "rails", ">= 5.1"
   s.add_dependency "schked", ">= 0.3", "< 2"
   s.add_dependency "sidekiq", ">= 5.2"
-  s.add_dependency "sidekiq-unique-jobs", ">= 7.1"
   s.add_dependency "ruby2_keywords" # Remove this on Ruby 2.7
   s.add_dependency "yabeda", "~> 0.8"
   s.add_dependency "thor"
   s.add_dependency "redlock"
+  s.add_dependency "redis"
   s.add_dependency "http_health_check"
 
   s.add_development_dependency "appraisal"

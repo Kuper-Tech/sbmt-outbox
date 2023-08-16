@@ -3,7 +3,6 @@
 require "ruby2_keywords"
 require "rails"
 require "sidekiq"
-require "sidekiq-unique-jobs"
 require "dry-initializer"
 require "dry-monads"
 require "dry/monads/do"
@@ -13,6 +12,7 @@ require "after_commit_everywhere"
 require "exponential_backoff"
 require "cutoff"
 require "http_health_check"
+require "redis"
 
 begin
   require "sentry-rails"

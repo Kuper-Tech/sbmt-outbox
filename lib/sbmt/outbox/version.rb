@@ -2,6 +2,6 @@
 
 module Sbmt
   module Outbox
-    VERSION = "4.5.3"
+    VERSION = "4.6.0"
   end
 end

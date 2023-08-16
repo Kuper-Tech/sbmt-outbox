@@ -1,16 +1,14 @@
 # frozen_string_literal: true
 
+require "redlock"
+
 module Sbmt
   module Outbox
     class BaseDeleteStaleItemsJob
       include Sidekiq::Worker
 
       MIN_RETENTION_PERIOD = 1.day
-
-      sidekiq_options lock: :until_executed,
-        lock_ttl: 3.hours.to_i,
-        on_conflict: :log,
-        retry: false
+      LOCK_TTL = 10_800_000
 
       class << self
         def enqueue
@@ -32,12 +30,20 @@ module Sbmt
       def perform(item_class_name)
         self.item_class = item_class_name.constantize
 
-        duration = item_class.config.retention
+        lock_manager = Redlock::Client.new(config.redis_servers, retry_count: 0)
 
-        validate_retention!(duration)
+        lock_manager.lock("#{self.class.name}:lock", LOCK_TTL) do |locked|
+          if locked
+            duration = item_class.config.retention
 
-        logger.with_tags(box_type: box_type, box_name: box_name) do
-          delete_stale_items(Time.current - duration)
+            validate_retention!(duration)
+
+            logger.with_tags(box_type: box_type, box_name: box_name) do
+              delete_stale_items(Time.current - duration)
+            end
+          else
+            logger.log_info("Failed to acquire lock #{self.class.name}")
+          end
         end
       end
 
