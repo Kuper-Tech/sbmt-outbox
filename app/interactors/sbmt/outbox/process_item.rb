@@ -9,7 +9,7 @@ module Sbmt
       METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter discarded_counter].freeze
 
       delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
-      delegate :box_type, :box_name, to: :item_class
+      delegate :box_type, :box_name, :owner, to: :item_class
 
       attr_accessor :process_latency
 
@@ -208,7 +208,7 @@ module Sbmt
       end
 
       def report_metrics(item)
-        labels = {type: box_type, name: box_name, partition: item&.partition}
+        labels = labels_for(item)
 
         METRICS_COUNTERS.each do |counter_name|
           Yabeda
@@ -219,12 +219,16 @@ module Sbmt
 
         track_process_latency(labels) if process_latency
 
-        return unless counters[:sent_counter] > 0
+        return unless counters[:sent_counter].positive?
 
         Yabeda
           .outbox
           .last_sent_event_id
           .set(labels, item_id)
+      end
+
+      def labels_for(item)
+        {type: box_type, name: box_name, owner: owner, partition: item&.partition}
       end
 
       def counters

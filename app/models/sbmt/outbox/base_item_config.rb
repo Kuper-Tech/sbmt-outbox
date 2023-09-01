@@ -12,6 +12,12 @@ module Sbmt
         validate!
       end
 
+      def owner
+        return @owner if defined? @owner
+
+        @owner = options[:owner].presence || Outbox.yaml_config[:owner].presence
+      end
+
       def bucket_size
         @bucket_size ||= (options[:bucket_size] || Outbox.yaml_config.fetch(:bucket_size, DEFAULT_BUCKET_SIZE)).to_i
       end
