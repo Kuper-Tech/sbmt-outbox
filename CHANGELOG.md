@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.7.0] - 30-08-2023
+
+### Added
+
+- the `owner` tag was added to metrics
+
 ## [4.6.0] - 15-08-2023
 
 ### Changed

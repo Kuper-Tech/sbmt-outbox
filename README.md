@@ -118,12 +118,14 @@ end
 # config/outbox.yml
 
 default: &default
+  owner: foo-team
   bucket_size: 16
   probes:
     port: 5555 # default: 5555
 
   outbox_items:
     my_outbox_item:
+      owner: my_outbox_item_team
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
       max_retries: 3 # default: 0
@@ -228,6 +230,7 @@ end
 
   inbox_items:
     my_inbox_item:
+      owner: my_inbox_item_team
       retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
       partition_size: 2 # default: 1
       max_retries: 3 # default: 0

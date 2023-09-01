@@ -7,7 +7,7 @@ module Sbmt
       option :attributes, reader: :private
       option :partition_by, reader: :private, optional: true, default: -> { attributes[:event_key] }
 
-      delegate :box_type, :box_name, to: :item_class
+      delegate :box_type, :box_name, :owner, to: :item_class
 
       def call
         record = item_class.new(attributes)
@@ -37,7 +37,7 @@ module Sbmt
           Yabeda
             .outbox
             .last_stored_event_id
-            .set({type: box_type, name: box_name, partition: partition}, item_id)
+            .set({type: box_type, name: box_name, owner: owner, partition: partition}, item_id)
         end
       end
 
@@ -46,7 +46,7 @@ module Sbmt
           Yabeda
             .outbox
             .created_counter
-            .increment({type: box_type, name: box_name, partition: partition}, by: 1)
+            .increment({type: box_type, name: box_name, owner: owner, partition: partition}, by: 1)
         end
       end
     end

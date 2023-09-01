@@ -6,6 +6,8 @@ module Sbmt
       self.abstract_class = true
 
       class << self
+        delegate :owner, to: :config
+
         def box_type
           raise NotImplementedError
         end
