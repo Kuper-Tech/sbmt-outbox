@@ -5,7 +5,7 @@ Rails.application.config.outbox.tap do |config|
   # config.error_tracker = "ErrorTracker"
 
   # customize redis
-  # config.redis_servers = [ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")]
+  # config.redis = {url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")}
 
   # default config paths
   config.paths << Rails.root.join("config/outbox.yml").to_s

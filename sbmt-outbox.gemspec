@@ -37,6 +37,7 @@ Gem::Specification.new do |s|
   "
 
   s.add_dependency "after_commit_everywhere", "~> 1.2"
+  s.add_dependency "connection_pool", "~> 2.0"
   s.add_dependency "cutoff", "~> 0.5"
   s.add_dependency "dry-initializer", "~> 3.0"
   s.add_dependency "dry-monads", "~> 1.3"
@@ -47,8 +48,8 @@ Gem::Specification.new do |s|
   s.add_dependency "ruby2_keywords" # Remove this on Ruby 2.7
   s.add_dependency "yabeda", "~> 0.8"
   s.add_dependency "thor"
-  s.add_dependency "redlock"
-  s.add_dependency "redis"
+  s.add_dependency "redlock", "> 1.0", "< 3.0"
+  s.add_dependency "redis-client", ">= 0.14.1", "< 1.0.0"
   s.add_dependency "http_health_check"
 
   s.add_development_dependency "appraisal"

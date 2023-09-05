@@ -12,7 +12,7 @@ module Sbmt
         c.outbox_item_classes = []
         c.inbox_item_classes = []
         c.paths = []
-        c.redis_servers = [ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")]
+        c.redis = {url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")}
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
           c.general_timeout = 120
           c.cutoff_timeout = 60
@@ -30,6 +30,21 @@ module Sbmt
         if defined?(::Sentry)
           c.batch_process_middlewares.push("Sbmt::Outbox::Middleware::Sentry::TracingBatchProcessMiddleware")
           c.item_process_middlewares.push("Sbmt::Outbox::Middleware::Sentry::TracingItemProcessMiddleware")
+        end
+
+        def c.redis_servers=(val)
+          val = val.first
+
+          if val.is_a?(String)
+            self.redis = {url: val}
+          elsif val.respond_to?(:_client)
+            conf = val._client.config
+            self.redis = {url: conf.server_url, username: conf.username, password: conf.password}
+          else
+            raise ArgumentError, "Outbox `redis_servers=` config option is deprecated. Please use `redis=` with a Hash"
+          end
+
+          warn "🔥 Outbox `redis_servers=` config option is deprecated. Please use `redis=` with a Hash. Called from #{caller(1..1).first}"
         end
       end
 

@@ -56,9 +56,9 @@ RSpec.configure do |config|
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
 
-  redis = Redis.new(url: ENV["REDIS_URL"])
+  redis = RedisClient.new(url: ENV["REDIS_URL"])
   config.before do
-    redis.flushdb
+    redis.call("FLUSHDB")
     Sidekiq::Queues.clear_all
   end
 end
