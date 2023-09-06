@@ -165,6 +165,7 @@ outbox_items:
 # config/initializers/outbox.rb
 
 Rails.application.config.outbox.tap do |config|
+  config.redis = {url: ENV.fetch("REDIS_URL")}
   config.outbox_item_classes << "MyOutboxItem"
   config.paths << Rails.root.join("config/outbox.yml").to_s
 

@@ -36,10 +36,8 @@ module Sbmt
         build_jobs(boxes).each { |job| queue << job }
         self.thread_pool = ThreadPool.new { queue.pop }
         self.concurrency = [concurrency, queue.size].min
-        self.lock_manager = Redlock::Client.new(config.redis_servers, retry_count: 0)
-        # TODO: add connection pool? I cannot access to the `@servers` variable in RedLock
-        self.redis = build_redis(config.redis_servers.first)
         self.thread_workers = {}
+        init_redis
       end
 
       def start
@@ -92,15 +90,16 @@ module Sbmt
 
       attr_accessor :queue, :thread_pool, :concurrency, :lock_manager, :redis, :thread_workers, :started
 
-      def build_redis(server)
-        case server
-        when String
-          Redis.new(url: server)
-        when Hash
-          Redis.new(**server)
+      def init_redis
+        self.redis = ConnectionPool::Wrapper.new { RedisClientFactory.build(config.redis) }
+
+        client = if Gem::Version.new(Redlock::VERSION) >= Gem::Version.new("2.0.0")
+          redis
         else
-          server
+          ConnectionPool::Wrapper.new { Redis.new(config.redis) }
         end
+
+        self.lock_manager = Redlock::Client.new([client], retry_count: 0)
       end
 
       def build_jobs(boxes)
@@ -144,7 +143,7 @@ module Sbmt
         middlewares = Middleware::Builder.new(batch_process_middlewares)
 
         middlewares.call(job) do
-          start_id ||= redis.getdel("#{job.resource_path}:last_id").to_i + 1
+          start_id ||= redis.call("GETDEL", "#{job.resource_path}:last_id").to_i + 1
           logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
           process_job_with_timeouts(job, start_id, labels)
         end
@@ -185,7 +184,7 @@ module Sbmt
         msg = if lock_timer.exceeded?
           "Lock timeout"
         elsif requeue_timer.exceeded?
-          redis.setex("#{job.resource_path}:last_id", general_timeout, last_id) if last_id
+          redis.call("SET", "#{job.resource_path}:last_id", last_id, "EX", general_timeout) if last_id
           "Requeue timeout"
         end
         raise "Unknown timer has been timed out" unless msg

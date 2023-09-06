@@ -12,7 +12,8 @@ require "after_commit_everywhere"
 require "exponential_backoff"
 require "cutoff"
 require "http_health_check"
-require "redis"
+require "redis-client"
+require "connection_pool"
 
 begin
   require "sentry-rails"
@@ -32,6 +33,7 @@ require_relative "outbox/engine"
 require_relative "outbox/middleware/builder"
 require_relative "outbox/middleware/runner"
 require_relative "outbox/probes/probe"
+require_relative "outbox/redis_client_factory"
 
 module Sbmt
   module Outbox

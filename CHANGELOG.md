@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.0] - 05-09-2023
+
+### Added
+
+- support Redlock 2.0
+- configure Redis using the `redis=` config option
+- support Redis Sentinel
+
+### Changed
+
+- deprecate using of the `redis_servers=` config option
+- use RedisClient instead of Redis
+
 ## [4.7.0] - 30-08-2023
 
 ### Added
