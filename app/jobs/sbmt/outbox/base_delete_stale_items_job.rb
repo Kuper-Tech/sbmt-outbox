@@ -30,7 +30,13 @@ module Sbmt
       def perform(item_class_name)
         self.item_class = item_class_name.constantize
 
-        lock_manager = Redlock::Client.new([RedisClientFactory.build(config.redis)], retry_count: 0)
+        client = if Gem::Version.new(Redlock::VERSION) >= Gem::Version.new("2.0.0")
+          RedisClientFactory.build(config.redis)
+        else
+          Redis.new(config.redis)
+        end
+
+        lock_manager = Redlock::Client.new([client], retry_count: 0)
 
         lock_manager.lock("#{self.class.name}:lock", LOCK_TTL) do |locked|
           if locked
