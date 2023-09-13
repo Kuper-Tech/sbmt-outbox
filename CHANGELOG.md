@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.1] - 13-09-2023
+
+### Fixed
+
+- clear all DB connections when a connection corrupted
+
 ## [4.8.0] - 05-09-2023
 
 ### Added

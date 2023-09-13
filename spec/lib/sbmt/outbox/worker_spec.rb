@@ -148,6 +148,9 @@ describe Sbmt::Outbox::Worker do
   end
 
   describe "db connection error while processing" do
+    # We have to disable the main Rspec transaction becase we want to reconnect all connections to DB
+    self.use_transactional_tests = false
+
     let(:boxes) { [OutboxItem] }
     let(:concurrency) { 1 }
 
