@@ -147,7 +147,7 @@ module Sbmt
           logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
           process_job_with_timeouts(job, start_id, labels)
         end
-      rescue ActiveRecord::StatementInvalid => e
+      rescue ActiveRecord::StatementInvalid, ActiveRecord::ConnectionNotEstablished => e
         attempt += 1
         log_fatal(e, job, worker_number)
 
@@ -156,11 +156,42 @@ module Sbmt
           raise e # exit with error
         end
 
-        ::ActiveRecord::Base.clear_active_connections!
+        logger.log_info("Try to clear active connections, attempt #{attempt}")
+        clear_active_connections
+
         retry
       rescue => e
         log_fatal(e, job, worker_number)
         track_fatal(e, job, worker_number)
+      end
+
+      def clear_active_connections
+        if support_connection_handling?
+          if legacy_connection_handling?
+            ActiveRecord::Base.connection_handlers.each do |_role, handler|
+              handler.clear_all_connections!
+            end
+          else
+            ActiveRecord::Base.connection_handler
+              .all_connection_pools
+              .each(&:clear_reloadable_connections!)
+          end
+        else
+          ::ActiveRecord::Base.clear_active_connections!
+        end
+      end
+
+      def support_connection_handling?
+        ActiveRecord.respond_to?(:legacy_connection_handling) ||
+          ActiveRecord::Base.respond_to?(:legacy_connection_handling)
+      end
+
+      def legacy_connection_handling?
+        if ActiveRecord.respond_to?(:legacy_connection_handling)
+          ActiveRecord.legacy_connection_handling
+        else
+          ActiveRecord::Base.legacy_connection_handling
+        end
       end
 
       def process_job_with_timeouts(job, start_id, labels)
