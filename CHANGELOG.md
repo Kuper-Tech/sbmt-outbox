@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.2] - 13-09-2023
+
+### Fixed
+
+- use correct redis client in delete stale items job
+
 ## [4.8.1] - 13-09-2023
 
 ### Fixed
