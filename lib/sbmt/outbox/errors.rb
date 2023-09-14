@@ -7,5 +7,14 @@ module Sbmt
 
     class ConfigError < Error
     end
+
+    class DatabaseError < Error
+    end
+
+    DB_CONNECTION_ERRORS = [
+      ActiveRecord::StatementInvalid,
+      ActiveRecord::ConnectionNotEstablished,
+      DatabaseError
+    ].freeze
   end
 end

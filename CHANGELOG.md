@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.3] - 14-09-2023
+
+### Fixed
+
+- handle and return database errors while processing an item, and then try to recover 3 times
+
 ## [4.8.2] - 13-09-2023
 
 ### Fixed

@@ -165,7 +165,7 @@ describe Sbmt::Outbox::Worker do
     end
     # rubocop:enable RSpec/BeforeAfterAll
 
-    it "does not fail" do
+    it "retries 3 times" do
       expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).exactly(3).times do |_klass, _id|
         worker.stop
         raise ActiveRecord::StatementInvalid
@@ -177,6 +177,22 @@ describe Sbmt::Outbox::Worker do
         .and_call_original
 
       expect { worker.start }.to raise_error(ActiveRecord::StatementInvalid)
+    end
+
+    context "when processing item returns database failure" do
+      it "retries 3 times" do
+        expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).exactly(3).times do |_klass, _id|
+          worker.stop
+          Dry::Monads::Result::Failure.new(:database_failure)
+        end
+
+        expect(Sbmt::Outbox.logger).to receive(:log_error)
+          .with(/Failed processing/, hash_including(:backtrace))
+          .exactly(3).times
+          .and_call_original
+
+        expect { worker.start }.to raise_error(Sbmt::Outbox::DatabaseError)
+      end
     end
   end
 end
