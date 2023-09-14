@@ -139,7 +139,7 @@ module Sbmt
       end
 
       def process_job_with_errors(job, worker_number, labels)
-        attempt ||= 1
+        attempt ||= 0
         middlewares = Middleware::Builder.new(batch_process_middlewares)
 
         middlewares.call(job) do
@@ -147,51 +147,22 @@ module Sbmt
           logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
           process_job_with_timeouts(job, start_id, labels)
         end
-      rescue ActiveRecord::StatementInvalid, ActiveRecord::ConnectionNotEstablished => e
+      rescue *Sbmt::Outbox::DB_CONNECTION_ERRORS => e
         attempt += 1
         log_fatal(e, job, worker_number)
 
-        if attempt > 3
+        if attempt >= 3
           track_fatal(e, job, worker_number)
-          raise e # exit with error
+          raise e
         end
 
         logger.log_info("Try to clear active connections, attempt #{attempt}")
-        clear_active_connections
+        DatabaseHelper.clear_active_connections
 
         retry
       rescue => e
         log_fatal(e, job, worker_number)
         track_fatal(e, job, worker_number)
-      end
-
-      def clear_active_connections
-        if support_connection_handling?
-          if legacy_connection_handling?
-            ActiveRecord::Base.connection_handlers.each do |_role, handler|
-              handler.clear_all_connections!
-            end
-          else
-            ActiveRecord::Base.connection_handler
-              .all_connection_pools
-              .each(&:clear_reloadable_connections!)
-          end
-        else
-          ::ActiveRecord::Base.clear_active_connections!
-        end
-      end
-
-      def support_connection_handling?
-        ActiveRecord.respond_to?(:legacy_connection_handling) ||
-          ActiveRecord::Base.respond_to?(:legacy_connection_handling)
-      end
-
-      def legacy_connection_handling?
-        if ActiveRecord.respond_to?(:legacy_connection_handling)
-          ActiveRecord.legacy_connection_handling
-        else
-          ActiveRecord::Base.legacy_connection_handling
-        end
       end
 
       def process_job_with_timeouts(job, start_id, labels)
@@ -243,7 +214,11 @@ module Sbmt
             item_execution_runtime.measure(labels) do
               Outbox.database_switcher.use_master do
                 middlewares.call(job, item.id) do
-                  ProcessItem.call(job.item_class, item.id)
+                  result = ProcessItem.call(job.item_class, item.id)
+
+                  if result.respond_to?(:failure?) && result.failure? && result.failure == :database_failure
+                    raise DatabaseError, "Got database failure while processing item #{job.item_class}##{item.id}"
+                  end
                 end
               end
               yield item

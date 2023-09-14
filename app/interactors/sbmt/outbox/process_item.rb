@@ -44,6 +44,9 @@ module Sbmt
           Success(item)
         rescue Dry::Monads::Do::Halt => e
           e.result
+        rescue *Sbmt::Outbox::DB_CONNECTION_ERRORS => e
+          track_failed(e, item)
+          Failure(:database_failure)
         rescue => e
           track_failed(e, item)
           Failure(e.message)
@@ -113,19 +116,29 @@ module Sbmt
         Failure(:missing_transports)
       end
 
+      # rubocop:disable Metrics/MethodLength
       def process_item(transport, item, payload)
         transport_error = nil
+        failure_type = nil
 
         result = item_class.transaction(requires_new: true) do
           transport.call(item, payload)
         rescue => e
           transport_error = e
+
+          failure_type = case e
+          when *Sbmt::Outbox::DB_CONNECTION_ERRORS
+            :database_failure
+          else
+            :transport_failure
+          end
+
           raise ActiveRecord::Rollback
         end
 
         if transport_error
           track_failed(transport_error, item)
-          return Failure(:transport_failure)
+          return Failure(failure_type)
         end
 
         case result
@@ -143,6 +156,7 @@ module Sbmt
           Failure(:transport_failure)
         end
       end
+      # rubocop:enable Metrics/MethodLength
 
       def track_failed(ex_or_msg, item = nil)
         log_error(ex_or_msg, item)
