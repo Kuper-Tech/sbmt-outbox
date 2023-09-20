@@ -38,7 +38,7 @@ module Sbmt
 
         lock_manager = Redlock::Client.new([client], retry_count: 0)
 
-        lock_manager.lock("#{self.class.name}:lock", LOCK_TTL) do |locked|
+        lock_manager.lock("#{self.class.name}:#{item_class_name}:lock", LOCK_TTL) do |locked|
           if locked
             duration = item_class.config.retention
 
@@ -48,7 +48,7 @@ module Sbmt
               delete_stale_items(Time.current - duration)
             end
           else
-            logger.log_info("Failed to acquire lock #{self.class.name}")
+            logger.log_info("Failed to acquire lock #{self.class.name}:#{item_class_name}")
           end
         end
       end

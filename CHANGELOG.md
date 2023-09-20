@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.4] - 20-09-2023
+
+### Fixed
+
+- get correct lock when deleting old items
+
 ## [4.8.3] - 14-09-2023
 
 ### Fixed
