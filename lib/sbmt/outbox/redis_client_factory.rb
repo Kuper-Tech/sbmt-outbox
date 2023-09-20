@@ -4,6 +4,8 @@ module Sbmt
   module Outbox
     module RedisClientFactory
       def self.build(options)
+        options = options.symbolize_keys
+
         unless options.key?(:reconnect_attempts)
           options[:reconnect_attempts] = 3
         end
