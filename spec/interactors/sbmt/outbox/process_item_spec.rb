@@ -166,7 +166,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "tracks error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
-          .with(/Failed processing outbox item with error: boom/, backtrace: kind_of(String))
+          .with(/Failed processing outbox item with error: RuntimeError boom/, backtrace: kind_of(String))
         expect(result.failure).to eq :transport_failure
       end
 

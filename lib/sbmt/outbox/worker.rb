@@ -54,7 +54,9 @@ module Sbmt
 
               if locked
                 job_execution_runtime.measure(labels) do
-                  process_job_with_errors(job, worker_number, labels)
+                  ::Rails.application.executor.wrap do
+                    safe_process_job(job, worker_number, labels)
+                  end
                 end
               else
                 result = ThreadPool::SKIPPED
@@ -138,8 +140,7 @@ module Sbmt
         thread_workers[thread_pool.worker_number] = Time.current
       end
 
-      def process_job_with_errors(job, worker_number, labels)
-        attempt ||= 0
+      def safe_process_job(job, worker_number, labels)
         middlewares = Middleware::Builder.new(batch_process_middlewares)
 
         middlewares.call(job) do
@@ -147,19 +148,6 @@ module Sbmt
           logger.log_info("Start processing #{job.resource_key} from id #{start_id}")
           process_job_with_timeouts(job, start_id, labels)
         end
-      rescue *Sbmt::Outbox::DB_CONNECTION_ERRORS => e
-        attempt += 1
-        log_fatal(e, job, worker_number)
-
-        if attempt >= 3
-          track_fatal(e, job, worker_number)
-          raise e
-        end
-
-        logger.log_info("Try to clear active connections, attempt #{attempt}")
-        DatabaseHelper.clear_active_connections
-
-        retry
       rescue => e
         log_fatal(e, job, worker_number)
         track_fatal(e, job, worker_number)
@@ -231,7 +219,7 @@ module Sbmt
         backtrace = e.backtrace.join("\n") if e.respond_to?(:backtrace)
 
         logger.log_error(
-          "Failed processing #{job.resource_key} with error: #{e.message}",
+          "Failed processing #{job.resource_key} with error: #{e.class} #{e.message}",
           backtrace: backtrace
         )
       end
