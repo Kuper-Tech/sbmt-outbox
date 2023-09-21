@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.6] - 21-09-2023
+
+### Fixed
+
+- fix working with connection errors. The previous approach leads to hanging of the thread. Now, it uses `Rails.application.executor.wrap` mechanism.
+
 ## [4.8.5] - 20-09-2023
 
 ### Fixed

@@ -119,26 +119,17 @@ module Sbmt
       # rubocop:disable Metrics/MethodLength
       def process_item(transport, item, payload)
         transport_error = nil
-        failure_type = nil
 
         result = item_class.transaction(requires_new: true) do
           transport.call(item, payload)
         rescue => e
           transport_error = e
-
-          failure_type = case e
-          when *Sbmt::Outbox::DB_CONNECTION_ERRORS
-            :database_failure
-          else
-            :transport_failure
-          end
-
           raise ActiveRecord::Rollback
         end
 
         if transport_error
           track_failed(transport_error, item)
-          return Failure(failure_type)
+          return Failure(:transport_failure)
         end
 
         case result
@@ -202,13 +193,33 @@ module Sbmt
       end
 
       def log_error(ex_or_msg, item = nil)
-        msg = "Failed processing #{box_type} item with error: #{ex_or_msg}.\n" \
+        text = format_exception_error(ex_or_msg)
+
+        msg = "Failed processing #{box_type} item with error: #{text}.\n" \
               "Record: #{item_class.name}##{item_id}.\n" \
               "#{item&.log_details&.to_json}"
 
-        backtrace = ex_or_msg.backtrace.join("\n") if ex_or_msg.respond_to?(:backtrace)
+        log_failure(msg, backtrace: format_backtrace(ex_or_msg))
+      end
 
-        log_failure(msg, backtrace: backtrace)
+      def format_exception_error(e)
+        text = if e.respond_to?(:cause) && !e.cause.nil?
+          "#{format_exception_error(e.cause)}. "
+        else
+          ""
+        end
+
+        if e.respond_to?(:message)
+          "#{text}#{e.class.name} #{e.message}"
+        else
+          "#{text}#{e}"
+        end
+      end
+
+      def format_backtrace(e)
+        if e.respond_to?(:backtrace) && !e.backtrace.nil?
+          e.backtrace.join("\n")
+        end
       end
 
       def report_error(ex_or_msg, item = nil)

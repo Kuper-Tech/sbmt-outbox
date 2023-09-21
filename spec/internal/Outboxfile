@@ -8,7 +8,9 @@ require "combustion"
 
 Dir.chdir(File.expand_path("../..", __dir__)) do
   Combustion.initialize! :active_record, database_reset: false, load_schema: false, database_migrate: false do
-    config.logger = ActiveSupport::TaggedLogging.new(Logger.new($stdout))
+    logger = Logger.new($stdout)
+    logger.formatter = Logger::Formatter.new
+    config.logger = ActiveSupport::TaggedLogging.new(logger)
     config.log_level = :info
   end
 end
