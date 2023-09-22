@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.7] - 22-09-2023
+
+### Fixed
+
+- deep symbolize config keys when initializing a Redis client
+
 ## [4.8.6] - 21-09-2023
 
 ### Fixed
