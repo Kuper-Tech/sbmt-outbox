@@ -44,9 +44,6 @@ module Sbmt
           Success(item)
         rescue Dry::Monads::Do::Halt => e
           e.result
-        rescue *Sbmt::Outbox::DB_CONNECTION_ERRORS => e
-          track_failed(e, item)
-          Failure(:database_failure)
         rescue => e
           track_failed(e, item)
           Failure(e.message)

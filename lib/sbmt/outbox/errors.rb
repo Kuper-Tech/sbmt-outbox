@@ -10,11 +10,5 @@ module Sbmt
 
     class DatabaseError < Error
     end
-
-    DB_CONNECTION_ERRORS = [
-      ActiveRecord::StatementInvalid,
-      ActiveRecord::ConnectionNotEstablished,
-      DatabaseError
-    ].freeze
   end
 end

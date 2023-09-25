@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.8.8] - 25-09-2023
+
+### Fixed
+
+- don't cache DB errors in the item processor
+
 ## [4.8.7] - 22-09-2023
 
 ### Fixed

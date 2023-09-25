@@ -202,11 +202,7 @@ module Sbmt
             item_execution_runtime.measure(labels) do
               Outbox.database_switcher.use_master do
                 middlewares.call(job, item.id) do
-                  result = ProcessItem.call(job.item_class, item.id)
-
-                  if result.respond_to?(:failure?) && result.failure? && result.failure == :database_failure
-                    raise DatabaseError, "Got database failure while processing item #{job.item_class}##{item.id}"
-                  end
+                  ProcessItem.call(job.item_class, item.id)
                 end
               end
               yield item
