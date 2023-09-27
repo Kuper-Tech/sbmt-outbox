@@ -11,7 +11,7 @@ module Sbmt
 
           attr_reader :new_transaction
 
-          def call(job, item_id)
+          def call(job, item_id, _options)
             return yield unless ::Sentry.initialized?
 
             scope = ::Sentry.get_current_scope

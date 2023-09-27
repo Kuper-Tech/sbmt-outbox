@@ -189,7 +189,7 @@ module Sbmt
 
           scope = item_class
             .for_processing
-            .select(:id)
+            .select(:id, :options)
 
           if item_class.has_attribute?(:bucket)
             scope = scope.where(bucket: job.buckets)
@@ -201,7 +201,15 @@ module Sbmt
             touch_thread_worker!
             item_execution_runtime.measure(labels) do
               Outbox.database_switcher.use_master do
-                middlewares.call(job, item.id) do
+                middleware_options = {
+                  item_class: item_class,
+                  # because of custom options getter which merges options value with item's default_options
+                  # there may be some other fields which we haven't selected in our scope (like uuid)
+                  # and we'll get ActiveModel validation error like "error: missing attribute: uuid"
+                  # so just get raw attribute value here
+                  options: item.attributes["options"]
+                }
+                middlewares.call(job, item.id, middleware_options) do
                   ProcessItem.call(job.item_class, item.id)
                 end
               end

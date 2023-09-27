@@ -24,6 +24,12 @@ rescue LoadError
   # optional dependency
 end
 
+begin
+  require_relative "outbox/instrumentation/open_telemetry_loader"
+rescue LoadError
+  # optional dependency
+end
+
 require_relative "outbox/version"
 require_relative "outbox/errors"
 require_relative "outbox/error_tracker"
@@ -101,6 +107,10 @@ module Sbmt
 
     def item_process_middlewares
       @item_process_middlewares ||= config.item_process_middlewares.map(&:constantize)
+    end
+
+    def create_item_middlewares
+      @create_item_middlewares ||= config.create_item_middlewares.map(&:constantize)
     end
   end
 end

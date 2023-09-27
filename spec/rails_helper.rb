@@ -45,6 +45,8 @@ require "fabrication"
 require "sidekiq/testing"
 require "yabeda/rspec"
 
+require "sbmt/outbox/instrumentation/open_telemetry_loader"
+
 Dir[Sbmt::Outbox::Engine.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
 Dir[Sbmt::Outbox::Engine.root.join("spec/fabricators/**/*.rb")].sort.each { |f| require f }
 

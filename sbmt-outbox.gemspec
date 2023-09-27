@@ -68,4 +68,8 @@ Gem::Specification.new do |s|
   s.add_development_dependency "standard", ">= 1.7"
   s.add_development_dependency "zeitwerk"
   s.add_development_dependency "sentry-rails", "> 5.2.0"
+  s.add_development_dependency "opentelemetry-sdk"
+  s.add_development_dependency "opentelemetry-api", ">= 0.17.0"
+  s.add_development_dependency "opentelemetry-common", ">= 0.17.0"
+  s.add_development_dependency "opentelemetry-instrumentation-base", ">= 0.17.0"
 end
