@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.9.0] - 22-09-2023
+
+### Added
+
+- plug opentelemetry tracing
+
 ## [4.8.8] - 25-09-2023
 
 ### Fixed

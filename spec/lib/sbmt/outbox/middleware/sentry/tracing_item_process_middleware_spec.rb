@@ -10,7 +10,7 @@ describe Sbmt::Outbox::Middleware::Sentry::TracingItemProcessMiddleware do
     expect(::Sentry).to receive(:initialized?).and_return(false)
     expect(::Sentry).not_to receive(:start_transaction)
 
-    expect { described_class.new.call(job, item_id) {} }.not_to raise_error
+    expect { described_class.new.call(job, item_id, {}) {} }.not_to raise_error
   end
 
   it "sets up sentry transaction" do
@@ -20,6 +20,6 @@ describe Sbmt::Outbox::Middleware::Sentry::TracingItemProcessMiddleware do
     expect(scope).to receive(:set_tags).with hash_including(:trace_id)
     expect(::Sentry).to receive(:start_transaction).and_return(nil)
 
-    expect { described_class.new.call(job, item_id) {} }.not_to raise_error
+    expect { described_class.new.call(job, item_id, {}) {} }.not_to raise_error
   end
 end

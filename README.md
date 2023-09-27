@@ -328,8 +328,36 @@ end
 
 ### Middlewares
 
-Обработку событий можно обвернуть в middlewares.
-Чтобы добавить middleware для процесса обработки партиции, необходимо указать в конфиге его класс:
+Обработку событий можно обернуть в middlewares. Существует 3 типа миддлвар:
+- клиентские (`create item middleware`) - вызываются на стороне основного приложения в процессе создания `inbox/outbox-item` в методах `CreateInboxItem/CreateOutboxItem`
+- серверные (`batch process middleware`) - вызываются outbox-воркером в процессе обработки батча `inbox/outbox-item`
+- серверные (`item process middleware`) - вызываются outbox-воркером в процессе обработки каждого `inbox/outbox-item`
+
+Чтобы добавить middleware, необходимо указать в конфиге его класс.
+
+Для кейса создания item (`create item middleware`):
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  config.create_item_middlewares.push(
+    'MyCreateItemMiddleware'
+  )
+end
+
+# my_create_item_middleware.rb
+
+class MyCreateItemMiddleware
+  def call(item_class, item_attributes)
+    # your code
+    yield
+    # your code
+  end
+end
+```
+
+Для процесса обработки партиции/батча (`batch process middleware`):
 
 ```ruby
 # config/initializers/outbox.rb
@@ -351,7 +379,7 @@ class MyBatchMiddleware
 end
 ```
 
-Также возможно обернуть обработку каждого события в отдельные middlewares
+Для процесса обработки каждого item (`item process middleware`):
 
 ```ruby
 # config/initializers/outbox.rb
@@ -362,10 +390,12 @@ Rails.application.config.outbox.tap do |config|
   )
 end
 
-# my_item_middleware.rb
+# my_create_item_middleware.rb
 
 class MyItemMiddleware
-  def call(job, item_id)
+  # options[:options] - item.options
+  # options[:item_class] - item class
+  def call(job, item_id, options = {})
     # your code
     yield
     # your code
@@ -373,7 +403,7 @@ class MyItemMiddleware
 end
 ```
 
-В обоих случаях, при добавление двух и более middlewares, порядок выполнения зависит от порядка, заданного в конфигурации гема.
+В любых кейсах, при добавлении двух и более middlewares, порядок выполнения зависит от порядка, заданного в конфигурации гема.
 
 ```ruby
 # config/initializers/outbox.rb
@@ -385,6 +415,10 @@ Rails.application.config.outbox.tap do |config|
   )
 end
 ```
+
+### Tracing
+
+В гем интегрирован опциональный трейсинг opentelemetry. Если в клиентском приложении подключены гемы opentelemetry-*, трейсер будет сконфигурирован автоматически 
 
 ## Usage
 

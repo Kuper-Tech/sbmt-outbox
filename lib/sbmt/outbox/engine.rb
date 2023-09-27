@@ -26,6 +26,7 @@ module Sbmt
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
         c.batch_process_middlewares = []
         c.item_process_middlewares = []
+        c.create_item_middlewares = []
 
         if defined?(::Sentry)
           c.batch_process_middlewares.push("Sbmt::Outbox::Middleware::Sentry::TracingBatchProcessMiddleware")
