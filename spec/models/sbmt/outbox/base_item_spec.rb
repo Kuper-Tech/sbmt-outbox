@@ -54,6 +54,7 @@ describe Sbmt::Outbox::BaseItem do
       outbox_item.reload
 
       expect(outbox_item.error_log).to include("test-error")
+      expect(outbox_item.errors_count).to eq(1)
 
       error = StandardError.new("another-error")
       outbox_item.add_error(error)
@@ -61,6 +62,8 @@ describe Sbmt::Outbox::BaseItem do
       outbox_item.reload
 
       expect(outbox_item.error_log).to include("another-error")
+      expect(outbox_item.error_log).not_to include("test-error")
+      expect(outbox_item.errors_count).to eq(2)
     end
   end
 
