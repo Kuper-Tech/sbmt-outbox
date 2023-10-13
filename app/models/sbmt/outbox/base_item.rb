@@ -111,15 +111,7 @@ module Sbmt
 
         return unless has_attribute?(:error_log)
 
-        self.error_log ||= ""
-        error_log << "-----\n#{Time.zone.now} - attempt: #{errors_count}\n"
-        error_log << "#{ex_or_msg}\n"
-
-        return unless ex_or_msg.respond_to?(:backtrace)
-        return if ex_or_msg.backtrace.nil?
-
-        error_log << ex_or_msg.backtrace.first(10).join("\n")
-        error_log << "\n"
+        self.error_log = "-----\n#{Time.zone.now} \n #{ex_or_msg}\n #{add_backtrace(ex_or_msg)}"
       end
 
       def partition
@@ -144,6 +136,13 @@ module Sbmt
       # Override in descendants
       def extra_log_details
         {}
+      end
+
+      def add_backtrace(ex)
+        return unless ex.respond_to?(:backtrace)
+        return if ex.backtrace.nil?
+
+        ex.backtrace.join("\n")
       end
     end
   end

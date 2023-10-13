@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.10.0] - 12-10-2023
+
+### Changed
+
+- reduced the number of logs for the column `error_log`
+
 ## [4.9.0] - 22-09-2023
 
 ### Added
