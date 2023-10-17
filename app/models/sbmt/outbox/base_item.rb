@@ -142,7 +142,7 @@ module Sbmt
         return unless ex.respond_to?(:backtrace)
         return if ex.backtrace.nil?
 
-        ex.backtrace.join("\n")
+        ex.backtrace.first(30).join("\n")
       end
     end
   end
