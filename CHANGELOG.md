@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.10.1] - 17-10-2023
+
+### Fixed
+
+- add backtrace limit
+
 ## [4.10.0] - 12-10-2023
 
 ### Changed
