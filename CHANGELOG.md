@@ -13,10 +13,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-## [Unreleased] - 20-11-2023
+## [4.11.0] - 17-11-2023
+
+### Added
+
+- added a comment to the migration generator for the proto_payload column if a MySQL database is used
 
 ### Changed
-- add a comment to the migration generator for the proto_payload column if a mysql database is used
+
+- changed a base class for the BaseItem to ApplicationRecord
 
 ## [4.10.1] - 17-10-2023
 

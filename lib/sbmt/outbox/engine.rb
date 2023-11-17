@@ -8,6 +8,7 @@ module Sbmt
       isolate_namespace Sbmt::Outbox
 
       config.outbox = ActiveSupport::OrderedOptions.new.tap do |c|
+        c.base_class = "ApplicationRecord"
         c.error_tracker = "Sbmt::Outbox::ErrorTracker"
         c.outbox_item_classes = []
         c.inbox_item_classes = []
