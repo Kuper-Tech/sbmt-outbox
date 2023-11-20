@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [Unreleased] - 20-11-2023
+
+### Changed
+- add a comment to the migration generator for the proto_payload column if a mysql database is used
+
 ## [4.10.1] - 17-10-2023
 
 ### Fixed
