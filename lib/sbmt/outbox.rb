@@ -57,6 +57,10 @@ module Sbmt
       @logger ||= Sbmt::Outbox::Logger.new
     end
 
+    def base_class
+      @base_class ||= config.base_class.constantize
+    end
+
     def error_tracker
       @error_tracker ||= config.error_tracker.constantize
     end
