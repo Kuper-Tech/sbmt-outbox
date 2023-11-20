@@ -88,7 +88,7 @@ create_table :my_outbox_items do |t|
   t.integer :bucket, null: false
   t.integer :status, null: false, default: 0
   t.jsonb :options
-  t.binary :proto_payload, null: false
+  t.binary :proto_payload, null: false # when using mysql the column type should be mediumblob
   t.integer :errors_count, null: false, default: 0
   t.text :error_log
   t.timestamp :processed_at
@@ -196,7 +196,7 @@ create_table :my_inbox_items do |t|
   t.integer :bucket, null: false
   t.integer :status, null: false, default: 0
   t.jsonb :options
-  t.binary :proto_payload, null: false
+  t.binary :proto_payload, null: false # when using mysql the column type should be mediumblob
   t.integer :errors_count, null: false, default: 0
   t.text :error_log
   t.timestamp :processed_at
