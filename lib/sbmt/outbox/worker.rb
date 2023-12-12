@@ -93,12 +93,12 @@ module Sbmt
       attr_accessor :queue, :thread_pool, :concurrency, :lock_manager, :redis, :thread_workers, :started
 
       def init_redis
-        self.redis = ConnectionPool::Wrapper.new { RedisClientFactory.build(config.redis) }
+        self.redis = ConnectionPool::Wrapper.new(size: concurrency) { RedisClientFactory.build(config.redis) }
 
         client = if Gem::Version.new(Redlock::VERSION) >= Gem::Version.new("2.0.0")
           redis
         else
-          ConnectionPool::Wrapper.new { Redis.new(config.redis) }
+          ConnectionPool::Wrapper.new(size: concurrency) { Redis.new(config.redis) }
         end
 
         self.lock_manager = Redlock::Client.new([client], retry_count: 0)
