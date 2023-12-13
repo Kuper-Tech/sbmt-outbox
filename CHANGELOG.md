@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.11.1] - 12-12-2023
+
+### Added
+
+### Changed
+
+### Fixed
+
+- the size of the redis connection pool is now equal to the number of threads, which will avoid issues with connection blocking.
+
 ## [4.11.0] - 17-11-2023
 
 ### Added
