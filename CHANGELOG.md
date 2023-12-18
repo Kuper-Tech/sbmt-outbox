@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [4.11.2] - 15-12-2023
+
+### Added
+
+### Changed
+
+### Fixed
+- optimized removing of obsolete items by using an index on the `created_at` field
+
 ## [4.11.1] - 12-12-2023
 
 ### Added
