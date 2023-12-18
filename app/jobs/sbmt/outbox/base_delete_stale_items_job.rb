@@ -9,6 +9,8 @@ module Sbmt
 
       MIN_RETENTION_PERIOD = 1.day
       LOCK_TTL = 10_800_000
+      BATCH_SIZE = 1000
+      SLEEP_TIME = 1
 
       class << self
         def enqueue
@@ -64,12 +66,12 @@ module Sbmt
       def delete_stale_items(waterline)
         logger.log_info("Start deleting #{box_type} items for #{box_name} older than #{waterline}")
 
-        item_class
-          .where("created_at < ?", waterline)
-          .in_batches(of: 1000) do |scope|
-            scope.delete_all
-            sleep 1
-          end
+        scope = item_class.where("created_at < ?", waterline)
+
+        while (ids = scope.limit(BATCH_SIZE).ids).present?
+          item_class.where(id: ids).delete_all
+          sleep SLEEP_TIME
+        end
 
         logger.log_info("Successfully deleted #{box_type} items for #{box_name} older than #{waterline}")
       end
