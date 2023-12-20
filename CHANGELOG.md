@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- dropped support of Ruby 2.5 and 2.6
+- removed after_commit_everywhere
+- removed `redis_servers=` config option. Configure Redis with `redis=` config option
+
 ### Fixed
 
 ## [4.11.2] - 15-12-2023
