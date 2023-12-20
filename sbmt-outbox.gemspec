@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.bindir = "exe"
   s.executables = s.files.grep(%r{^exe/}) { |f| File.basename(f) }
 
-  s.required_ruby_version = ">= 2.5"
+  s.required_ruby_version = ">= 2.7"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
@@ -28,14 +28,6 @@ Gem::Specification.new do |s|
       "public gem pushes."
   end
 
-  s.post_install_message = "
-  Outbox gem starting 4.3.0 uses internal Sentry-tracing middlewares for job instrumentation.
-
-  \e[1;33mIMPORTANT:\e[0m SentryTracingItemProcessMiddleware / SentryTracingBatchProcessMiddleware \e[1;33mSHOULD BE REMOVED\e[0m from your application's codebase!
-  If your application uses custom Outbox-middlewares for instrumentation, please check there are no functionality interferences.
-
-  "
-
   s.add_dependency "after_commit_everywhere", "~> 1.2"
   s.add_dependency "connection_pool", "~> 2.0"
   s.add_dependency "cutoff", "~> 0.5"
@@ -45,7 +37,6 @@ Gem::Specification.new do |s|
   s.add_dependency "rails", ">= 5.1"
   s.add_dependency "schked", ">= 0.3", "< 2"
   s.add_dependency "sidekiq", ">= 5.2"
-  s.add_dependency "ruby2_keywords" # Remove this on Ruby 2.7
   s.add_dependency "yabeda", "~> 0.8"
   s.add_dependency "thor"
   s.add_dependency "redlock", "> 1.0", "< 3.0"

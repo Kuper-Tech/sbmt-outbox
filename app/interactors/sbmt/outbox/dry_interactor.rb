@@ -8,8 +8,8 @@ module Sbmt
       include AfterCommitEverywhere
 
       class << self
-        ruby2_keywords def call(*params)
-          new(*params).call
+        def call(*args, **kwargs)
+          new(*args, **kwargs).call
         end
       end
     end
