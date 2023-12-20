@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - removed after_commit_everywhere
 - removed `redis_servers=` config option. Configure Redis with `redis=` config option
 - treat only False result as failed processing
+- make ErrorTracker to send errors to Sentry (if available)
 
 ### Fixed
 

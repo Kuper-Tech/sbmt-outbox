@@ -2,26 +2,23 @@
 
 module Sbmt
   module Outbox
-    module ErrorTracker
-      extend self
+    class ErrorTracker
+      class << self
+        def error(message, params = {})
+          unless defined?(Sentry)
+            Outbox.logger.log_error(message, params)
+            return
+          end
 
-      def error(arr, _params = {})
-        Rails.logger.error(arr)
-      end
+          Sentry.with_scope do |scope|
+            scope.set_contexts(contexts: params)
 
-      def warning(arr, _params = {})
-        Rails.logger.warn("sbmt-outbox") do
-          arr.to_s
-        end
-      end
-
-      private
-
-      def format_msg(arr, params)
-        if arr.respond_to?(:message)
-          "#{arr.message}, params: #{params.inspect}"
-        else
-          "#{arr}, params: #{params.inspect}"
+            if message.is_a?(Exception)
+              Sentry.capture_exception(message, level: :error)
+            else
+              Sentry.capture_message(message, level: :error)
+            end
+          end
         end
       end
     end
