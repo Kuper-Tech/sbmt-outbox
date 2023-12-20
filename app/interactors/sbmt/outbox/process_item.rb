@@ -137,11 +137,11 @@ module Sbmt
           else
             Success()
           end
-        when true
-          Success()
-        else
+        when false
           track_failed("transport #{transport} returned #{result.inspect}", item)
           Failure(:transport_failure)
+        else
+          Success()
         end
       end
       # rubocop:enable Metrics/MethodLength
