@@ -28,7 +28,6 @@ Gem::Specification.new do |s|
       "public gem pushes."
   end
 
-  s.add_dependency "after_commit_everywhere", "~> 1.2"
   s.add_dependency "connection_pool", "~> 2.0"
   s.add_dependency "cutoff", "~> 0.5"
   s.add_dependency "dry-initializer", "~> 3.0"

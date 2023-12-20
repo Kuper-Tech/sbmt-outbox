@@ -37,21 +37,17 @@ module Sbmt
       private
 
       def track_last_stored_id(item_id, partition)
-        after_commit do
-          Yabeda
-            .outbox
-            .last_stored_event_id
-            .set({type: box_type, name: box_name, owner: owner, partition: partition}, item_id)
-        end
+        Yabeda
+          .outbox
+          .last_stored_event_id
+          .set({type: box_type, name: box_name, owner: owner, partition: partition}, item_id)
       end
 
       def track_counter(partition)
-        after_commit do
-          Yabeda
-            .outbox
-            .created_counter
-            .increment({type: box_type, name: box_name, owner: owner, partition: partition}, by: 1)
-        end
+        Yabeda
+          .outbox
+          .created_counter
+          .increment({type: box_type, name: box_name, owner: owner, partition: partition}, by: 1)
       end
     end
   end
