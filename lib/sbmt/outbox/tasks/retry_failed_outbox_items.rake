@@ -11,7 +11,7 @@ namespace :outbox do
     scope = item_class.failed
     scope = scope.where(id: ids) unless ids.empty?
     scope.in_batches.update_all(
-      status: Sbmt::Outbox::Item.statuses[:pending],
+      status: Sbmt::Outbox::BaseItem.statuses[:pending],
       errors_count: 0
     )
   end

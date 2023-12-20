@@ -27,7 +27,7 @@ module Sbmt
         def delivered_later?
           scope = outbox_item.class
             .where("id > ?", outbox_item)
-            .where(event_key: outbox_item.event_key, status: Sbmt::Outbox::Item.statuses[:delivered])
+            .where(event_key: outbox_item.event_key, status: Sbmt::Outbox::BaseItem.statuses[:delivered])
 
           if outbox_item.has_attribute?(:event_name) && outbox_item.event_name.present?
             scope = scope.where(event_name: outbox_item.event_name)

@@ -12,8 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - dropped support of Ruby 2.5 and 2.6
+- removed Sbmt::Outbox::Item
 - removed after_commit_everywhere
 - removed `redis_servers=` config option. Configure Redis with `redis=` config option
+- treat only False result as failed processing
 
 ### Fixed
 

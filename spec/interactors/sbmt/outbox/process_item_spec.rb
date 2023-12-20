@@ -32,7 +32,7 @@ describe Sbmt::Outbox::ProcessItem do
       let(:outbox_item) do
         Fabricate(
           :outbox_item,
-          status: Sbmt::Outbox::Item.statuses[:failed]
+          status: Sbmt::Outbox::BaseItem.statuses[:failed]
         )
       end
 
