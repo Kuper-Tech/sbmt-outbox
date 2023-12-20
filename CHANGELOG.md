@@ -15,9 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - removed Sbmt::Outbox::Item
 - removed after_commit_everywhere
 - removed `redis_servers=` config option. Configure Redis with `redis=` config option
-- treat only False result as failed processing
+- changed the expected result of a transport while processing to only False result is consedered as failed
 - make ErrorTracker to send errors to Sentry (if available)
-- plug Schked as an optional dependency
+- re-plugged Schked as an optional dependency
+- replaced Sidekiq with ActiveJob. Don't forget to set `config.active_job.queue_adapter = :sidekiq`
 
 ### Fixed
 

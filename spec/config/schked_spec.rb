@@ -23,7 +23,7 @@ describe Schked do
     end
 
     it "enqueues job" do
-      expect { job.call(false) }.to change { Sbmt::Outbox::DeleteStaleOutboxItemsJob.jobs.size }.by(1)
+      expect { job.call(false) }.to have_enqueued_job(Sbmt::Outbox::DeleteStaleOutboxItemsJob)
     end
   end
 
@@ -37,7 +37,7 @@ describe Schked do
     end
 
     it "enqueues job" do
-      expect { job.call(false) }.to change { Sbmt::Outbox::DeleteStaleInboxItemsJob.jobs.size }.by(1)
+      expect { job.call(false) }.to have_enqueued_job(Sbmt::Outbox::DeleteStaleInboxItemsJob)
     end
   end
 end

@@ -2,7 +2,7 @@
 
 module Sbmt
   module Outbox
-    class BaseItem < Outbox.base_class
+    class BaseItem < Outbox.active_record_base_class
       self.abstract_class = true
 
       class << self

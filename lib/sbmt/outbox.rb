@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rails"
-require "sidekiq"
 require "dry-initializer"
 require "dry-monads"
 require "dry/monads/do"
@@ -54,8 +53,12 @@ module Sbmt
       @logger ||= Sbmt::Outbox::Logger.new
     end
 
-    def base_class
-      @base_class ||= config.base_class.constantize
+    def active_record_base_class
+      @active_record_base_class ||= config.active_record_base_class.constantize
+    end
+
+    def active_job_base_class
+      @active_job_base_class ||= config.active_job_base_class.constantize
     end
 
     def error_tracker

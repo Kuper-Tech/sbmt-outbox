@@ -10,7 +10,7 @@ ENV["RAILS_ENV"] = "test"
 require "combustion"
 
 begin
-  Combustion.initialize! :active_record do
+  Combustion.initialize! :active_record, :active_job do
     if ENV["LOG"].to_s.empty?
       config.logger = ActiveSupport::TaggedLogging.new(Logger.new(nil))
       config.log_level = :fatal
@@ -23,6 +23,7 @@ begin
 
     config.i18n.available_locales = [:ru, :en]
     config.i18n.default_locale = :ru
+    config.active_job.queue_adapter = :test
   end
 rescue => e
   # Fail fast if application couldn't be loaded
@@ -42,7 +43,6 @@ ActiveRecord::Base.logger = Rails.logger
 require "rspec/rails"
 # Add additional requires below this line. Rails is not loaded until this point!
 require "fabrication"
-require "sidekiq/testing"
 require "yabeda/rspec"
 
 require "sbmt/outbox/instrumentation/open_telemetry_loader"
@@ -61,6 +61,5 @@ RSpec.configure do |config|
   redis = RedisClient.new(url: ENV["REDIS_URL"])
   config.before do
     redis.call("FLUSHDB")
-    Sidekiq::Queues.clear_all
   end
 end

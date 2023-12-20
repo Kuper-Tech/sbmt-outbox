@@ -4,9 +4,7 @@ require "redlock"
 
 module Sbmt
   module Outbox
-    class BaseDeleteStaleItemsJob
-      include Sidekiq::Worker
-
+    class BaseDeleteStaleItemsJob < ApplicationJob
       MIN_RETENTION_PERIOD = 1.day
       LOCK_TTL = 10_800_000
       BATCH_SIZE = 1000
@@ -15,7 +13,7 @@ module Sbmt
       class << self
         def enqueue
           item_classes.each do |item_class|
-            perform_async(item_class.to_s)
+            perform_later(item_class.to_s)
           end
         end
 

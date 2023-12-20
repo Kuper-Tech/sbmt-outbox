@@ -3,7 +3,7 @@
 module Sbmt
   module Outbox
     class DeleteStaleOutboxItemsJob < BaseDeleteStaleItemsJob
-      sidekiq_options queue: :outbox
+      queue_as :outbox
 
       class << self
         def item_classes
