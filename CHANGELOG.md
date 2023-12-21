@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- don't include buckets into a partition lock key
+
 ## [4.11.2] - 15-12-2023
 
 ### Added

@@ -112,7 +112,7 @@ module Sbmt
           partitions = (0...item_class.config.partition_size).to_a
           partitions.map do |partition|
             buckets = item_class.partition_buckets.fetch(partition)
-            resource_key = "#{item_class.box_name}/#{partition}:{#{buckets.join(",")}}"
+            resource_key = "#{item_class.box_name}/#{partition}"
 
             Job.new(
               item_class: item_class,
