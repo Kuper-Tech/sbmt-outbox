@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- track errors when the worker get a failure
+
 ### Changed
 
 - dropped support of Ruby 2.5 and 2.6

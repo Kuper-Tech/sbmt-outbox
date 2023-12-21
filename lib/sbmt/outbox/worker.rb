@@ -71,6 +71,9 @@ module Sbmt
         ensure
           queue << job
         end
+      rescue => e
+        Outbox.error_tracker.error(e)
+        raise
       ensure
         self.started = false
       end
