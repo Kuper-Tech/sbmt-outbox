@@ -8,7 +8,7 @@ require "sbmt/outbox/version"
 Gem::Specification.new do |s|
   s.name = "sbmt-outbox"
   s.version = Sbmt::Outbox::VERSION
-  s.authors = ["Misha Merkushin"]
+  s.authors = ["Sbermarket Ruby-Platform Team"]
   s.email = ["mikhail.merkushin@sbermarket.ru"]
   s.summary = "Outbox service"
   s.description = "A service that uses a relational database inserts messages/events into an outbox table as part of the local transaction."
