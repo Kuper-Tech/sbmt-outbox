@@ -50,12 +50,28 @@ module Sbmt
 
       scope :for_processing, -> { where(status: :pending) }
 
-      validates :uuid, :event_key, :bucket, :proto_payload, presence: true
+      validates :uuid, :event_key, :bucket, :payload, presence: true
 
       delegate :box_name, :config, to: "self.class"
 
       after_initialize do
         self.uuid ||= SecureRandom.uuid if has_attribute?(:uuid)
+      end
+
+      def payload
+        if has_attribute?(:proto_payload)
+          proto_payload
+        else
+          self[:payload]
+        end
+      end
+
+      def payload=(value)
+        if has_attribute?(:proto_payload)
+          self.proto_payload = value
+        else
+          self[:payload] = value
+        end
       end
 
       def for_processing?

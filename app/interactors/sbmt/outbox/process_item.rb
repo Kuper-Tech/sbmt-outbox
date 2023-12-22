@@ -101,7 +101,7 @@ module Sbmt
           track_failed("payload builder returned failure: #{payload.failure}", item)
           Failure(:payload_failure)
         else
-          Success(item.proto_payload)
+          Success(item.payload)
         end
       end
 

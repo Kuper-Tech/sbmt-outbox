@@ -6,7 +6,7 @@ ActiveRecord::Schema.define do
     t.bigint :event_key, null: false
     t.bigint :bucket, null: false
     t.json :options
-    t.binary :proto_payload, null: false
+    t.binary :payload, null: false
     t.integer :status, null: false, default: 0
     t.integer :errors_count, null: false, default: 0
     t.text :error_log
@@ -25,7 +25,7 @@ ActiveRecord::Schema.define do
     t.bigint :event_key, null: false
     t.bigint :bucket, null: false
     t.json :options
-    t.binary :proto_payload, null: false
+    t.binary :payload, null: false
     t.integer :status, null: false, default: 0
     t.integer :errors_count, null: false, default: 0
     t.text :error_log
@@ -43,7 +43,7 @@ ActiveRecord::Schema.define do
     t.bigint :event_key, null: false
     t.bigint :bucket, null: false
     t.json :options
-    t.binary :proto_payload, null: false
+    t.binary :payload, null: false
     t.integer :status, null: false, default: 0
     t.integer :errors_count, null: false, default: 0
     t.text :error_log

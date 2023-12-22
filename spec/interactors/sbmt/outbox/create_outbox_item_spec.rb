@@ -5,7 +5,7 @@ describe Sbmt::Outbox::CreateOutboxItem do
 
   let(:attributes) do
     {
-      proto_payload: "test",
+      payload: "test",
       event_key: 10
     }
   end
