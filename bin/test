@@ -3,4 +3,4 @@
 set -euxo pipefail
 
 bundle exec rubocop
-bundle exec appraisal rspec
+bundle exec appraisal rspec ${RSPEC_ARGS}

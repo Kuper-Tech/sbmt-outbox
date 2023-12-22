@@ -17,9 +17,9 @@ tests:
     matrix:
       - RUBY_VERSION: ['2.7', '3.0', '3.1', '3.2']
   services:
-    - name: dreg.sbmt.io/dhub/library/postgres:12.2
+    - name: postgres:12.2
       alias: postgres
-    - name: dreg.sbmt.io/dhub/library/redis:7
+    - name: redis:7
       alias: redis
   variables:
     POSTGRES_PASSWORD: secret
