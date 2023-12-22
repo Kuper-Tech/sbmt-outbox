@@ -1,13 +1,6 @@
 services:
   ruby:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        RUBY_VERSION: ${RUBY_VERSION:-3.2}
-        BUNDLER_VERSION: 2.3
-        RUBYGEMS_VERSION: 3.5.1
-    image: outbox-dev:0.4.0-ruby_${RUBY_VERSION:-3.2}
+    image: ruby:${RUBY_VERSION:-3.2}
     environment:
       HISTFILE: /app/tmp/.bash_history
       BUNDLE_PATH: /usr/local/bundle

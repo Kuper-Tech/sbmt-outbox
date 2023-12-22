@@ -27,8 +27,6 @@ tests:
     DATABASE_URL: postgres://postgres:secret@postgres:5432
     REDIS_URL: redis://redis:6379/0
   before_script:
-    - gem update --system 3.5
-    - gem install bundler -v 2.3
     - bin/setup
   script:
     - bundle exec appraisal rspec --format RspecJunitFormatter --out test-results/rspec_$RUBY_VERSION.xml --format documentation
