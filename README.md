@@ -1,24 +1,20 @@
-# Outbox
+# Sbmt-Outbox
 
-Микросервисы часто публикуют события после выполнения транзакции базы данных. Запись в базу данных и публикация события — это две разные транзакции, и они должны быть атомарными. Отказ опубликовать событие может означать критический отказ бизнес-процесса.
+Microservices often publish messages after a transaction is committed. Writing to the database and publishing the message are two separate transactions, so they must be atomic. An unsuccessful publication of a message can lead to critical failure of the business process.
 
-Outbox pattern обеспечивает эффективное решение для надежной публикации событий. Идея этого подхода заключается в том, чтобы иметь таблицу «Исходящие» в базе данных сервиса. При завершении основной транзакции в базе данных выполняется не только вставка или обновление данных , но и запись, представляющая событие, также вставляется в таблицу outbox items. Два действия базы данных выполняются как часть одной транзакции.
+Outbox pattern provides a reliable solution for message publication. The idea of this approach is to have an "outgoing messages table" in the service database. Before the main transaction finishes, a message row is inserted in this table. Thus, two actions are performed as part of a single transaction. An asynchronous process pulls new rows from the database table, and if they exist it publishes messages to the broker.
 
-Асинхронный процесс отслеживает в таблице исходящих сообщений новые записи и, если они есть, публикует события в шине событий. Шаблон просто разделяет две транзакции на разные сервисы, повышая надежность.
-
-Read more about Outbox patter at https://microservices.io/patterns/data/transactional-outbox.html
-
-PaaS implementation https://gitlab.sbmt.io/paas/rfc/-/blob/master/text/paas-2219-outbox/README.md
-
-Gem реализован как самостоятельный демон.
+Read more about the Outbox pattern at https://microservices.io/patterns/data/transactional-outbox.html
 
 ## Installation
 
+Add this line to your application's Gemfile:
+
 ```ruby
-source "https://nexus.sbmt.io/repository/ruby-gems-sbermarket/" do
-  gem "sbmt-outbox"
-end
+gem "sbmt-outbox"
 ```
+
+And then execute:
 
 ```shell
 bundle install
@@ -26,59 +22,77 @@ bundle install
 
 ## Auto configuration
 
-Для упрощения настройки и создания inbox/outbox items реализованы rails-генераторы
+We recommend going through configuration and files creation with the following Rails generators.
 
-### Настройка первоначальной конфигурации гема
+Each generator can be run using the `--help` option to learn more about the available arguments.
 
-Если вы подключаете outbox в свое приложения впервые, можно сгенерировать первоначальную базовую конфигурацию:
+### Initial configuration
 
-```shell
-bundle exec rails g outbox:install
-```
-
-В результате будут созданы основные конфиги гема, более подробно ознакомиться с перечнем опций можно так:
+If you plug the gem into your application for the first time, you can generate the initial configuration:
 
 ```shell
-bundle exec rails g outbox:install --help
+rails g outbox:install
 ```
 
-### Создание inbox/outbox-items
+### Outbox/inbox items creation
 
-Сгенерировать inbox/outbox-item можно следующим образом:
+An Active Record model for the outbox/inbox item can be generated like this:
 
 ```shell
-bundle exec rails g outbox:item MaybeNamespaced::Model::InboxItem --kind inbox
-bundle exec rails g outbox:item MaybeNamespaced::Model::OutboxItem --kind outbox
+rails g outbox:item MaybeNamespaced::SomeOutboxItem --kind outbox
+rails g outbox:item MaybeNamespaced::SomeInboxItem --kind inbox
 ```
 
-В результате будут созданы: миграция, модель, преднастроены файлы конфигурации гема для использования создаваемого item
+In the result, a migration and a model will be created, and the `outbox.yml` file will be configured.
 
-Более подробно перечень опций генератора можно посмотреть в help:
+### Transport creation
+
+A transport — is a class that will be invoked while processing the specific outbox/inbox item. The transport must return a boolean value or a Dry monads result.
 
 ```shell
-bundle exec rails g outbox:item --help
+rails g outbox:transport MaybeNamespaced::SomeOutboxItem some/transport/name --kind outbox
+rails g outbox:transport MaybeNamespaced::SomeInboxItem some/transport/name --kind inbox
 ```
 
-### Добавление транспорта
+## Usage
 
-Чтобы добавить транспорт, выполните
+To create an outbox item, you should call an interactor with the item model class and `event_key`. The last one will be the partitioning key.
 
-```shell
-bin/rails g outbox:transport MaybeNamespaced::Model::OutboxItem some/transport/name --kind outbox
-bin/rails g outbox:transport MaybeNamespaced::Model::InboxItem some/transport/name --kind inbox
+```ruby
+transaction do
+  some_record.save!
+
+  result = Sbmt::Outbox::CreateOutboxItem.call(
+    MyOutboxItem,
+    event_key: some_record.id,
+    attributes: {
+      payload: some_record.generate_payload,
+      options: {
+        key: some_record.id, # optional, may be used when producing to a Kafka topic
+        headers: {'FOO_BAR' => 'baz'} # optional, you can add custom headers
+      }
+    }
+  )
+
+  raise result.failure unless result.success?
+end
 ```
 
-Подробнее см.
-```shell
-bin/rails g outbox:transport -h
-```
+## Monitoring
 
+We use [Yabeda](https://github.com/yabeda-rb/yabeda) to collect [all kind of metrics](./config/initializers/yabeda.rb).
+
+Example of Grafana Dashboard that you can import [from a file](./examples/grafana-dashboard.json):
+
+![Grafana Dashboard](./examples/outbox-grafana-preview.png)
+
+[Full picture](./examples/outbox-grafana.png)
 
 ## Manual configuration
 
 ### Outbox pattern
 
-Чтобы процесс увидел ваши откладываемые события, вам нужно реализовать таблицу в БД и модель.
+You should create a database table in order for the process to see your outgoing messages.
 
 ```ruby
 create_table :my_outbox_items do |t|
@@ -88,7 +102,7 @@ create_table :my_outbox_items do |t|
   t.integer :bucket, null: false
   t.integer :status, null: false, default: 0
   t.jsonb :options
-  t.binary :proto_payload, null: false # when using mysql the column type should be mediumblob
+  t.binary :payload, null: false # when using mysql the column type should be mediumblob
   t.integer :errors_count, null: false, default: 0
   t.text :error_log
   t.timestamp :processed_at
@@ -101,7 +115,7 @@ add_index :my_outbox_items, [:event_name, :event_key]
 add_index :my_outbox_items, :created_at
 ```
 
-Вы можете объединить несколько событий через одну таблицу, для этого нужно объявить колонку `event_name`. Такой подход оправдан только в случае, когда предполагается, что событий будет не очень много, а также у таких событий будет одинаковые политики retention и retry.
+You can combine several types of messages in the single table. For that, you should define an `event_name` column in the table. This approach is justified only if it is assumed that there will not be very many events, and such events will have the same retention and retry policies.
 
 ```ruby
 # app/models/my_outbox_item.rb
@@ -110,28 +124,25 @@ class MyOutboxItem < Sbmt::Outbox::OutboxItem
 end
 ```
 
-Если вы используете Кафку в качестве транспорта, то рекомендуется использовать для этого гем sbmt-kafka_producer.
-
-Мы почти у цели — осталось определить пару конфигов.
+The `outbox.yml` config is a main config for the gem where are located parameters for each outbox/inbox item class.
 
 ```yaml
 # config/outbox.yml
-
 default: &default
-  owner: foo-team
-  bucket_size: 16
+  owner: foo-team # optional, used in Yabeda metrics
+  bucket_size: 16 # optional, default 16, see into about the buckets at the #Concurrency section
   probes:
-    port: 5555 # default: 5555
+    port: 5555 # default, used for Kubernetes probes
 
-  outbox_items:
-    my_outbox_item:
-      owner: my_outbox_item_team
-      retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
-      partition_size: 2 # default: 1
-      max_retries: 3 # default: 0
-      transports:
-        sbmt/kafka_producer:
-          topic: "my-topic-name"
+  outbox_items: # outbox items section
+    my_outbox_item: # underscored model class name
+      owner: my_outbox_item_team # optional, used in Yabeda metrics
+      retention: P1W # retention period, https://en.wikipedia.org/wiki/ISO_8601#Durations
+      partition_size: 2 # default 1, partitions count
+      max_retries: 3 # default 0, the number of retries before the item will be marked as failed
+      transports: # transports section
+        produce_message: # underscored transport class name
+          topic: "my-topic-name" # default transport arguments
 
 development:
   <<: *default
@@ -145,201 +156,201 @@ production:
   bucket_size: 256
 ```
 
-**NOTE:**  `HttpHealthCheck` запускается всегда при старте демона, если в конфиге отсутствует ключ `probes` используется дефолтный порт `5555` для их запуска
+```ruby
+# app/services/import_order.rb
+class ProduceMessage
+  def initialize(topic:)
+    @topic = topic
+  end
 
-Если в событиях используется `event_name` то транспорты указываются в таком формате:
+  def call(outbox_item, payload)
+    # send message to topic
+    true # mark message as processed
+  end
+end
+```
+
+If you use Kafka as a transport, it is recommended to use the sbmt-kafka_producer gem for this.
+
+The transports are defined in the following format when `event_name` is used:
 
 ```yaml
 outbox_items:
   my_outbox_item:
     transports:
-      - class: sbmt/kafka_producer
-        event_name: "order_created"
-        topic: "order_created_topic"
-      - class: sbmt/kafka_producer
+      - class: produce_message
+        event_name: "order_created" # event name marker
+        topic: "order_created_topic" # some transport default argument
+      - class: produce_message
         event_name: "orders_completed"
         topic: "orders_completed_topic"
 ```
+
+The `outbox.rb` contains overall general configuration:
 
 ```ruby
 # config/initializers/outbox.rb
 
 Rails.application.config.outbox.tap do |config|
-  config.redis = {url: ENV.fetch("REDIS_URL")}
-  config.outbox_item_classes << "MyOutboxItem"
-  config.paths << Rails.root.join("config/outbox.yml").to_s
+  config.redis = {url: ENV.fetch("REDIS_URL")} # Redis is used as the coordinator service
+  config.paths << Rails.root.join("config/outbox.yml").to_s # configuration file paths, deep merged at the application start, useful with Rails engines
+  config.outbox_item_classes << "MyOutboxItem" # register only used outbox classes defined in the YAML configs
 
   config.process_items.tap do |x|
-    x[:general_timeout] = 180 # максимальное время обработки батча, после которого батч будет считаться зависшим и обработка будет прервана
-    x[:cutoff_timeout] = 60 # максимально время обработки батча, после которого обработка батча будет прервана в текущем потоке, а следующий подхвативший поток начнет обработку батча с того же места
-    x[:batch_size] = 200 # размер батча
+    x[:general_timeout] = 180 # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    x[:cutoff_timeout] = 60 # maximum patch processing time, after which the processing of the patch will be aborted in the current thread, and the next thread that picks up the batch will start processing from the same place
+    x[:batch_size] = 200
   end
 
   config.worker.tap do |worker|
-    worker[:rate_limit] = 10 # количество батчей, которое один поток обработает за rate_interval
-    worker[:rate_interval] = 60 # секунды
+    worker[:rate_limit] = 10 # number of batches that one thread will process per rate interval
+    worker[:rate_interval] = 60 # in seconds
   end
 end
 ```
 
 ### Inbox pattern
 
-Обратный процесс. Здесь мы принимаем наши события.
-
-Создаем таблицу в БД и модель.
-
-```ruby
-create_table :my_inbox_items do |t|
-  t.uuid :uuid, null: false
-  t.string :event_name, null: false # optional, use it when you have several events per one inbox table
-  t.string :event_key, null: false
-  t.integer :bucket, null: false
-  t.integer :status, null: false, default: 0
-  t.jsonb :options
-  t.binary :proto_payload, null: false # when using mysql the column type should be mediumblob
-  t.integer :errors_count, null: false, default: 0
-  t.text :error_log
-  t.timestamp :processed_at
-  t.timestamps
-end
-
-add_index :my_inbox_items, :uuid, unique: true
-add_index :my_inbox_items, [:status, :bucket]
-add_index :my_inbox_items, [:event_name, :event_key]
-add_index :my_inbox_items, :created_at
-```
-
-Вы можете объединить несколько событий через одну таблицу, для этого нужно объявить колонку `event_name`. Такой подход оправдан только в случае, когда предполагается, что событий будет не очень много, а также у таких событий будет одинаковые политики retention и retry.
+The database migration will be the same as described at the Outbox pattern.
 
 ```ruby
 # app/models/my_inbox_item.rb
 class MyInboxItem < Sbmt::Inbox::InboxItem
 end
-
-# app/services/import_order.rb
-class ImportOrder
-  def initialize(source:)
-  end
-
-  def call(outbox_item, payload)
-  end
-end
 ```
 
 ```yaml
 # config/outbox.yml
+# see main configuration at the Outbox pattern
+inbox_items: # inbox items section
+  my_inbox_item: # underscored model class name
+    owner: my_inbox_item_team # optional, used in Yabeda metrics
+    retention: P1W # retention period, https://en.wikipedia.org/wiki/ISO_8601#Durations
+    partition_size: 2 # default 1, partitions count
+    max_retries: 3 # default 0, the number of retries before the item will be marked as failed
+    transports: # transports section
+      import_order: # underscored transport class name
+        source: "kafka" # default transport arguments
+```
 
-  inbox_items:
-    my_inbox_item:
-      owner: my_inbox_item_team
-      retention: P1W # https://en.wikipedia.org/wiki/ISO_8601#Durations
-      partition_size: 2 # default: 1
-      max_retries: 3 # default: 0
-      transports:
-        import_order:
-          source: "kafka"
+```ruby
+# app/services/import_order.rb
+class ImportOrder
+  def initialize(source:)
+    @source = source
+  end
+
+  def call(outbox_item, payload)
+    # some work to create order in the database
+    true # mark message as processed
+  end
+end
 ```
 
 ```ruby
 # config/initializers/outbox.rb
-
 Rails.application.config.outbox.tap do |config|
+  # see main configuration at the Outbox pattern
   config.inbox_item_classes << "MyInboxItem"
 end
 ```
 
+If you use Kafka, it is recommended to use the sbmt-kafka_consumer gem for this.
+
 ### Retry strategies
 
-В геме используется несколько видов стратегий для повторения обработок события в случае ошибки. Стратегии можно комбинировать — они будут запускаться по очереди. Каждая стратегия принимает одно из трех решений: обработать сообщение сейчас; пропустить обработку; пометить сообщение как не нуждающееся в обработке.
+The gem uses several types of strategies to repeat a message processing in case of an error. Strategies can be combined — they will be launched in turn. Each strategy makes one of three decisions: process a message; skip processing a message; skip processing and mark message as skipped for future processing.
 
 #### Exponential backoff
 
+This strategy periodically retries a failed messages with increasing delays between message processing.
+
 ```yaml
 # config/outbox.yml
-
-  outbox_items:
-    my_outbox_item:
-      ...
-      minimal_retry_interval: 10 # default: 10
-      maximal_retry_interval: 600 # default: 600
-      multiplier_retry_interval: 2 # default: 2
-      retry_strategies:
-        - exponential_backoff
+outbox_items:
+  my_outbox_item:
+    ...
+    minimal_retry_interval: 10 # default: 10
+    maximal_retry_interval: 600 # default: 600
+    multiplier_retry_interval: 2 # default: 2
+    retry_strategies:
+      - exponential_backoff
 ```
 
 #### Compacted log
 
-Данная стратегия необходима, если используется [Kafka log compaction](https://habr.com/ru/company/sberbank/blog/590045/).
+This strategy should be used when [Kafka log compaction](https://docs.aiven.io/docs/products/kafka/concepts/log-compaction) is enabled.
 
 ```yaml
 # config/outbox.yml
-
-  outbox_items:
-    my_outbox_item:
-      ...
-      retry_strategies:
-        - exponential_backoff
-        - compacted_log
+outbox_items:
+  my_outbox_item:
+    ...
+    retry_strategies:
+      - exponential_backoff
+      - compacted_log
 ```
 
-Если вы хотите (и должны хотеть) использовать вместе с `exponential_backoff`, то у убедитесь в том, что `compacted_log` идет последней, для минимизации запросов в БД.
+The exponential_backoff strategy should be used with the compacted_log strategy, and it should go last to minimize the number of queries to the database.
 
 ### Partition strategies
 
-В зависимости от того, какой типа данных используется в `event_key` необходимо выбрать правильную стратегию для выбора партиции.
+Depending on which data type is used in the `event_key`, it is necessary to choose the right partition strategy.
 
 #### Number partitioning
 
-Используется когда типа данных число или строка, содержащая число, например `some-chars-123`. В случае строки все нечисловые символы вырезаются и остаются только цифры. Стратегия используется по умолчанию.
+This strategy should be used when `event_key` contains a number, for example `52523` or `some-chars-123`. All characters taht are not numbers will be deleted, and only numbers will remain. The strategy is used by default.
 
 ```yaml
 # config/outbox.yml
-
-  outbox_items:
-    my_outbox_item:
-      ...
-      partition_strategy: number
+outbox_items:
+  my_outbox_item:
+    ...
+    partition_strategy: number
 ```
 
 #### Hash partitioning
 
-Стратегия полезна в случае использования uuid в качестве типа данных для `event_key`.
+This strategy should be used when `event_key` is a string or uuid.
 
 ```yaml
 # config/outbox.yml
-
-  outbox_items:
-    my_outbox_item:
-      ...
-      partition_strategy: hash
+outbox_items:
+  my_outbox_item:
+    ...
+    partition_strategy: hash
 ```
 
-### Concurrency
+## Concurrency
 
-Демон outbox использует Ruby threads для конкурентной обработки сообщений, содержащихся в таблице.
-Количество потоков задается через параметр `--concurrency`. Если параметр не передан, то по умолчанию запускается 10 потоков.
-Также в CLI можно передать параметр `--box`, который определяет какие конкретно outbox/inbox таблицы должен обрабатывать конкретный процесс. Если параметр на задан, то демон обрабатывает все доступные таблицы. Помимо этого, можно указать какие партиции для таблицы должен обрабатывать процесс, для этого нужно передать параметр в следующем формате: `--box some_outbox:1,2,3`.
+Outbox Daemon CLI uses Ruby threads for concurrent processing of messages pulled from the database table. The number of threads is configures using a `--concurrency` option. By default it's 10 unless the param is provided. You can run several daemons at the same time. The number of partitions per outbox item class is set by `partition_size` config option. Each outbox item partition will be processed one at a time by some daemon. Each partition batch serves several buckets. The bucket is a number in the row in the `bucket` column generated by the partition strategy based on `event_key` column when the message was committed to the database in the range from zero to `bucket_size`. Thus, each outbox table has several partitions which has several buckets. Take a note, you must not to have `partition_size` larger then `bucket_size`. This architecture was made to have an ability to scale daemons without stopping of the entire system to avoid mixing messages in chronological order. So, if you need more partitions, you should just stop the daemons, configure `partition_size`, and start them again.
 
-В конфиге `outbox.yml` можно также встретить настройку `bucket_size`. Когда создается outbox/inbox item, то в зависимости от стратегии партиционирования, высчитывается колонка `bucket` в пределах размера `bucket_size`. Далее при старте демона все бакеты мапятся в партиции, количество которых задается через `partition_size`. Например, если bucket_size=4 и partition_size=2, то bucket_0 и bucket_2 принадлежат partition_0, а bucket_1 и bucket_3 принадлежат partition_1. **Важно!** когда выбираете значения для bucket_size и partition_size, необходимо чтобы `bucket_size` делился без остатка на `partition_size`, иначе получится неравномерное распределение бакетов между партициями. Такая система с бакетами сделана для того, чтобы можно было практически налету масштабировать обработку сообщений, не останавливая всё приложение, а только изменяя настройку partition_size и перезапуская только демон. Также важно изначально оценить потенциальный объем сообщений, чтобы выбрать правильное значение для `bucket_size`, так как изменить его в дальнейшем будет очень проблематично, но и переусердствовать не стоит, так как слишком большое значение `bucket_size` и маленькое значение `partition_size` может замедлить выборку сообщений из таблицы.
-
-В один момент времени невозможна обработка одной и той же партиции в разных потоках, даже если эти потоки находятся в разных процессах. За счет этого обеспечивается хронологическая обработка сообщений с одинаковыми `event_key`.
-
-Пример конфигурации. Допустим в качестве транспорта для outbox используется Kafka producer. В топике Kafka 18 партиций. Тут важно понимать, что нам не надо завязываться точь-в-точь на количество партиций в топике, мы просто ориентируемся на эти цифры, потому что партиции в outbox с ними ни как не связаны. Если у нас bucket_size=256, то тогда мы можем сделать partition_size=16. Количество процессов (реплик) можем сделать 4, в каждом по 4 потока.
+**Example** Suppose you have a Kafka topic with 18 partitions. The `bucket_size` is 256. We can set `partition_size` to 16 if we expect a slow payload generation. Therefore we should run 4 daemons with 4 threads each to maximum utilize the partitions.
 
 ### Middlewares
 
-Обработку событий можно обернуть в middlewares. Существует 3 типа миддлвар:
-- клиентские (`create item middleware`) - вызываются на стороне основного приложения в процессе создания `inbox/outbox-item` в методах `CreateInboxItem/CreateOutboxItem`
-- серверные (`batch process middleware`) - вызываются outbox-воркером в процессе обработки батча `inbox/outbox-item`
-- серверные (`item process middleware`) - вызываются outbox-воркером в процессе обработки каждого `inbox/outbox-item`
+You can wrap the item processing within middlewares. There are 3 types:
+- client middlewares — triggered outside of a daemon; executed alongside an item is created
+- server middlewares - triggered inside a daemon; divided by two types:
+  - batch middlewares — executed alongside a batch is fetched from the database
+  - item middlewares —executed alongside an item is processed
 
-Чтобы добавить middleware, необходимо указать в конфиге его класс.
-
-Для кейса создания item (`create item middleware`):
+The order of execution depends on the order defined in the outbox config:
 
 ```ruby
 # config/initializers/outbox.rb
+Rails.application.config.outbox.tap do |config|
+  config.item_process_middlewares.push(
+    'MyFirstItemMiddleware', # goes first
+    'MySecondItemMiddleware' # goes second
+  )
+end
+```
 
+#### Client middlewares
+
+```ruby
+# config/initializers/outbox.rb
 Rails.application.config.outbox.tap do |config|
   config.create_item_middlewares.push(
     'MyCreateItemMiddleware'
@@ -347,7 +358,6 @@ Rails.application.config.outbox.tap do |config|
 end
 
 # my_create_item_middleware.rb
-
 class MyCreateItemMiddleware
   def call(item_class, item_attributes)
     # your code
@@ -357,11 +367,12 @@ class MyCreateItemMiddleware
 end
 ```
 
-Для процесса обработки партиции/батча (`batch process middleware`):
+#### Server middlewares
+
+Example of a batch middleware:
 
 ```ruby
 # config/initializers/outbox.rb
-
 Rails.application.config.outbox.tap do |config|
   config.batch_process_middlewares.push(
     'MyBatchMiddleware'
@@ -369,7 +380,6 @@ Rails.application.config.outbox.tap do |config|
 end
 
 # my_batch_middleware.rb
-
 class MyBatchMiddleware
   def call(job)
     # your code
@@ -379,11 +389,10 @@ class MyBatchMiddleware
 end
 ```
 
-Для процесса обработки каждого item (`item process middleware`):
+Example of an item middleware:
 
 ```ruby
 # config/initializers/outbox.rb
-
 Rails.application.config.outbox.tap do |config|
   config.item_process_middlewares.push(
     'MyItemMiddleware'
@@ -391,7 +400,6 @@ Rails.application.config.outbox.tap do |config|
 end
 
 # my_create_item_middleware.rb
-
 class MyItemMiddleware
   # options[:options] - item.options
   # options[:item_class] - item class
@@ -403,35 +411,9 @@ class MyItemMiddleware
 end
 ```
 
-В любых кейсах, при добавлении двух и более middlewares, порядок выполнения зависит от порядка, заданного в конфигурации гема.
+## Tracing
 
-```ruby
-# config/initializers/outbox.rb
-
-Rails.application.config.outbox.tap do |config|
-  config.item_process_middlewares.push(
-    'MyFirstItemMiddleware', # выполнится первым
-    'MySecondItemMiddleware' # выполнится вторым
-  )
-end
-```
-
-### Tracing
-
-В гем интегрирован опциональный трейсинг opentelemetry. Если в клиентском приложении подключены гемы opentelemetry-*, трейсер будет сконфигурирован автоматически
-
-## Usage
-
-### Create outbox item
-
-```ruby
-transaction do
-  some_record.save!
-
-  result = Sbmt::Outbox::CreateItem.call(MyOutboxItem, attributes: some_attrs)
-  raise result.failure unless result.success?
-end
-```
+The gem is optionally integrated with OpenTelemetry. If your main application has `opentelemetry-*` gems, the tracing will be configured automatically.
 
 ## CLI Arguments
 

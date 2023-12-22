@@ -5,6 +5,7 @@ module Sbmt
     class BaseCreateItem < Outbox::DryInteractor
       param :item_class, reader: :private
       option :attributes, reader: :private
+      option :event_key, reader: :private, optional: true, default: -> { attributes[:event_key] }
       option :partition_by, reader: :private, optional: true, default: -> { attributes[:event_key] }
 
       delegate :box_type, :box_name, :owner, to: :item_class
@@ -15,7 +16,7 @@ module Sbmt
         middlewares.call(item_class, attributes) do
           record = item_class.new(attributes)
 
-          return Failure(:missing_event_key) unless attributes.key?(:event_key)
+          return Failure(:missing_event_key) unless event_key
           return Failure(:missing_partition_by) unless partition_by
 
           res = item_class.config.partition_strategy

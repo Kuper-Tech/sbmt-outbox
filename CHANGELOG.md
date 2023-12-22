@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - re-plugged Schked as an optional dependency
 - replaced Sidekiq with ActiveJob. Don't forget to set `config.active_job.queue_adapter = :sidekiq`
 - accept box names as arguments in maintenance tasks, ex: `rake outbox:retry_failed_items[some/box_item]`
+- rename proto_payload to payload
 
 ### Fixed
 
