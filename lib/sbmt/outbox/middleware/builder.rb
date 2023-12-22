@@ -8,8 +8,8 @@ module Sbmt
           middlewares.each { |middleware| stack << middleware }
         end
 
-        def call(*args, &block)
-          Runner.new(stack.dup).call(*args, &block)
+        def call(...)
+          Runner.new(stack.dup).call(...)
         end
 
         private
