@@ -215,7 +215,7 @@ The database migration will be the same as described at the Outbox pattern.
 
 ```ruby
 # app/models/my_inbox_item.rb
-class MyInboxItem < Sbmt::Inbox::InboxItem
+class MyInboxItem < Sbmt::Outbox::InboxItem
 end
 ```
 
