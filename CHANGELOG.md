@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - replaced Sidekiq with ActiveJob. Don't forget to set `config.active_job.queue_adapter = :sidekiq`
 - accept box names as arguments in maintenance tasks, ex: `rake outbox:retry_failed_items[some/box_item]`
 - rename proto_payload to payload
+- replaced gem fabrication with factory_bot_rails
 
 ### Fixed
 

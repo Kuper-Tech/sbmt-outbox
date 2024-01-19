@@ -42,15 +42,16 @@ ActiveRecord::Base.logger = Rails.logger
 
 require "rspec/rails"
 # Add additional requires below this line. Rails is not loaded until this point!
-require "fabrication"
+require "factory_bot"
 require "yabeda/rspec"
 
 require "sbmt/outbox/instrumentation/open_telemetry_loader"
 
 Dir[Sbmt::Outbox::Engine.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
-Dir[Sbmt::Outbox::Engine.root.join("spec/fabricators/**/*.rb")].sort.each { |f| require f }
+Dir[Sbmt::Outbox::Engine.root.join("spec/factories/**/*.rb")].sort.each { |f| require f }
 
 RSpec.configure do |config|
+  config.include FactoryBot::Syntax::Methods
   config.include ActiveSupport::Testing::TimeHelpers
 
   config.fixture_path = Rails.root.join("spec/fixtures").to_s

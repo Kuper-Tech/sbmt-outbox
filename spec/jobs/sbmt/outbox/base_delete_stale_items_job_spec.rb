@@ -11,7 +11,7 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
     end
   end
 
-  let!(:item) { Fabricate(:outbox_item, created_at: created_at) }
+  let!(:item) { create(:outbox_item, created_at: created_at) }
   let(:created_at) { 1.month.ago }
 
   describe ".enqueue" do

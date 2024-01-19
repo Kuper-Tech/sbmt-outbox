@@ -3,9 +3,9 @@
 describe "rake outbox:delete_failed_items" do
   subject(:task) { Rake::Task["outbox:delete_failed_items"] }
 
-  let!(:outbox_item_a) { Fabricate(:outbox_item, status: :failed, errors_count: 1) }
-  let!(:outbox_item_b) { Fabricate(:outbox_item, status: :failed, errors_count: 1) }
-  let!(:outbox_item_c) { Fabricate(:outbox_item, status: :delivered, errors_count: 0) }
+  let!(:outbox_item_a) { create(:outbox_item, status: :failed, errors_count: 1) }
+  let!(:outbox_item_b) { create(:outbox_item, status: :failed, errors_count: 1) }
+  let!(:outbox_item_c) { create(:outbox_item, status: :delivered, errors_count: 0) }
 
   before do
     task.reenable

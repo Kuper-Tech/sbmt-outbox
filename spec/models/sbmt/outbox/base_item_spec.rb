@@ -2,7 +2,7 @@
 
 describe Sbmt::Outbox::BaseItem do
   describe "#max_retries_exceeded?" do
-    let(:outbox_item) { Fabricate(:outbox_item) }
+    let(:outbox_item) { create(:outbox_item) }
 
     before do
       allow(outbox_item.config).to receive(:max_retries).and_return(1)
@@ -13,7 +13,7 @@ describe Sbmt::Outbox::BaseItem do
     end
 
     context "when item was retried" do
-      let(:outbox_item) { Fabricate(:outbox_item, errors_count: 2) }
+      let(:outbox_item) { create(:outbox_item, errors_count: 2) }
 
       it "has not available retries" do
         expect(outbox_item).to be_max_retries_exceeded
@@ -22,7 +22,7 @@ describe Sbmt::Outbox::BaseItem do
   end
 
   describe "#options" do
-    let(:outbox_item) { Fabricate(:outbox_item) }
+    let(:outbox_item) { create(:outbox_item) }
     let(:dispatched_at_header_name) { Sbmt::Outbox::OutboxItem::DISPATCH_TIME_HEADER_NAME }
 
     it "returns valid options" do
@@ -45,7 +45,7 @@ describe Sbmt::Outbox::BaseItem do
   end
 
   describe "#add_error" do
-    let(:outbox_item) { Fabricate(:outbox_item) }
+    let(:outbox_item) { create(:outbox_item) }
 
     it "saves exception message to record" do
       error = StandardError.new("test-error")
@@ -68,7 +68,7 @@ describe Sbmt::Outbox::BaseItem do
   end
 
   describe "#partition" do
-    let(:outbox_item) { Fabricate.build(:outbox_item, bucket: 3) }
+    let(:outbox_item) { build(:outbox_item, bucket: 3) }
 
     it "returns valid partition" do
       expect(outbox_item.partition).to eq 1
@@ -107,7 +107,7 @@ describe Sbmt::Outbox::BaseItem do
 
   describe "#transports" do
     context "when transport was built by factory" do
-      let(:outbox_item) { Fabricate.build(:outbox_item) }
+      let(:outbox_item) { build(:outbox_item) }
 
       it "returns valid transports" do
         expect(outbox_item.transports.size).to eq 1
@@ -118,7 +118,7 @@ describe Sbmt::Outbox::BaseItem do
     end
 
     context "when transport was built by name" do
-      let(:inbox_item) { Fabricate.build(:inbox_item) }
+      let(:inbox_item) { build(:inbox_item) }
 
       it "returns valid transports" do
         expect(inbox_item.transports.size).to eq 1
@@ -128,7 +128,7 @@ describe Sbmt::Outbox::BaseItem do
     end
 
     context "when transports were selected by event name" do
-      let(:outbox_item) { Fabricate.build(:combined_outbox_item, event_name: "orders_completed") }
+      let(:outbox_item) { build(:combined_outbox_item, event_name: "orders_completed") }
 
       it "returns valid transports" do
         expect(outbox_item.transports.size).to eq 1
