@@ -23,10 +23,10 @@ describe Sbmt::Outbox::Worker do
     # TODO: [Rails 5.1] Database transactions are shared between test threads
     # rubocop:disable RSpec/BeforeAfterAll
     before(:context) do
-      @outbox_item_1 = Fabricate(:outbox_item, event_key: 1, bucket: 0)
-      @outbox_item_2 = Fabricate(:outbox_item, event_key: 2, bucket: 1)
-      @inbox_item_3 = Fabricate(:inbox_item, event_key: 3, bucket: 0)
-      @inbox_item_4 = Fabricate(:inbox_item, event_key: 4, bucket: 1)
+      @outbox_item_1 = create(:outbox_item, event_key: 1, bucket: 0)
+      @outbox_item_2 = create(:outbox_item, event_key: 2, bucket: 1)
+      @inbox_item_3 = create(:inbox_item, event_key: 3, bucket: 0)
+      @inbox_item_4 = create(:inbox_item, event_key: 4, bucket: 1)
     end
 
     after(:context) do
@@ -87,8 +87,8 @@ describe Sbmt::Outbox::Worker do
     # TODO: [Rails 5.1] Database transactions are shared between test threads
     # rubocop:disable RSpec/BeforeAfterAll
     before(:context) do
-      @item_1 = Fabricate(:outbox_item, bucket: 0)
-      @item_2 = Fabricate(:outbox_item, bucket: 0)
+      @item_1 = create(:outbox_item, bucket: 0)
+      @item_2 = create(:outbox_item, bucket: 0)
     end
 
     after(:context) do
@@ -125,7 +125,7 @@ describe Sbmt::Outbox::Worker do
     # TODO: [Rails 5.1] Database transactions are shared between test threads
     # rubocop:disable RSpec/BeforeAfterAll
     before(:context) do
-      @item_1 = Fabricate(:outbox_item)
+      @item_1 = create(:outbox_item)
     end
 
     after(:context) do

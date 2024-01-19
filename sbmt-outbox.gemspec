@@ -43,7 +43,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "appraisal"
   s.add_development_dependency "bundler"
   s.add_development_dependency "combustion"
-  s.add_development_dependency "fabrication"
+  s.add_development_dependency "factory_bot_rails"
   s.add_development_dependency "pg"
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"

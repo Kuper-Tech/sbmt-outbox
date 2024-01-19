@@ -3,7 +3,7 @@
 describe Sbmt::Outbox::RetryStrategies::ExponentialBackoff do
   subject(:result) { described_class.call(outbox_item) }
 
-  let(:outbox_item) { Fabricate(:outbox_item, processed_at: processed_at) }
+  let(:outbox_item) { create(:outbox_item, processed_at: processed_at) }
 
   let(:processed_at) { Time.zone.now }
 

@@ -14,8 +14,3 @@ Dir.chdir(File.expand_path("../..", __dir__)) do
     config.log_level = :info
   end
 end
-
-# require "fabrication"
-# Dir["#{ENGINE_ROOT}/spec/fabricators/**/*.rb"].sort.each { |f| require f }
-# Fabricate(:outbox_item)
-# Fabricate(:inbox_item)
