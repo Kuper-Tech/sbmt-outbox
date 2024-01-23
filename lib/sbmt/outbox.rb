@@ -54,11 +54,11 @@ module Sbmt
     end
 
     def active_record_base_class
-      @active_record_base_class ||= config.active_record_base_class.constantize
+      @active_record_base_class ||= config.active_record_base_class.safe_constantize || ActiveRecord::Base
     end
 
     def active_job_base_class
-      @active_job_base_class ||= config.active_job_base_class.constantize
+      @active_job_base_class ||= config.active_job_base_class.safe_constantize || ActiveJob::Base
     end
 
     def error_tracker
