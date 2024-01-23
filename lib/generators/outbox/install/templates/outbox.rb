@@ -10,12 +10,6 @@ Rails.application.config.outbox.tap do |config|
   # default config paths
   config.paths << Rails.root.join("config/outbox.yml").to_s
 
-  # setup inbox item classes
-  # config.inbox_item_classes << "MyInboxItem"
-
-  # setup outbox item classes
-  # config.outbox_item_classes << "MyOutboxItem"
-
   # setup custom batch process middlewares
   # config.batch_process_middlewares << "MyBatchProcessMiddleware"
 

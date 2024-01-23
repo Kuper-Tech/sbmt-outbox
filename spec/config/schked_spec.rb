@@ -23,7 +23,7 @@ describe Schked do
     end
 
     it "enqueues job" do
-      expect { job.call(false) }.to have_enqueued_job(Sbmt::Outbox::DeleteStaleOutboxItemsJob)
+      expect { job.call(false) }.to have_enqueued_job(Sbmt::Outbox::DeleteStaleOutboxItemsJob).exactly(:twice)
     end
   end
 

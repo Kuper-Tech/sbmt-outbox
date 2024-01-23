@@ -70,11 +70,19 @@ module Sbmt
     end
 
     def outbox_item_classes
-      @outbox_item_classes ||= config.outbox_item_classes.map(&:constantize)
+      @outbox_item_classes ||= if config.outbox_item_classes.empty?
+        (yaml_config[:outbox_items] || {}).keys.map { |name| name.camelize.constantize }
+      else
+        config.outbox_item_classes.map(&:constantize)
+      end
     end
 
     def inbox_item_classes
-      @inbox_item_classes ||= config.inbox_item_classes.map(&:constantize)
+      @inbox_item_classes ||= if config.inbox_item_classes.empty?
+        (yaml_config[:inbox_items] || {}).keys.map { |name| name.camelize.constantize }
+      else
+        config.inbox_item_classes.map(&:constantize)
+      end
     end
 
     def item_classes

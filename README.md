@@ -194,7 +194,6 @@ The `outbox.rb` contains overall general configuration:
 Rails.application.config.outbox.tap do |config|
   config.redis = {url: ENV.fetch("REDIS_URL")} # Redis is used as the coordinator service
   config.paths << Rails.root.join("config/outbox.yml").to_s # configuration file paths, deep merged at the application start, useful with Rails engines
-  config.outbox_item_classes << "MyOutboxItem" # register only used outbox classes defined in the YAML configs
 
   config.process_items.tap do |x|
     x[:general_timeout] = 180 # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
@@ -244,14 +243,6 @@ class ImportOrder
     # some work to create order in the database
     true # mark message as processed
   end
-end
-```
-
-```ruby
-# config/initializers/outbox.rb
-Rails.application.config.outbox.tap do |config|
-  # see main configuration at the Outbox pattern
-  config.inbox_item_classes << "MyInboxItem"
 end
 ```
 

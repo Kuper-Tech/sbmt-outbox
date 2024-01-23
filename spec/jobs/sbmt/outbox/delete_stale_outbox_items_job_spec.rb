@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 describe Sbmt::Outbox::DeleteStaleOutboxItemsJob do
-  it { expect(described_class.item_classes).to eq [OutboxItem] }
+  it { expect(described_class.item_classes).to eq [OutboxItem, CombinedOutboxItem] }
 end
