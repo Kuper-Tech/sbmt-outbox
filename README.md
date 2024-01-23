@@ -197,15 +197,21 @@ Rails.application.config.outbox.tap do |config|
 
   # optional
   config.process_items.tap do |x|
-    x[:general_timeout] = 180 # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
-    x[:cutoff_timeout] = 60 # maximum patch processing time, after which the processing of the patch will be aborted in the current thread, and the next thread that picks up the batch will start processing from the same place
+    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    x[:general_timeout] = 180
+    # maximum patch processing time, after which the processing of the patch will be aborted in the current thread,
+    # and the next thread that picks up the batch will start processing from the same place
+    x[:cutoff_timeout] = 60
+    # batch size
     x[:batch_size] = 200
   end
 
   # optional
   config.worker.tap do |worker|
-    worker[:rate_limit] = 10 # number of batches that one thread will process per rate interval
-    worker[:rate_interval] = 60 # in seconds
+    # number of batches that one thread will process per rate interval
+    worker[:rate_limit] = 10
+    # rate interval in seconds
+    worker[:rate_interval] = 60
   end
 end
 ```
