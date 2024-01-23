@@ -94,7 +94,15 @@ module Sbmt
     end
 
     def yaml_config
-      @yaml_config ||= config.paths.each_with_object({}.with_indifferent_access) do |path, memo|
+      return @yaml_config if defined?(@yaml_config)
+
+      paths = if config.paths.empty?
+        [Rails.root.join("config/outbox.yml").to_s]
+      else
+        config.paths
+      end
+
+      @yaml_config = paths.each_with_object({}.with_indifferent_access) do |path, memo|
         memo.deep_merge!(
           load_yaml(path)
         )

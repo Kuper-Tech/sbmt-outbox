@@ -192,15 +192,17 @@ The `outbox.rb` contains overall general configuration:
 # config/initializers/outbox.rb
 
 Rails.application.config.outbox.tap do |config|
-  config.redis = {url: ENV.fetch("REDIS_URL")} # Redis is used as the coordinator service
-  config.paths << Rails.root.join("config/outbox.yml").to_s # configuration file paths, deep merged at the application start, useful with Rails engines
+  config.redis = {url: ENV.fetch("REDIS_URL")} # Redis is used as a coordinator service
+  config.paths << Rails.root.join("config/outbox.yml").to_s # optional; configuration file paths, deep merged at the application start, useful with Rails engines
 
+  # optional
   config.process_items.tap do |x|
     x[:general_timeout] = 180 # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
     x[:cutoff_timeout] = 60 # maximum patch processing time, after which the processing of the patch will be aborted in the current thread, and the next thread that picks up the batch will start processing from the same place
     x[:batch_size] = 200
   end
 
+  # optional
   config.worker.tap do |worker|
     worker[:rate_limit] = 10 # number of batches that one thread will process per rate interval
     worker[:rate_interval] = 60 # in seconds
