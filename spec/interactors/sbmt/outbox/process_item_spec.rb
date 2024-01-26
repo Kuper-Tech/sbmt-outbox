@@ -6,10 +6,14 @@ describe Sbmt::Outbox::ProcessItem do
 
     let(:max_retries) { 0 }
     let(:producer) { OutboxItem.config.transports[:_all_].first }
+    let(:dummy_middleware_class) { instance_double(Class, new: dummy_middleware) }
+    let(:dummy_middleware) { ->(*_args, &b) { b.call } }
 
     before do
       allow(producer).to receive(:publish).and_return(true)
       allow_any_instance_of(Sbmt::Outbox::OutboxItemConfig).to receive(:max_retries).and_return(max_retries)
+      allow(Sbmt::Outbox).to receive(:item_process_middlewares).and_return([dummy_middleware_class])
+      allow(dummy_middleware).to receive(:call).and_call_original
     end
 
     context "when outbox item is not found in db" do
@@ -20,6 +24,7 @@ describe Sbmt::Outbox::ProcessItem do
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
           .with(/Failed processing outbox item with error: not found/, backtrace: nil)
         expect(result).not_to be_success
+        expect(dummy_middleware).not_to have_received(:call)
         expect(result.failure).to eq :not_found
       end
 
@@ -40,6 +45,7 @@ describe Sbmt::Outbox::ProcessItem do
         expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
         expect(result).not_to be_success
+        expect(dummy_middleware).not_to have_received(:call)
         expect(result.failure).to eq :already_processed
       end
     end
@@ -58,6 +64,11 @@ describe Sbmt::Outbox::ProcessItem do
       it "changes status to failed" do
         result
         expect(outbox_item.reload).to be_failed
+      end
+
+      it "does not call middleware" do
+        result
+        expect(dummy_middleware).not_to have_received(:call)
       end
 
       it "tracks error" do
@@ -80,6 +91,7 @@ describe Sbmt::Outbox::ProcessItem do
         allow(Sbmt::Outbox.logger).to receive(:log_success)
         expect(Sbmt::Outbox.logger).to receive(:log_success).with(/delivered/, any_args)
         expect(result).to be_success
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
         expect(outbox_item.reload).to be_delivered
       end
 
@@ -108,6 +120,11 @@ describe Sbmt::Outbox::ProcessItem do
         expect(outbox_item.reload).to be_failed
       end
 
+      it "calls middleware" do
+        result
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
+      end
+
       it "tracks error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
@@ -129,6 +146,7 @@ describe Sbmt::Outbox::ProcessItem do
           expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
           expect(Sbmt::Outbox.logger).to receive(:log_failure)
           result
+          expect(dummy_middleware).to have_received(:call).with(outbox_item)
           expect(outbox_item.reload).to be_pending
           expect(outbox_item.errors_count).to eq 1
         end
@@ -161,6 +179,11 @@ describe Sbmt::Outbox::ProcessItem do
       it "changes status to failed" do
         result
         expect(outbox_item.reload).to be_failed
+      end
+
+      it "calls middleware" do
+        result
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
       end
 
       it "tracks error" do
@@ -196,6 +219,11 @@ describe Sbmt::Outbox::ProcessItem do
         expect(outbox_item.reload).to be_failed
       end
 
+      it "calls middleware" do
+        result
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
+      end
+
       it "does not remove outbox item" do
         expect { result }.not_to change(OutboxItem, :count)
       end
@@ -210,6 +238,7 @@ describe Sbmt::Outbox::ProcessItem do
 
       it "returns success" do
         expect(result).to be_success
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
         expect(outbox_item.reload).to be_delivered
       end
     end
@@ -225,6 +254,7 @@ describe Sbmt::Outbox::ProcessItem do
         expect(producer).to receive(:call).with(outbox_item, "custom-payload").and_return(true)
 
         expect(result).to be_success
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
         expect(outbox_item.reload).to be_delivered
       end
     end
@@ -240,6 +270,11 @@ describe Sbmt::Outbox::ProcessItem do
       it "doesn't change status to failed" do
         expect { result }.to change { outbox_item.reload.processed_at }
         expect(outbox_item).to be_pending
+      end
+
+      it "calls middleware" do
+        result
+        expect(dummy_middleware).to have_received(:call).with(outbox_item)
       end
 
       it "increment errors count" do
@@ -258,6 +293,11 @@ describe Sbmt::Outbox::ProcessItem do
         it "skips processing" do
           expect(result.failure).to eq :skip_processing
         end
+
+        it "does not call middleware" do
+          result
+          expect(dummy_middleware).not_to have_received(:call)
+        end
       end
 
       context "with the next processing time is less than the current time" do
@@ -271,6 +311,11 @@ describe Sbmt::Outbox::ProcessItem do
 
         it "processes with transport failure" do
           expect(result.failure).to eq :transport_failure
+        end
+
+        it "calls middleware" do
+          result
+          expect(dummy_middleware).to have_received(:call).with(outbox_item)
         end
       end
 
@@ -287,6 +332,11 @@ describe Sbmt::Outbox::ProcessItem do
           expect(result.failure).to eq :discard_item
           expect(outbox_item.reload).to be_discarded
         end
+
+        it "does not call middleware" do
+          result
+          expect(dummy_middleware).not_to have_received(:call)
+        end
       end
 
       context "when retry strategy returns unknown error" do
@@ -301,6 +351,11 @@ describe Sbmt::Outbox::ProcessItem do
         it "fails" do
           expect(result.failure).to eq :retry_strategy_failure
           expect(outbox_item.reload).to be_pending
+        end
+
+        it "does not call middleware" do
+          result
+          expect(dummy_middleware).not_to have_received(:call)
         end
       end
     end

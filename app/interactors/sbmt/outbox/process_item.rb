@@ -9,6 +9,7 @@ module Sbmt
       METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter discarded_counter].freeze
 
       delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
+      delegate :item_process_middlewares, to: "Sbmt::Outbox"
       delegate :box_type, :box_name, :owner, to: :item_class
 
       attr_accessor :process_latency
@@ -32,16 +33,19 @@ module Sbmt
             self.process_latency = Time.current - item.created_at
           end
 
+          middlewares = Middleware::Builder.new(item_process_middlewares)
           payload = yield build_payload(item)
           transports = yield fetch_transports(item)
 
-          transports.each do |transport|
-            yield process_item(transport, item, payload)
+          middlewares.call(item) do
+            transports.each do |transport|
+              yield process_item(transport, item, payload)
+            end
+
+            track_successed(item)
+
+            Success(item)
           end
-
-          track_successed(item)
-
-          Success(item)
         rescue Dry::Monads::Do::Halt => e
           e.result
         rescue => e

@@ -400,9 +400,7 @@ end
 
 # my_create_item_middleware.rb
 class MyItemMiddleware
-  # options[:options] - item.options
-  # options[:item_class] - item class
-  def call(job, item_id, options = {})
+  def call(item)
     # your code
     yield
     # your code

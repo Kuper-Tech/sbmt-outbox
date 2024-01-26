@@ -9,6 +9,12 @@ describe Sbmt::Outbox::Worker do
       concurrency: concurrency
     )
   end
+  let!(:processed_info) {
+    {
+      processed: [],
+      processed_by_thread: Hash.new { |hash, key| hash[key] = [] }
+    }
+  }
 
   around do |block|
     Timeout.timeout(15, &block)
@@ -38,45 +44,29 @@ describe Sbmt::Outbox::Worker do
     # rubocop:enable RSpec/BeforeAfterAll
 
     it "runs in expected order" do
-      processed = []
-      processed_by_thread = Hash.new { |hash, key| hash[key] = [] }
       thread_pool = worker.send(:thread_pool)
+
       thread_1 = nil
       thread_2 = nil
 
       expect(worker).to receive(:process_job).exactly(4).times.and_call_original
 
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @outbox_item_1.id) do |_klass, _id|
-        sleep 3
+      expect_to_process_item(@outbox_item_1, sleep_time: 3) do
         thread_1 = thread_pool.worker_number
-        processed << @outbox_item_1.event_key
-        processed_by_thread[thread_pool.worker_number] << @outbox_item_1.event_key
       end
-
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @outbox_item_2.id) do |_klass, _id|
-        sleep 5
+      expect_to_process_item(@outbox_item_2, sleep_time: 5) do
         thread_2 = thread_pool.worker_number
-        processed << @outbox_item_2.event_key
-        processed_by_thread[thread_pool.worker_number] << @outbox_item_2.event_key
       end
-
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(InboxItem, @inbox_item_3.id) do |_klass, _id|
-        processed << @inbox_item_3.event_key
-        processed_by_thread[thread_pool.worker_number] << @inbox_item_3.event_key
-      end
-
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(InboxItem, @inbox_item_4.id) do |_klass, _id|
+      expect_to_process_item(@inbox_item_3)
+      expect_to_process_item(@inbox_item_4) do
         worker.stop
-
-        processed << @inbox_item_4.event_key
-        processed_by_thread[thread_pool.worker_number] << @inbox_item_4.event_key
       end
 
       worker.start
 
-      expect(processed).to eq [1, 3, 4, 2]
-      expect(processed_by_thread[thread_1]).to eq [1, 3, 4]
-      expect(processed_by_thread[thread_2]).to eq [2]
+      expect(processed_info[:processed]).to eq [1, 3, 4, 2]
+      expect(processed_info[:processed_by_thread][thread_1]).to eq [1, 3, 4]
+      expect(processed_info[:processed_by_thread][thread_2]).to eq [2]
     end
   end
 
@@ -98,23 +88,16 @@ describe Sbmt::Outbox::Worker do
     # rubocop:enable RSpec/BeforeAfterAll
 
     it "requeues job to start processing from last id" do
-      processed = []
-
       allow(worker).to receive(:cutoff_timeout).and_return(2)
 
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id) do |_klass, _id|
-        sleep 3
-        processed << @item_1
-      end
-
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_2.id) do |_klass, _id|
-        processed << @item_2
+      expect_to_process_item(@item_1, sleep_time: 3)
+      expect_to_process_item(@item_2, sleep_time: 3) do
         worker.stop
       end
 
       worker.start
 
-      expect(processed).to eq [@item_1, @item_2]
+      expect(processed_info[:processed]).to eq [@item_1.event_key, @item_2.event_key]
     end
   end
 
@@ -134,7 +117,7 @@ describe Sbmt::Outbox::Worker do
     # rubocop:enable RSpec/BeforeAfterAll
 
     it "does not fail" do
-      expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(OutboxItem, @item_1.id).once do |_klass, _id|
+      expect_to_process_item(@item_1, sleep_time: 3) do
         worker.stop
         raise "test error"
       end
@@ -144,6 +127,21 @@ describe Sbmt::Outbox::Worker do
         .and_call_original
 
       worker.start
+    end
+  end
+
+  def expect_to_process_item(item, sleep_time: nil)
+    expect(Sbmt::Outbox::ProcessItem).to receive(:call).with(item.class, item.id) do |_id|
+      sleep sleep_time if sleep_time
+      yield if block_given?
+
+      next unless processed_info
+
+      processed = processed_info[:processed]
+      processed_by_thread = processed_info[:processed_by_thread]
+
+      processed_info[:processed] << item.event_key if processed
+      processed_by_thread[worker.send(:thread_pool).worker_number] << item.event_key if processed_by_thread
     end
   end
 end
