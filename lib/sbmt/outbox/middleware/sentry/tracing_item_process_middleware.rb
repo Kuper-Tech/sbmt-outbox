@@ -11,15 +11,15 @@ module Sbmt
 
           attr_reader :new_transaction
 
-          def call(job, item_id, _options)
+          def call(item)
             return yield unless ::Sentry.initialized?
 
             scope = ::Sentry.get_current_scope
 
             # transaction will be nil if sentry tracing is not enabled
-            transaction = scope&.get_transaction || start_transaction(scope, job)
-            span = transaction&.start_child(op: op(job), description: "Starting item processing")
-            span&.set_data(:item_id, item_id)
+            transaction = scope&.get_transaction || start_transaction(scope, item.class)
+            span = transaction&.start_child(op: op(item.class), description: "Starting item processing")
+            span&.set_data(:item_id, item.id)
 
             begin
               yield
@@ -42,17 +42,21 @@ module Sbmt
             span.finish
           end
 
-          def start_transaction(scope, job)
+          def start_transaction(scope, item_class)
             @new_transaction = true
-            start_sentry_transaction(scope, op(job), transaction_name(job), job.log_tags)
+            start_sentry_transaction(scope, op(item_class), transaction_name(item_class), tags(item_class))
           end
 
-          def transaction_name(job)
-            "Sbmt.#{job.log_tags[:box_type]&.capitalize}.#{job.log_tags[:box_name]&.capitalize}"
+          def transaction_name(item_class)
+            "Sbmt.#{item_class.box_type.capitalize}.#{item_class.box_name.capitalize}"
           end
 
-          def op(job)
-            "sbmt.#{job.log_tags[:box_type]&.downcase}.item_process"
+          def tags(item_class)
+            {box_type: item_class.box_type, box_name: item_class.box_name}
+          end
+
+          def op(item_class)
+            "sbmt.#{item_class.box_type.downcase}.item_process"
           end
         end
       end

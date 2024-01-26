@@ -3,13 +3,8 @@
 describe Sbmt::Outbox::Middleware::OpenTelemetry::TracingItemProcessMiddleware do
   let(:tracer) { double("tracer") } # rubocop:disable RSpec/VerifiedDoubles
   let(:instrumentation_instance) { double("instrumentation instance") } # rubocop:disable RSpec/VerifiedDoubles
-  let(:headers) { {} }
-  let(:options) do
-    {
-      item_class: InboxItem,
-      options: {headers: headers}
-    }
-  end
+  let(:headers) { {"SOME_TELEMETRY_HEADER" => "telemetry_value"} }
+  let(:inbox_item) { create(:inbox_item, options: {headers: headers}) }
 
   before do
     allow(::Sbmt::Outbox::Instrumentation::OpenTelemetryLoader).to receive(:instance).and_return(instrumentation_instance)
@@ -24,11 +19,11 @@ describe Sbmt::Outbox::Middleware::OpenTelemetry::TracingItemProcessMiddleware d
         "messaging.operation" => "process",
         "messaging.outbox.box_name" => "inbox_item",
         "messaging.outbox.box_type" => "inbox",
-        "messaging.outbox.item_id" => "1",
+        "messaging.outbox.item_id" => inbox_item.id.to_s,
         "messaging.system" => "outbox"
       }).and_yield
-      expect(::OpenTelemetry.propagation).to receive(:extract).with(headers)
-      described_class.new.call("job", 1, options) {}
+      expect(::OpenTelemetry.propagation).to receive(:extract).with(a_hash_including(headers))
+      described_class.new.call(inbox_item) {}
     end
   end
 end

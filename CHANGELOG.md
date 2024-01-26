@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - accept box names as arguments in maintenance tasks, ex: `rake outbox:retry_failed_items[some/box_item]`
 - rename proto_payload to payload
 - replaced gem fabrication with factory_bot_rails
+- now item_process_middlewares is only called if `Sbmt::Outbox::Item` is actually being processed
+- changed item_process_middlewares call signature: `item` is passed to `#call` method instead of `item_id`, `job` and `options` parameter are removed
 
 ### Fixed
 
