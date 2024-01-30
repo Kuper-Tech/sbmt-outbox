@@ -10,7 +10,6 @@ module Outbox
       class_option :kind, type: :string, desc: "Either inbox or outbox", banner: "inbox/outbox", required: true
       class_option :skip_migration, type: :boolean, default: false, desc: "Skip creating migration"
       class_option :skip_model, type: :boolean, default: false, desc: "Skip creating model class"
-      class_option :skip_initializer, type: :boolean, default: false, desc: "Skip modifying config/initializers/outbox.rb"
       class_option :skip_config, type: :boolean, default: false, desc: "Skip modifying config/outbox.yml"
       class_option :skip_values, type: :boolean, default: false, desc: "Skip modifying configs/values.yaml"
 
@@ -47,12 +46,6 @@ module Outbox
         return if options[:skip_model]
 
         template "#{options[:kind]}_item.rb", File.join("app/models", "#{item_path}.rb")
-      end
-
-      def patch_initializer
-        return if options[:skip_initializer]
-
-        add_item_to_initializer("config.#{options[:kind]}_item_classes")
       end
 
       def patch_config
