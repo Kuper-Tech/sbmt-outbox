@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.email = ["mikhail.merkushin@sbermarket.ru"]
   s.summary = "Outbox service"
   s.description = "A service that uses a relational database inserts messages/events into an outbox table as part of the local transaction."
+  s.homepage = "https://github.com/SberMarket-Tech/sbmt-outbox"
 
   s.files = Dir["{app,config,lib,exe}/**/*", "Rakefile", "README.md"]
   s.bindir = "exe"
