@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "helpers/alerts"
 require_relative "helpers/config"
 require_relative "helpers/initializer"
 require_relative "helpers/items"

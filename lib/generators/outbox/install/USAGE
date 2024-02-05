@@ -8,5 +8,3 @@ Example:
       Outboxfile
       config/initializers/outbox.rb
       config/outbox.yml
-    This will modify:
-      configs/alerts.yaml

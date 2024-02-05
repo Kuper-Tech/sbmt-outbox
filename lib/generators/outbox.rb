@@ -6,7 +6,6 @@ require_relative "helpers"
 module Outbox
   module Generators
     class Base < Rails::Generators::Base
-      include Helpers::Alerts
       include Helpers::Config
       include Helpers::Initializer
       include Helpers::Paas
