@@ -7,6 +7,7 @@ require "sbmt/outbox/version"
 
 Gem::Specification.new do |s|
   s.name = "sbmt-outbox"
+  s.license = "MIT"
   s.version = Sbmt::Outbox::VERSION
   s.authors = ["Sbermarket Ruby-Platform Team"]
   s.email = ["mikhail.merkushin@sbermarket.ru"]
