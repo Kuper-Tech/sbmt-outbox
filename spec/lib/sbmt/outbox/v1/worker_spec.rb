@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-require "sbmt/outbox/worker"
+require "sbmt/outbox/v1/worker"
 
-describe Sbmt::Outbox::Worker do
+# rubocop:disable RSpec/InstanceVariable
+describe Sbmt::Outbox::V1::Worker do
   let(:worker) do
     described_class.new(
       boxes: boxes,
@@ -145,3 +146,4 @@ describe Sbmt::Outbox::Worker do
     end
   end
 end
+# rubocop:enable RSpec/InstanceVariable

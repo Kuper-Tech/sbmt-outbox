@@ -25,7 +25,7 @@ module Sbmt
       def start
         load_environment
 
-        worker = Sbmt::Outbox::Worker.new(
+        worker = Sbmt::Outbox::V1::Worker.new(
           boxes: format_boxes(options[:box]),
           concurrency: options[:concurrency]
         )
@@ -49,7 +49,7 @@ module Sbmt
         load(lookup_outboxfile)
 
         require "sbmt/outbox"
-        require "sbmt/outbox/worker"
+        require "sbmt/outbox/v1/worker"
       end
 
       def lookup_outboxfile
