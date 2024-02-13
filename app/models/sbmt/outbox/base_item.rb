@@ -20,15 +20,16 @@ module Sbmt
           @config ||= lookup_config.new(box_name)
         end
 
+        def calc_bucket_partitions(count)
+          (0...count).to_a
+            .each_with_object({}) do |x, m|
+            m[x] = (0...config.bucket_size).to_a
+              .select { |p| p % count == x }
+          end
+        end
+
         def partition_buckets
-          @partition_buckets ||=
-            (0...config.partition_size)
-              .to_a
-              .each_with_object({}) do |x, m|
-                m[x] = (0...config.bucket_size)
-                  .to_a
-                  .select { |p| p % config.partition_size == x }
-              end
+          @partition_buckets ||= calc_bucket_partitions(config.partition_size)
         end
 
         def bucket_partitions

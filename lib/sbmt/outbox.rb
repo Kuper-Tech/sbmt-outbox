@@ -53,6 +53,10 @@ module Sbmt
       @logger ||= Sbmt::Outbox::Logger.new
     end
 
+    def worker_config_v2
+      @worker_config_v2 ||= config.worker_v2
+    end
+
     def active_record_base_class
       @active_record_base_class ||= config.active_record_base_class.safe_constantize || ActiveRecord::Base
     end
