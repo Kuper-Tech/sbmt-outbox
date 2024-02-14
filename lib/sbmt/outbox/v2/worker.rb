@@ -2,6 +2,7 @@
 
 require "redlock"
 require "sbmt/outbox/v2/poller"
+require "sbmt/outbox/v2/processor"
 
 module Sbmt
   module Outbox
@@ -12,7 +13,7 @@ module Sbmt
         end
 
         def start
-          poller.start
+          @poller.start
 
           # TODO: processor.start
           # TODO: non-blocking start

@@ -2,6 +2,7 @@
 
 require "redlock"
 require "sbmt/outbox/v2/partitioned_box_processor"
+require "sbmt/outbox/v2/redis_job"
 
 module Sbmt
   module Outbox
@@ -35,7 +36,7 @@ module Sbmt
           lock_manager.lock("#{task.resource_path}:lock", poller_config.general_timeout * 1000) do |locked|
             if locked
               ::Rails.application.executor.wrap do
-                # TODO: process poll task
+                poll(task)
               end
             else
               result = ThreadPool::SKIPPED
@@ -46,6 +47,30 @@ module Sbmt
         end
 
         private
+
+        def poll(task)
+          Outbox.database_switcher.use_slave do
+            item_class = task.item_class
+            ids_per_bucket = item_class
+              .for_processing
+              .where(bucket: task.buckets)
+              .order(id: :asc)
+              .limit(poller_config.batch_size)
+              .pluck(:bucket, :id)
+              # hash: bucket => [id1, id2, id3] (with preserved ids order)
+              .group_by { |bucket, _| bucket }
+              .transform_values { |pairs| pairs.map { |_, id| id } }
+
+            push_to_redis(item_class, ids_per_bucket) if ids.present?
+          end
+        end
+
+        def push_to_redis(item_class, ids_per_bucket)
+          ids_per_bucket.each do |bucket, ids|
+            redis_job = RedisJob.new(item_class.name, bucket, ids)
+            redis.call("LPUSH", "#{item_class.name}:job_queue", redis_job.serialize)
+          end
+        end
 
         def poller_config
           worker_config_v2.poller

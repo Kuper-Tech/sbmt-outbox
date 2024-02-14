@@ -28,8 +28,8 @@ module Sbmt
         c.worker_v2 = ActiveSupport::OrderedOptions.new.tap do |c|
           c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
             pc.concurrency = 6
-            pc.general_timeout = 180
-            pc.cutoff_timeout = 60
+            pc.threads_count = 1
+            pc.general_timeout = 30
             pc.batch_size = 200
           end
         end

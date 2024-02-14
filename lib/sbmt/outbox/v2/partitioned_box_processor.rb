@@ -7,6 +7,7 @@ module Sbmt
     module V2
       class PartitionedBoxProcessor
         delegate :alive?, to: :thread_pool
+        delegate logger, to: "Sbmt::Outbox"
 
         Task = Struct.new(
           :item_class,
@@ -15,7 +16,15 @@ module Sbmt
           :resource_key,
           :resource_path,
           keyword_init: true
-        )
+        ) do
+          def log_tags
+            {
+              box_type: item_class.box_type,
+              box_name: item_class.box_name,
+              box_partition: partition
+            }
+          end
+        end
 
         def initialize(boxes:, partitions_count:, threads_count:, name: "abstract_worker", throttler: nil)
           @queue = build_task_queue(boxes)
@@ -38,12 +47,8 @@ module Sbmt
           thread_pool.start do |worker_number, task|
             result = ThreadPool::PROCESSED
 
-            logger.with_tags(
-              box_type: task.item_class.box_type,
-              box_name: task.item_class.box_name,
-              box_partition: task.partition
-            ) do
-              result = process_task(worker_number, task)
+            logger.with_tags(**task.log_tags) do
+              result = safe_process_task(worker_number, task)
             end
 
             result
@@ -58,16 +63,20 @@ module Sbmt
         end
 
         def ready?
-          started && thread_workers.any?
+          started
         end
 
-        def alive?
+        def alive?(timeout)
           return false unless started
 
-          deadline = Time.current - general_timeout
-          thread_workers.all? do |_worker_number, time|
-            deadline < time
-          end
+          @thread_pool.alive?(timeout)
+        end
+
+        def safe_process_task(worker_number, task)
+          process_task(worker_number, task)
+        rescue => e
+          log_fatal(e, task, worker_number)
+          track_fatal(e, task, worker_number)
         end
 
         def process_task(_worker_number, _task)
@@ -98,6 +107,19 @@ module Sbmt
           res.shuffle!
 
           Queue.new(res)
+        end
+
+        def log_fatal(e, task, worker_number)
+          backtrace = e.backtrace.join("\n") if e.respond_to?(:backtrace)
+
+          logger.log_error(
+            "Failed processing #{task.resource_key} with error: #{e.class} #{e.message}",
+            backtrace: backtrace
+          )
+        end
+
+        def track_fatal(e, task, worker_number)
+          Outbox.error_tracker.error(e, **task.log_tags)
         end
       end
     end
