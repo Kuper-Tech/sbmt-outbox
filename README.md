@@ -199,7 +199,7 @@ Rails.application.config.outbox.tap do |config|
   config.process_items.tap do |x|
     # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
     x[:general_timeout] = 180
-    # maximum patch processing time, after which the processing of the patch will be aborted in the current thread,
+    # maximum batch processing time, after which the processing of the batch will be aborted in the current thread,
     # and the next thread that picks up the batch will start processing from the same place
     x[:cutoff_timeout] = 60
     # batch size
@@ -298,7 +298,7 @@ Depending on which data type is used in the `event_key`, it is necessary to choo
 
 #### Number partitioning
 
-This strategy should be used when `event_key` contains a number, for example `52523` or `some-chars-123`. All characters taht are not numbers will be deleted, and only numbers will remain. The strategy is used by default.
+This strategy should be used when `event_key` contains a number, for example `52523` or `some-chars-123`. All characters that are not numbers will be deleted, and only numbers will remain. The strategy is used by default.
 
 ```yaml
 # config/outbox.yml
