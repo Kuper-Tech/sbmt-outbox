@@ -29,8 +29,9 @@ module Sbmt
           c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
             pc.concurrency = 6
             pc.threads_count = 1
-            pc.general_timeout = 30
-            pc.batch_size = 200
+            pc.general_timeout = 60
+            pc.regular_items_batch_size = 200
+            pc.retryable_items_batch_size = 100
           end
         end
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"

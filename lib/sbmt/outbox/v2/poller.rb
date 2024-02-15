@@ -13,7 +13,7 @@ module Sbmt
         def initialize(boxes)
           super(
             boxes: boxes, partitions_count: poller_config.concurrency,
-            threads_count: 1, name: "poller"
+            threads_count: poller_config.threads_count, name: "poller"
           )
           init_redis
         end
@@ -49,26 +49,59 @@ module Sbmt
         private
 
         def poll(task)
+          lock_timer = Cutoff.new(general_timeout)
+          last_id = 0
+
           Outbox.database_switcher.use_slave do
-            item_class = task.item_class
-            ids_per_bucket = item_class
+            item_class = job.item_class
+
+            scope = item_class
               .for_processing
               .where(bucket: task.buckets)
-              .order(id: :asc)
-              .limit(poller_config.batch_size)
-              .pluck(:bucket, :id)
-              # hash: bucket => [id1, id2, id3] (with preserved ids order)
-              .group_by { |bucket, _| bucket }
-              .transform_values { |pairs| pairs.map { |_, id| id } }
+              .select(:id, :bucket, :processed_at)
 
-            push_to_redis(item_class, ids_per_bucket) if ids.present?
+            regular_count = 0
+            retryable_count = 0
+
+            # single buffer to preserve item's positions
+            poll_buffer = {}
+
+            scope.find_each(batch_size: poller_config.regular_items_batch_size) do |item|
+              last_id = item.id
+
+              if item.processed_at
+                # skip if retryable buffer capacity limit reached
+                next if retryable_count >= poller_config.retryable_items_batch_size
+
+                poll_buffer[item.bucket] ||= []
+                poll_buffer[item.bucket] << item.id
+
+                retryable_count += 1
+              else
+                poll_buffer[item.bucket] ||= []
+                poll_buffer[item.bucket] << item.id
+
+                regular_count += 1
+              end
+
+              lock_timer.checkpoint!
+
+              # regular items have priority over retryable ones
+              break if regular_count >= poller_config.regular_items_batch_size
+            end
+
+            push_to_redis(item_class, poll_buffer) if poll_buffer.present?
           end
+        rescue Cutoff::CutoffExceededError
+          logger.log_info("Lock timeout while processing #{task.resource_key} at id #{last_id}")
         end
 
         def push_to_redis(item_class, ids_per_bucket)
-          ids_per_bucket.each do |bucket, ids|
-            redis_job = RedisJob.new(item_class.name, bucket, ids)
-            redis.call("LPUSH", "#{item_class.name}:job_queue", redis_job.serialize)
+          redis.pipelined do |conn|
+            ids_per_bucket.each do |bucket, ids|
+              redis_job = RedisJob.new(item_class.name, bucket, ids)
+              conn.call("LPUSH", "#{item_class.name}:job_queue", redis_job.serialize)
+            end
           end
         end
 
