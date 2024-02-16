@@ -7,7 +7,7 @@ module Sbmt
     module V2
       class PartitionedBoxProcessor
         delegate :alive?, to: :thread_pool
-        delegate logger, to: "Sbmt::Outbox"
+        delegate :config, :logger, to: "Sbmt::Outbox"
 
         Task = Struct.new(
           :item_class,
@@ -26,10 +26,11 @@ module Sbmt
           end
         end
 
-        def initialize(boxes:, partitions_count:, threads_count:, name: "abstract_worker", throttler: nil)
-          @queue = build_task_queue(boxes)
+        def initialize(boxes:, partitions_count:, threads_count:, lock_timeout:, name: "abstract_worker", throttler: nil)
           @partitions_count = partitions_count
+          @lock_timeout = lock_timeout
           @worker_name = name
+          @queue = build_task_queue(boxes)
           @thread_pool = ThreadPool.new(
             concurrency: threads_count,
             name: "#{name}_thread_pool",
@@ -38,6 +39,8 @@ module Sbmt
             queue.pop
           end
           @started = false
+
+          init_redis
         end
 
         def start
@@ -47,8 +50,16 @@ module Sbmt
           thread_pool.start do |worker_number, task|
             result = ThreadPool::PROCESSED
 
-            logger.with_tags(**task.log_tags) do
-              result = safe_process_task(worker_number, task)
+            lock_manager.lock("#{task.resource_path}:lock", lock_timeout * 1000) do |locked|
+              logger.with_tags(**task.log_tags) do
+                if locked
+                  ::Rails.application.executor.wrap do
+                    result = safe_process_task(worker_number, task) || ThreadPool::PROCESSED
+                  end
+                else
+                  result = ThreadPool::SKIPPED
+                end
+              end
             end
 
             result
@@ -85,13 +96,25 @@ module Sbmt
 
         private
 
-        attr_accessor :queue, :started, :thread_pool, :partitions_count, :worker_name
+        attr_accessor :queue, :started, :thread_pool, :partitions_count, :worker_name, :lock_timeout, :redis, :lock_manager
+
+        def init_redis
+          self.redis = ConnectionPool::Wrapper.new(size: partitions_count) { RedisClientFactory.build(config.redis) }
+
+          client = if Gem::Version.new(Redlock::VERSION) >= Gem::Version.new("2.0.0")
+            redis
+          else
+            ConnectionPool::Wrapper.new(size: partitions_count) { Redis.new(config.redis) }
+          end
+
+          self.lock_manager = Redlock::Client.new([client], retry_count: 0)
+        end
 
         def build_task_queue(boxes)
           res = boxes.map do |item_class|
             schedule_concurrency = (0...partitions_count).to_a
             schedule_concurrency.map do |partition|
-              buckets = item_class.calc_bucket_partitions(partition).fetch(partition)
+              buckets = item_class.calc_bucket_partitions(partitions_count).fetch(partition)
               resource_key = "#{item_class.box_name}:#{partition}"
 
               Task.new(

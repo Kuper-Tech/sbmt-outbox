@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "sbmt/outbox/throttler/base"
+require "sbmt/outbox/v2/thread_pool_throttler/base"
 
 module Sbmt
   module Outbox
