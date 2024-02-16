@@ -2,6 +2,7 @@
 
 require "sbmt/outbox/v2/poller"
 
+# rubocop:disable RSpec/IndexedLet
 describe Sbmt::Outbox::V2::Poller do
   let(:boxes) { [OutboxItem, InboxItem] }
   let(:regular_batch_size) { 2 }
@@ -94,3 +95,4 @@ describe Sbmt::Outbox::V2::Poller do
     end
   end
 end
+# rubocop:enable RSpec/IndexedLet

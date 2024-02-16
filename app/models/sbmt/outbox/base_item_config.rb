@@ -50,7 +50,7 @@ module Sbmt
         return @retry_strategies if defined?(@retry_strategies)
 
         configured_strategies = options[:retry_strategies]
-        strategies = (configured_strategies.presence || %w[exponential_backoff latest_available])
+        strategies = configured_strategies.presence || %w[exponential_backoff latest_available]
 
         @retry_strategies ||= Array.wrap(strategies).map do |str_name|
           "Sbmt::Outbox::RetryStrategies::#{str_name.camelize}".constantize
