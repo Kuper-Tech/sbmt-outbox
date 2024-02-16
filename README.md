@@ -278,7 +278,7 @@ outbox_items:
 
 #### Compacted log
 
-This strategy should be used when [Kafka log compaction](https://docs.aiven.io/docs/products/kafka/concepts/log-compaction) is enabled.
+This strategy ensures idempotency. In short, if a message fails and a later message with the same event_key has already been delivered, then you most likely do not want to re-deliver the first one when it is retried.
 
 ```yaml
 # config/outbox.yml
@@ -290,7 +290,7 @@ outbox_items:
       - compacted_log
 ```
 
-The exponential_backoff strategy should be used with the compacted_log strategy, and it should go last to minimize the number of queries to the database.
+The exponential backoff strategy should be used in conjunction with the compact log strategy, and it should come last to minimize the number of database queries.
 
 ### Partition strategies
 
