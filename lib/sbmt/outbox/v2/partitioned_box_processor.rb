@@ -111,7 +111,7 @@ module Sbmt
         end
 
         def build_task_queue(boxes)
-          res = boxes.map do |item_class|
+          tasks = boxes.map do |item_class|
             schedule_concurrency = (0...partitions_count).to_a
             schedule_concurrency.map do |partition|
               buckets = item_class.calc_bucket_partitions(partitions_count).fetch(partition)
@@ -127,9 +127,8 @@ module Sbmt
             end
           end.flatten
 
-          res.shuffle!
-
-          Queue.new(res)
+          tasks.shuffle!
+          Queue.new.tap { |queue| tasks.each { |task| queue << task } }
         end
 
         def log_fatal(e, task, worker_number)
