@@ -1,3 +1,6 @@
+[![Gem Version](https://badge.fury.io/rb/sbmt-outbox.svg)](https://badge.fury.io/rb/sbmt-outbox)
+[![Build Status](https://github.com/SberMarket-Tech/sbmt-outbox/workflows/Ruby/badge.svg?branch=master)](https://github.com/SberMarket-Tech/sbmt-outbox/actions?query=branch%3Amaster)
+
 # Sbmt-Outbox
 
 Microservices often publish messages after a transaction is committed. Writing to the database and publishing the message are two separate transactions, so they must be atomic. An unsuccessful publication of a message can lead to critical failure of the business process.
