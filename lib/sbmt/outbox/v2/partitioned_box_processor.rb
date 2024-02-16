@@ -129,7 +129,7 @@ module Sbmt
 
           res.shuffle!
 
-          Thread::Queue.new(res)
+          Queue.new(res)
         end
 
         def log_fatal(e, task, worker_number)
