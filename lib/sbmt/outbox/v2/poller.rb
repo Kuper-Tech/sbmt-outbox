@@ -8,16 +8,16 @@ module Sbmt
   module Outbox
     module V2
       class Poller < PartitionedBoxProcessor
-        delegate :worker_config_v2, :logger, to: "Sbmt::Outbox"
+        delegate :poller_config, :logger, to: "Sbmt::Outbox"
         attr_reader :partitions_count, :threads_count, :lock_timeout, :regular_items_batch_size, :retryable_items_batch_size
 
         def initialize(
           boxes,
-          partitions_count: worker_config_v2.poller.concurrency,
-          threads_count: worker_config_v2.poller.threads_count,
-          lock_timeout: worker_config_v2.poller.general_timeout,
-          regular_items_batch_size: worker_config_v2.poller.regular_items_batch_size,
-          retryable_items_batch_size: worker_config_v2.poller.retryable_items_batch_size
+          partitions_count: poller_config.concurrency,
+          threads_count: poller_config.threads_count,
+          lock_timeout: poller_config.general_timeout,
+          regular_items_batch_size: poller_config.regular_items_batch_size,
+          retryable_items_batch_size: poller_config.retryable_items_batch_size
         )
           super(
             boxes: boxes,

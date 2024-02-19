@@ -53,8 +53,8 @@ module Sbmt
       @logger ||= Sbmt::Outbox::Logger.new
     end
 
-    def worker_config_v2
-      @worker_config_v2 ||= config.worker_v2
+    def poller_config
+      @poller_config ||= config.poller
     end
 
     def active_record_base_class
