@@ -3,9 +3,9 @@
 
 # Sbmt-Outbox
 
-Microservices often publish messages after a transaction is committed. Writing to the database and publishing the message are two separate transactions, so they must be atomic. An unsuccessful publication of a message can lead to critical failure of the business process.
+Microservices often publish messages after a transaction has been committed. Writing to the database and publishing a message are two separate transactions, so they must be atomic. A failed publication of a message could lead to a critical failure of the business process.
 
-Outbox pattern provides a reliable solution for message publication. The idea of this approach is to have an "outgoing messages table" in the service database. Before the main transaction finishes, a message row is inserted in this table. Thus, two actions are performed as part of a single transaction. An asynchronous process pulls new rows from the database table, and if they exist it publishes messages to the broker.
+The Outbox pattern provides a reliable solution for message publishing. The idea behind this approach is to have an "outgoing message table" in the service's database. Before the main transaction completes, a new message row is added to this table. As a result, two actions take place as part of a single transaction. An asynchronous process retrieves new rows from the database table and, if they exist, publishes the messages to the broker.
 
 Read more about the Outbox pattern at https://microservices.io/patterns/data/transactional-outbox.html
 
@@ -25,9 +25,9 @@ bundle install
 
 ## Auto configuration
 
-We recommend going through configuration and files creation with the following Rails generators.
+We recommend going through the configuration and files creation process using the following Rails generators:
 
-Each generator can be run using the `--help` option to learn more about the available arguments.
+Each generator can be run by using the `--help` option to learn more about the available arguments.
 
 ### Initial configuration
 
@@ -39,18 +39,18 @@ rails g outbox:install
 
 ### Outbox/inbox items creation
 
-An Active Record model for the outbox/inbox item can be generated like this:
+An ActiveRecord model can be generated for the outbox/ inbox item like this:
 
 ```shell
 rails g outbox:item MaybeNamespaced::SomeOutboxItem --kind outbox
 rails g outbox:item MaybeNamespaced::SomeInboxItem --kind inbox
 ```
 
-In the result, a migration and a model will be created, and the `outbox.yml` file will be configured.
+As the result, a migration and a model will be created and the `outbox.yml` file configured.
 
 ### Transport creation
 
-A transport — is a class that will be invoked while processing the specific outbox/inbox item. The transport must return a boolean value or a Dry monads result.
+A transport is a class that is invoked while processing a specific outbox or inbox item. The transport must return either a boolean value or a dry monad result.
 
 ```shell
 rails g outbox:transport MaybeNamespaced::SomeOutboxItem some/transport/name --kind outbox
@@ -59,7 +59,7 @@ rails g outbox:transport MaybeNamespaced::SomeInboxItem some/transport/name --ki
 
 ## Usage
 
-To create an outbox item, you should call an interactor with the item model class and `event_key`. The last one will be the partitioning key.
+To create an Outbox item, you should call the Interactor with the Item Model Class and `event_key` as arguments. The latter will be the Partitioning Key.
 
 ```ruby
 transaction do
@@ -85,7 +85,7 @@ end
 
 We use [Yabeda](https://github.com/yabeda-rb/yabeda) to collect [all kind of metrics](./config/initializers/yabeda.rb).
 
-Example of Grafana Dashboard that you can import [from a file](./examples/grafana-dashboard.json):
+Example of a Grafana dashboard that you can import [from a file](./examples/grafana-dashboard.json):
 
 ![Grafana Dashboard](./examples/outbox-grafana-preview.png)
 
@@ -95,7 +95,7 @@ Example of Grafana Dashboard that you can import [from a file](./examples/grafan
 
 ### Outbox pattern
 
-You should create a database table in order for the process to see your outgoing messages.
+You should create a database table in order for the process to view your outgoing messages.
 
 ```ruby
 create_table :my_outbox_items do |t|
@@ -118,7 +118,7 @@ add_index :my_outbox_items, [:event_name, :event_key]
 add_index :my_outbox_items, :created_at
 ```
 
-You can combine several types of messages in the single table. For that, you should define an `event_name` column in the table. This approach is justified only if it is assumed that there will not be very many events, and such events will have the same retention and retry policies.
+You can combine various types of messages within a single table. To do this, you should include an `event_name` field in the table. However, this approach is only justified if it is assumed that there won't be many events, and those events will follow the same retention and retry policy.
 
 ```ruby
 # app/models/my_outbox_item.rb
@@ -127,7 +127,8 @@ class MyOutboxItem < Sbmt::Outbox::OutboxItem
 end
 ```
 
-The `outbox.yml` config is a main config for the gem where are located parameters for each outbox/inbox item class.
+#### outbox.yml
+The `outbox.yml` configuration file is the main configuration for the gem, where parameters for each outbox/inbox item are located.
 
 ```yaml
 # config/outbox.yml
@@ -173,9 +174,9 @@ class ProduceMessage
 end
 ```
 
-If you use Kafka as a transport, it is recommended to use the sbmt-kafka_producer gem for this.
+**If you use Kafka as a transport, it is recommended that you use the [`sbmt-kafka_producer`](https://github.com/SberMarket-Tech/sbmt-kafka_producer) gem for this purpose.**
 
-The transports are defined in the following format when `event_name` is used:
+Transports are defined as follows when `event_name` is used:
 
 ```yaml
 outbox_items:
@@ -189,7 +190,9 @@ outbox_items:
         topic: "orders_completed_topic"
 ```
 
-The `outbox.rb` contains overall general configuration:
+#### outbox.rb
+
+The `outbox.rb` file contains the overall general configuration.
 
 ```ruby
 # config/initializers/outbox.rb
@@ -221,7 +224,7 @@ end
 
 ### Inbox pattern
 
-The database migration will be the same as described at the Outbox pattern.
+The database migration will be the same as described in the Outbox pattern.
 
 ```ruby
 # app/models/my_inbox_item.rb
@@ -257,15 +260,15 @@ class ImportOrder
 end
 ```
 
-If you use Kafka, it is recommended to use the sbmt-kafka_consumer gem for this.
+**If you use Kafka, it is recommended that you use the [`sbmt-kafka_consumer`](https://github.com/SberMarket-Tech/sbmt-kafka_consumer) gem for this purpose.**
 
 ### Retry strategies
 
-The gem uses several types of strategies to repeat a message processing in case of an error. Strategies can be combined — they will be launched in turn. Each strategy makes one of three decisions: process a message; skip processing a message; skip processing and mark message as skipped for future processing.
+The gem uses several types of retry strategies to repeat message processing if an error occurs. These strategies can be combined and will be executed one after the other. Each retry strategy takes one of three actions: to process the message, to skip processing the message or to skip processing and mark the message as "skipped" for future processing.
 
 #### Exponential backoff
 
-This strategy periodically retries a failed messages with increasing delays between message processing.
+This strategy periodically attempts to resend failed messages, with increasing delays in between each attempt.
 
 ```yaml
 # config/outbox.yml
@@ -297,11 +300,11 @@ The exponential backoff strategy should be used in conjunction with the compact 
 
 ### Partition strategies
 
-Depending on which data type is used in the `event_key`, it is necessary to choose the right partition strategy.
+Depending on which type of data is used in the `event_key`, it is necessary to choose the right partitioning strategy.
 
 #### Number partitioning
 
-This strategy should be used when `event_key` contains a number, for example `52523` or `some-chars-123`. All characters that are not numbers will be deleted, and only numbers will remain. The strategy is used by default.
+This strategy should be used when the `event_key` field contains a number. For example, it could be `52523`, or `some-chars-123`. Any characters that aren't numbers will be removed, and only the numbers will remain. This strategy is used as a default.
 
 ```yaml
 # config/outbox.yml
@@ -313,7 +316,7 @@ outbox_items:
 
 #### Hash partitioning
 
-This strategy should be used when `event_key` is a string or uuid.
+This strategy should be used when the `event_key` is a string or uuid.
 
 ```yaml
 # config/outbox.yml
@@ -325,19 +328,19 @@ outbox_items:
 
 ## Concurrency
 
-Outbox Daemon CLI uses Ruby threads for concurrent processing of messages pulled from the database table. The number of threads is configures using a `--concurrency` option. By default it's 10 unless the param is provided. You can run several daemons at the same time. The number of partitions per outbox item class is set by `partition_size` config option. Each outbox item partition will be processed one at a time by some daemon. Each partition batch serves several buckets. The bucket is a number in the row in the `bucket` column generated by the partition strategy based on `event_key` column when the message was committed to the database in the range from zero to `bucket_size`. Thus, each outbox table has several partitions which has several buckets. Take a note, you must not to have `partition_size` larger then `bucket_size`. This architecture was made to have an ability to scale daemons without stopping of the entire system to avoid mixing messages in chronological order. So, if you need more partitions, you should just stop the daemons, configure `partition_size`, and start them again.
+The Outbox executable CLI uses Ruby threads for concurrent processing of messages pulled from the database table. The number of threads is configured using the `--concurrency` option. By default, it's 10 unless a parameter is provided. You can run multiple daemons at once. The number of partitions for each outbox item class is set by the `partition_size` configuration option. Each partition is processed one at a time by a daemon. Each batch of partitions serves several buckets. A bucket is a number in a row in the `bucket` column generated by the partitioning strategy based on the `event_key` column when a message was committed to the database within the range of zero to `bucket_size`. Therefore, each outbox table has many partitions that contain several buckets. Note that you must not have `partition_size` greater than `bucket_size.` This architecture was designed to allow the daemons to scale without stopping the entire system in order to avoid mixing messages chronologically.So, if you need more partitions, just stop the daemons, set `partition_size` correctly, and start them again.
 
-**Example** Suppose you have a Kafka topic with 18 partitions. The `bucket_size` is 256. We can set `partition_size` to 16 if we expect a slow payload generation. Therefore we should run 4 daemons with 4 threads each to maximum utilize the partitions.
+**Example:** Suppose you have a Kafka topic with 18 partitions. The `bucket_size` is 256. If we expect a slow payload generation, we can set `partition_size` to 16. Therefore, we should run 4 daemons with 4 threads each in order to maximize utilization of the partitions.
 
 ### Middlewares
 
-You can wrap the item processing within middlewares. There are 3 types:
-- client middlewares — triggered outside of a daemon; executed alongside an item is created
-- server middlewares - triggered inside a daemon; divided by two types:
-  - batch middlewares — executed alongside a batch is fetched from the database
-  - item middlewares —executed alongside an item is processed
+You can wrap item processing within middlewares. There are three types:
+- client middlewares – triggered outside of a daemon; executed alongside an item is created
+- server middlewares – triggered inside a daemon; divided into two types:
+  - batch middlewares – executed alongside a batch being fetched from the database
+  - item middlewares – execute alongside an item during processing
 
-The order of execution depends on the order defined in the outbox config:
+The order of execution depends on the order specified in the outbox configuration:
 
 ```ruby
 # config/initializers/outbox.rb
