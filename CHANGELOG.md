@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [5.0.1] - 2024-02-29
+
+### Fixed
+
+- fixed backward compatibility with proto_payload
+
+## [5.0.0] - 2024-02-27
+
 ### Added
 
 - track errors when the worker get a failure

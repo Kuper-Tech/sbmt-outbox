@@ -58,6 +58,22 @@ module Sbmt
         self.uuid ||= SecureRandom.uuid if has_attribute?(:uuid)
       end
 
+      def proto_payload
+        if has_attribute?(:payload)
+          payload
+        else
+          self[:proto_payload]
+        end
+      end
+
+      def proto_payload=(value)
+        if has_attribute?(:payload)
+          self.payload = value
+        else
+          self[:proto_payload] = value
+        end
+      end
+
       def payload
         if has_attribute?(:proto_payload)
           proto_payload
