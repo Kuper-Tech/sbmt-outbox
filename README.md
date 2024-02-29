@@ -23,6 +23,10 @@ And then execute:
 bundle install
 ```
 
+## Demo
+
+Learn how to use this gem and how it works with Ruby on Rails at here https://github.com/SberMarket-Tech/outbox-example-apps
+
 ## Auto configuration
 
 We recommend going through the configuration and files creation process using the following Rails generators:
