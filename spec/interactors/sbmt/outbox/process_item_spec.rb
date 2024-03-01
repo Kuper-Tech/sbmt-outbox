@@ -98,9 +98,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "tracks Yabeda sent counter and last_sent_event_id and process_latency" do
         expect { result }.to increment_yabeda_counter(Yabeda.outbox.sent_counter).by(1)
           .and update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
-        expect { result }.to measure_yabeda_histogram(Yabeda.outbox.process_latency)
-
-        result
+          .and measure_yabeda_histogram(Yabeda.outbox.process_latency)
       end
     end
 

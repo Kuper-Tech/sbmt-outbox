@@ -33,6 +33,20 @@ module Sbmt
           pc.general_timeout = 60
           pc.regular_items_batch_size = 200
           pc.retryable_items_batch_size = 100
+
+          pc.tactic = "default"
+          pc.rate_limit = 20
+          pc.rate_interval = 60
+          pc.min_queue_size = 10
+          pc.max_queue_size = 100
+          pc.min_queue_timelag = 5
+          pc.queue_delay = 5
+        end
+        c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
+          pc.threads_count = 4
+          pc.general_timeout = 120
+          pc.cutoff_timeout = 60
+          pc.brpop_delay = 2
         end
 
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"

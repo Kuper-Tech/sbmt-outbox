@@ -45,6 +45,9 @@ require "rspec/rails"
 require "factory_bot"
 require "yabeda/rspec"
 
+RSpec::Matchers.define_negated_matcher :not_increment_yabeda_counter, :increment_yabeda_counter
+RSpec::Matchers.define_negated_matcher :not_update_yabeda_gauge, :update_yabeda_gauge
+
 require "sbmt/outbox/instrumentation/open_telemetry_loader"
 
 Dir[Sbmt::Outbox::Engine.root.join("spec/support/**/*.rb")].sort.each { |f| require f }

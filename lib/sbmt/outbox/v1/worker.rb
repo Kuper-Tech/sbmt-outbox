@@ -50,7 +50,7 @@ module Sbmt
             result = ThreadPool::PROCESSED
             logger.with_tags(**job.log_tags.merge(worker: worker_number)) do
               lock_manager.lock("#{job.resource_path}:lock", general_timeout * 1000) do |locked|
-                labels = job.yabeda_labels.merge(worker_number: worker_number)
+                labels = job.yabeda_labels
 
                 if locked
                   job_execution_runtime.measure(labels) do
@@ -153,7 +153,7 @@ module Sbmt
           end
         rescue => e
           log_fatal(e, job, worker_number)
-          track_fatal(e, job, worker_number)
+          track_fatal(e, job)
         end
 
         def process_job_with_timeouts(job, start_id, labels)
@@ -220,12 +220,8 @@ module Sbmt
           )
         end
 
-        def track_fatal(e, job, worker_number)
-          job_counter
-            .increment(
-              job.yabeda_labels.merge(worker_number: worker_number, state: "failed"),
-              by: 1
-            )
+        def track_fatal(e, job)
+          job_counter.increment(job.yabeda_labels.merge(state: "failed"))
 
           Outbox.error_tracker.error(e, **job.log_tags)
         end

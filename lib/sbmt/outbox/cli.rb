@@ -20,15 +20,46 @@ module Sbmt
       option :concurrency,
         aliases: "-c",
         type: :numeric,
-        default: 10,
-        desc: "Number of threads"
+        desc: "Number of threads (processor)"
+      option :poll_concurrency,
+        aliases: "-p",
+        type: :numeric,
+        desc: "Number of poller partitions"
+      option :poll_threads,
+        aliases: "-n",
+        type: :numeric,
+        default: 1,
+        desc: "Number of threads (poller)"
+      option :poll_tactic,
+        aliases: "-t",
+        type: :string,
+        desc: "Poll tactic: [default, low-priority, aggressive]"
+      option :version,
+        aliases: "-w",
+        type: :numeric,
+        default: 2,
+        desc: "Worker version: [1 | 2]"
       def start
-        load_environment
+        version = options[:version]
 
-        worker = Sbmt::Outbox::V1::Worker.new(
-          boxes: format_boxes(options[:box]),
-          concurrency: options[:concurrency]
-        )
+        load_environment(version)
+
+        worker = if version == 1
+          Sbmt::Outbox::V1::Worker.new(
+            boxes: format_boxes(options[:box]),
+            concurrency: options[:concurrency] || 10
+          )
+        elsif version == 2
+          Sbmt::Outbox::V2::Worker.new(
+            boxes: format_boxes(options[:box]),
+            poll_tactic: options[:poll_tactic],
+            poller_threads_count: options[:poll_threads],
+            poller_partitions_count: options[:poll_concurrency],
+            processor_concurrency: options[:concurrency] || 4
+          )
+        else
+          raise "Worker version #{version} is invalid, available versions: 1|2"
+        end
 
         Sbmt::Outbox.current_worker = worker
 
@@ -45,11 +76,12 @@ module Sbmt
 
       private
 
-      def load_environment
+      def load_environment(version)
         load(lookup_outboxfile)
 
         require "sbmt/outbox"
-        require "sbmt/outbox/v1/worker"
+        require "sbmt/outbox/v1/worker" if version == 1
+        require "sbmt/outbox/v2/worker" if version == 2
       end
 
       def lookup_outboxfile

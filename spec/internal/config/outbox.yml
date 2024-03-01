@@ -17,7 +17,7 @@ test:
           kafka:
             required_acks: -1
 
-    combined_outbox_item:
+    combined/outbox_item:
       partition_size: 2
       partition_strategy: hash
       retention: P1W

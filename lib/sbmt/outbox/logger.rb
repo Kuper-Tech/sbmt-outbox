@@ -5,6 +5,12 @@ module Sbmt
     class Logger
       delegate :logger, to: :Rails
 
+      def log_debug(message, **params)
+        with_tags(**params) do
+          logger.debug(message)
+        end
+      end
+
       def log_info(message, **params)
         with_tags(**params) do
           logger.info(message)

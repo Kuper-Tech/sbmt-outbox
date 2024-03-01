@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "sbmt/outbox/v2/thread_pool_throttler"
-
 module Sbmt
   module Outbox
     module V2
@@ -12,11 +10,11 @@ module Sbmt
         SKIPPED = Object.new.freeze
         PROCESSED = Object.new.freeze
 
-        def initialize(concurrency:, name: "thread_pool", throttler: nil, random_startup_delay: true, &block)
+        def initialize(concurrency:, name: "thread_pool", random_startup_delay: true, start_async: true, &block)
           self.concurrency = concurrency
           self.name = name
-          self.throttler = throttler || ThreadPoolThrottler::Noop.new
           self.random_startup_delay = random_startup_delay
+          self.start_async = start_async
           self.task_source = block
           self.task_mutex = Mutex.new
           self.stopped = true
@@ -40,21 +38,32 @@ module Sbmt
         def start
           self.stopped = false
 
+          mode = start_async ? "async" : "sync"
+          logger.log_info("#{name}: starting #{concurrency} threads in #{mode} mode")
+
           result = run_threads do |task|
             logger.with_tags(worker: worker_number) do
               yield worker_number, task
             end
           end
 
-          raise result if result.is_a?(Exception)
+          logger.log_info("#{name}: threads started")
 
-          nil
-        ensure
-          stop
+          raise result if result.is_a?(Exception)
         end
 
         def stop
           self.stopped = true
+
+          threads.map(&:join) if start_async
+        ensure
+          stop_threads
+        end
+
+        def running?
+          return false if stopped
+
+          true
         end
 
         def alive?(timeout)
@@ -62,24 +71,27 @@ module Sbmt
 
           deadline = Time.current - timeout
           threads.all? do |thread|
-            deadline < thread.last_active_at
+            last_active_at = last_active_at(thread)
+            return false unless last_active_at
+
+            deadline < last_active_at
           end
         end
 
         private
 
-        attr_accessor :concurrency, :name, :throttler, :random_startup_delay, :task_source, :task_mutex, :stopped, :threads
+        attr_accessor :concurrency, :name, :random_startup_delay, :task_source, :task_mutex, :stopped, :start_async, :threads
 
         def touch_worker!
           self.last_active_at = Time.current
         end
 
-        def worker_number
-          Thread.current["#{name}_worker_number:#{object_id}"]
+        def worker_number(thread = Thread.current)
+          thread.thread_variable_get("#{name}_worker_number:#{object_id}")
         end
 
-        def last_active_at
-          Thread.current["#{name}_last_active_at:#{object_id}"]
+        def last_active_at(thread = Thread.current)
+          thread.thread_variable_get("#{name}_last_active_at:#{object_id}")
         end
 
         def run_threads
@@ -87,19 +99,19 @@ module Sbmt
 
           in_threads do |worker_num|
             self.worker_number = worker_num
-            touch_worker!
             # We don't want to start all threads at the same time
             sleep(rand * (worker_num + 1)) if random_startup_delay
 
-            last_result = nil
-            until exception
-              throttler.wait(worker_num, last_result)
+            touch_worker!
 
+            until exception
               task = next_task
               break unless task
 
+              touch_worker!
+
               begin
-                last_result = yield task
+                yield task
               rescue Exception => e # rubocop:disable Lint/RescueException
                 exception = e
               end
@@ -115,20 +127,24 @@ module Sbmt
               concurrency.times do |i|
                 threads << Thread.new { yield(i) }
               end
-              threads.map(&:value)
+              threads.map(&:value) unless start_async
             end
           ensure
-            threads.each(&:kill)
-            threads.clear
+            stop_threads unless start_async
           end
         end
 
+        def stop_threads
+          threads.each(&:kill)
+          threads.clear
+        end
+
         def worker_number=(num)
-          Thread.current["#{name}_worker_number:#{object_id}"] = num
+          Thread.current.thread_variable_set("#{name}_worker_number:#{object_id}", num)
         end
 
         def last_active_at=(at)
-          Thread.current["#{name}_last_active_at:#{object_id}"] = at
+          Thread.current.thread_variable_set("#{name}_last_active_at:#{object_id}", at)
         end
       end
     end
