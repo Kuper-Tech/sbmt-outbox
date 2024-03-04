@@ -216,12 +216,50 @@ Rails.application.config.outbox.tap do |config|
     x[:batch_size] = 200
   end
 
-  # optional
+  # optional (worker v1: DEPRECATED)
   config.worker.tap do |worker|
     # number of batches that one thread will process per rate interval
     worker[:rate_limit] = 10
     # rate interval in seconds
     worker[:rate_interval] = 60
+  end
+  
+  # optional (worker v2: default)
+  c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
+    # max parallel threads (per box-item, globally)
+    pc.concurrency = 6
+    # max threads count (per worker process)
+    pc.threads_count = 1
+    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    pc.general_timeout = 60
+    # poll buffer consists of regular items (errors_count = 0, i.e. without any processing errors) and retryable items (errors_count > 0)
+    # max poll buffer size = regular_items_batch_size + retryable_items_batch_size
+    pc.regular_items_batch_size = 200
+    pc.retryable_items_batch_size = 100
+
+    # poll tactic: default is optimal for most cases: rate limit + redis job-queue size threshold
+    # poll tactic: aggressive is for high-intencity data: without rate limits + redis job-queue size threshold
+    # poll tactic: low-priority is for low-intencity data: rate limits + redis job-queue size threshold + + redis job-queue lag threshold
+    pc.tactic = "default"
+    # number of batches that one thread will process per rate interval
+    pc.rate_limit = 20
+    # rate interval in seconds
+    pc.rate_interval = 60
+    # mix / max redis job queue thresholds per box-item for default / aggressive / low-priority poll tactics
+    pc.min_queue_size = 10
+    pc.max_queue_size = 100
+    # min redis job queue time lag threshold per box-item for low-priority poll tactic (in seconds)
+    pc.min_queue_timelag = 5
+    # throttling delay for default / aggressive / low-priority poll tactics (in seconds)
+    pc.queue_delay = 5
+  end
+  c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
+    # max threads count (per worker process)
+    pc.threads_count = 4
+    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    pc.general_timeout = 120
+    # BRPOP delay (in seconds) for polling redis job queue per box-item
+    pc.brpop_delay = 2
   end
 end
 ```
@@ -286,7 +324,7 @@ outbox_items:
       - exponential_backoff
 ```
 
-#### Compacted log
+#### Latest available
 
 This strategy ensures idempotency. In short, if a message fails and a later message with the same event_key has already been delivered, then you most likely do not want to re-deliver the first one when it is retried.
 
@@ -297,10 +335,10 @@ outbox_items:
     ...
     retry_strategies:
       - exponential_backoff
-      - compacted_log
+      - latest_available
 ```
 
-The exponential backoff strategy should be used in conjunction with the compact log strategy, and it should come last to minimize the number of database queries.
+The exponential backoff strategy should be used in conjunction with the latest available strategy, and it should come last to minimize the number of database queries.
 
 ### Partition strategies
 
@@ -422,12 +460,23 @@ end
 
 The gem is optionally integrated with OpenTelemetry. If your main application has `opentelemetry-*` gems, the tracing will be configured automatically.
 
-## CLI Arguments
+## CLI Arguments (v1: DEPRECATED)
 
 | Key                   | Description                                                               |
 |-----------------------|---------------------------------------------------------------------------|
 | `--boxes or -b`       | Outbox/Inbox processors to start`                                         |
 | `--concurrency or -c` | Number of threads. Default 10.                                            |
+
+## CLI Arguments (v2: default)
+
+| Key                        | Description                                                          |
+|----------------------------|----------------------------------------------------------------------|
+| `--boxes or -b`            | Outbox/Inbox processors to start`                                    |
+| `--concurrency or -c`      | Number of process threads. Default 4.                                |
+| `--poll-concurrency or -p` | Number of poller partitions. Default 6.                              |
+| `--poll-threads or -n`     | Number of poll threads. Default 1.                                   |
+| `--poll-tactic or -t`      | Poll tactic. Default "default".                                      |
+| `--worker-version or -w`   | Worker version. Default 2.                                           |
 
 ## Development & Test
 

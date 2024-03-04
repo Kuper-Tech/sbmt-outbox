@@ -34,13 +34,13 @@ module Sbmt
         aliases: "-t",
         type: :string,
         desc: "Poll tactic: [default, low-priority, aggressive]"
-      option :version,
+      option :worker_version,
         aliases: "-w",
         type: :numeric,
         default: 2,
         desc: "Worker version: [1 | 2]"
       def start
-        version = options[:version]
+        version = options[:worker_version]
 
         load_environment(version)
 
