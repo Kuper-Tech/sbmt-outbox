@@ -14,7 +14,9 @@ module Sbmt
 
             @log_tags = {
               box_type: item_class.box_type,
-              box_name: item_class.box_name
+              box_name: item_class.box_name,
+              worker_name: worker_name,
+              worker_version: worker_version
             }
 
             @yabeda_labels = {

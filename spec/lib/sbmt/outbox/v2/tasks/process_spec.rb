@@ -8,9 +8,9 @@ describe Sbmt::Outbox::V2::Tasks::Process do
   let(:ids) { [0, 1] }
 
   it "properly formats log tags" do
-    expect(described_class.new(item_class: InboxItem, worker_name: worker_name, bucket: bucket, ids: ids).log_tags).to eq(box_name: "inbox_item", box_type: :inbox, bucket: 0)
-    expect(described_class.new(item_class: OutboxItem, worker_name: worker_name, bucket: bucket, ids: ids).log_tags).to eq(box_name: "outbox_item", box_type: :outbox, bucket: 0)
-    expect(described_class.new(item_class: Combined::OutboxItem, worker_name: worker_name, bucket: bucket, ids: ids).log_tags).to eq(box_name: "combined/outbox_item", box_type: :outbox, bucket: 0)
+    expect(described_class.new(item_class: InboxItem, worker_name: worker_name, bucket: bucket, ids: ids).log_tags).to eq(box_name: "inbox_item", box_type: :inbox, bucket: 0, worker_name: "worker", worker_version: 2)
+    expect(described_class.new(item_class: OutboxItem, worker_name: worker_name, bucket: bucket, ids: ids).log_tags).to eq(box_name: "outbox_item", box_type: :outbox, bucket: 0, worker_name: "worker", worker_version: 2)
+    expect(described_class.new(item_class: Combined::OutboxItem, worker_name: worker_name, bucket: bucket, ids: ids).log_tags).to eq(box_name: "combined/outbox_item", box_type: :outbox, bucket: 0, worker_name: "worker", worker_version: 2)
   end
 
   it "properly formats yabeda labels" do
@@ -24,7 +24,7 @@ describe Sbmt::Outbox::V2::Tasks::Process do
       .to eq(
         item_class: InboxItem, worker_name: "worker", worker_version: 2, bucket: 0, ids: [0, 1],
         resource_key: "inbox_item:0", resource_path: "sbmt:outbox:worker:inbox_item:0",
-        log_tags: {box_name: "inbox_item", bucket: 0, box_type: :inbox},
+        log_tags: {box_name: "inbox_item", bucket: 0, box_type: :inbox, worker_name: "worker", worker_version: 2},
         yabeda_labels: {name: "inbox_item", type: :inbox, worker_name: "worker", worker_version: 2}
       )
   end
