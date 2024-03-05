@@ -10,10 +10,6 @@ module Sbmt
           THROTTLE_STATUS = "throttle"
           SKIP_STATUS = "skip"
 
-          def initialize
-            @mutex = Mutex.new
-          end
-
           def call(worker_num, poll_task, task_result)
             with_metrics(poll_task) do
               wait(worker_num, poll_task, task_result)
@@ -25,8 +21,6 @@ module Sbmt
           end
 
           private
-
-          attr_reader :mutex
 
           def with_metrics(poll_task, &block)
             tags = metric_tags(poll_task)
