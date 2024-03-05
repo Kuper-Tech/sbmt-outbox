@@ -29,24 +29,24 @@ module Sbmt
         # worker v2
         c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
           pc.concurrency = 6
-          pc.threads_count = 1
-          pc.general_timeout = 60
-          pc.regular_items_batch_size = 200
-          pc.retryable_items_batch_size = 100
+          pc.threads_count = 2
+          pc.general_timeout = ENV.fetch("OUTBOX__POLLER__GENERAL_TIMEOUT", 60).to_i
+          pc.regular_items_batch_size = ENV.fetch("OUTBOX__POLLER__REGULAR_BATCH_SIZE", 200).to_i
+          pc.retryable_items_batch_size = ENV.fetch("OUTBOX__POLLER__RETRY_BATCH_SIZE", 100).to_i
 
           pc.tactic = "default"
-          pc.rate_limit = 20
-          pc.rate_interval = 60
-          pc.min_queue_size = 10
-          pc.max_queue_size = 100
-          pc.min_queue_timelag = 5
-          pc.queue_delay = 5
+          pc.rate_limit = ENV.fetch("OUTBOX__POLLER__RATE_LIMIT", 60).to_i
+          pc.rate_interval = ENV.fetch("OUTBOX__POLLER__RATE_INTERVAL", 60).to_i
+          pc.min_queue_size = ENV.fetch("OUTBOX__POLLER__MIN_QUEUE_SIZE", 10).to_i
+          pc.max_queue_size = ENV.fetch("OUTBOX__POLLER__MAX_QUEUE_SIZE", 100).to_i
+          pc.min_queue_timelag = ENV.fetch("OUTBOX__POLLER__MIN_QUEUE_TIMELAG", 5).to_i
+          pc.queue_delay = ENV.fetch("OUTBOX__POLLER__QUEUE_DELAY", 5).to_i
         end
         c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
           pc.threads_count = 4
-          pc.general_timeout = 120
-          pc.cutoff_timeout = 60
-          pc.brpop_delay = 2
+          pc.general_timeout = ENV.fetch("OUTBOX__PROCESSOR__GENERAL_TIMEOUT", 120).to_i
+          pc.cutoff_timeout = ENV.fetch("OUTBOX__PROCESSOR__CUTOFF_TIMEOUT", 60).to_i
+          pc.brpop_delay = ENV.fetch("OUTBOX__PROCESSOR__BRPOP_DELAY", 5).to_i
         end
 
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
