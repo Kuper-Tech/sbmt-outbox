@@ -82,6 +82,8 @@ module Sbmt
           box_worker.item_execution_runtime.measure(task.yabeda_labels) do
             Outbox.database_switcher.use_slave do
               result = fetch_items(task) do |item|
+                box_worker.job_items_counter.increment(task.yabeda_labels)
+
                 last_id = item.id
                 lock_timer.checkpoint!
               end
@@ -97,48 +99,69 @@ module Sbmt
         end
 
         def fetch_items(task)
-          scope = task.item_class
-            .for_processing
-            .where(bucket: task.buckets)
-            .select(:id, :bucket, :processed_at)
-
           regular_count = 0
           retryable_count = 0
 
           # single buffer to preserve item's positions
           poll_buffer = {}
 
-          scope.find_in_batches(batch_size: max_batch_size) do |batch|
-            batch.each do |item|
-              if item.processed_at
-                # skip if retryable buffer capacity limit reached
-                next if retryable_count >= retryable_items_batch_size
+          fetch_items_with_retries(task, max_batch_size).each do |item|
+            if item.errors_count > 0
+              # skip if retryable buffer capacity limit reached
+              next if retryable_count >= retryable_items_batch_size
 
-                poll_buffer[item.bucket] ||= []
-                poll_buffer[item.bucket] << item.id
+              poll_buffer[item.bucket] ||= []
+              poll_buffer[item.bucket] << item.id
 
-                retryable_count += 1
-              else
-                poll_buffer[item.bucket] ||= []
-                poll_buffer[item.bucket] << item.id
+              retryable_count += 1
+            else
+              poll_buffer[item.bucket] ||= []
+              poll_buffer[item.bucket] << item.id
 
-                regular_count += 1
-              end
-
-              box_worker.job_items_counter.increment(task.yabeda_labels)
-
-              yield(item)
-
-              # regular items have priority over retryable ones
-              break if regular_count >= regular_items_batch_size
+              regular_count += 1
             end
 
-            box_worker.batches_per_poll_counter.increment(task.yabeda_labels)
+            yield(item)
+          end
 
-            break if poll_buffer.size >= max_buffer_size || regular_count >= regular_items_batch_size
+          box_worker.batches_per_poll_counter.increment(task.yabeda_labels)
+
+          return {} if poll_buffer.blank?
+
+          # regular items have priority over retryable ones
+          return poll_buffer if regular_count >= regular_items_batch_size
+
+          # additionally poll regular items only when retryable buffer capacity limit reached
+          # and no regular items were found
+          if retryable_count >= retryable_items_batch_size && regular_count == 0
+            fetch_regular_items(task, regular_items_batch_size).each do |item|
+              poll_buffer[item.bucket] ||= []
+              poll_buffer[item.bucket] << item.id
+
+              yield(item)
+            end
+            box_worker.batches_per_poll_counter.increment(task.yabeda_labels)
           end
 
           poll_buffer
+        end
+
+        def fetch_items_with_retries(task, limit)
+          task.item_class
+            .for_processing
+            .where(bucket: task.buckets)
+            .order(id: :asc)
+            .limit(limit)
+            .select(:id, :bucket, :errors_count)
+        end
+
+        def fetch_regular_items(task, limit)
+          task.item_class
+            .for_processing
+            .where(bucket: task.buckets, errors_count: 0)
+            .order(id: :asc)
+            .limit(limit)
+            .select(:id, :bucket)
         end
 
         def push_to_redis(poll_task, ids_per_bucket)

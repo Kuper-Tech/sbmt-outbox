@@ -102,7 +102,7 @@ describe Sbmt::Outbox::V2::Poller do
           expect { poller.process_task(0, task) }
             .to measure_yabeda_histogram(Yabeda.box_worker.item_execution_runtime).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_items_counter)
-            .and not_increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter)
+            .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(1)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
         end
       end
@@ -136,14 +136,13 @@ describe Sbmt::Outbox::V2::Poller do
         let(:retry_batch_size) { 1 }
 
         # i.e. max_batch_size = 1, max_buffer_size = 2
-        # so it makes 3 batch (sql) poll requests
-        #   1: fills buffer with 1 retryable item
-        #   2: skips 2nd retryable item, because retry_batch_size = 1 is already hit
-        #   3: fills buffer with 1 regular item
+        # so it makes 2 batch (sql) poll requests
+        #   1: fills buffer with 1 retryable item and skips 2nd retryable item, because retry_batch_size = 1 is already hit
+        #   2: fills buffer with 1 regular item
 
-        let!(:item1_1) { create(:inbox_item, bucket: 0, processed_at: Time.current) }
-        let!(:item1_2) { create(:inbox_item, bucket: 0, processed_at: Time.current) }
-        let!(:item2) { create(:inbox_item, bucket: 1, processed_at: Time.current) }
+        let!(:item1_1) { create(:inbox_item, bucket: 0, errors_count: 1) }
+        let!(:item1_2) { create(:inbox_item, bucket: 0, errors_count: 1) }
+        let!(:item2) { create(:inbox_item, bucket: 1, errors_count: 1) }
         let!(:item3) { create(:inbox_item, bucket: 2) }
 
         it "polls more batches to fill regular items buffer limit" do
@@ -153,7 +152,7 @@ describe Sbmt::Outbox::V2::Poller do
           expect { poller.process_task(0, task) }
             .to measure_yabeda_histogram(Yabeda.box_worker.item_execution_runtime).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2)
             .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(2)
-            .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(3)
+            .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(2)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
         end
       end
@@ -168,8 +167,8 @@ describe Sbmt::Outbox::V2::Poller do
         # and the rest retryable items will be polled later in the next poll
 
         let!(:item1) { create(:inbox_item, bucket: 0) }
-        let!(:item2) { create(:inbox_item, bucket: 1, processed_at: Time.current) }
-        let!(:item3) { create(:inbox_item, bucket: 2, processed_at: Time.current) }
+        let!(:item2) { create(:inbox_item, bucket: 1, errors_count: 1) }
+        let!(:item3) { create(:inbox_item, bucket: 2, errors_count: 1) }
 
         it "stops if regular buffer limit is full" do
           expect(redis).to receive(:call).with("LPUSH", "inbox_item:job_queue", "0:#{freeze_time.to_i}:#{item1.id}")

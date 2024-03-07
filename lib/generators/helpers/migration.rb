@@ -44,8 +44,8 @@ module Outbox
             end
 
             add_index :#{table_name}, :uuid, unique: true
-            add_index :#{table_name}, [:status, :bucket]
-            add_index :#{table_name}, :event_key
+            add_index :#{table_name}, [:status, :bucket, :errors_count]
+            add_index :#{table_name}, [:event_key, :id]
             add_index :#{table_name}, :created_at
           RUBY
 
