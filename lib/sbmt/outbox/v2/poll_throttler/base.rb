@@ -9,6 +9,7 @@ module Sbmt
 
           THROTTLE_STATUS = "throttle"
           SKIP_STATUS = "skip"
+          NOOP_STATUS = "noop"
 
           def call(worker_num, poll_task, task_result)
             with_metrics(poll_task) do
@@ -24,13 +25,14 @@ module Sbmt
 
           def with_metrics(poll_task, &block)
             tags = metric_tags(poll_task)
+            result = nil
 
             poll_throttling_runtime.measure(tags) do
               result = yield
-
               poll_throttling_counter.increment(tags.merge(status: result.value_or(result.failure)), by: 1)
-              result
             end
+
+            result
           end
 
           def metric_tags(poll_task)

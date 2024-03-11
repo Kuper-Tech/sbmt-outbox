@@ -251,7 +251,7 @@ Rails.application.config.outbox.tap do |config|
     # min redis job queue time lag threshold per box-item for low-priority poll tactic (in seconds)
     pc.min_queue_timelag = 5
     # throttling delay for default / aggressive / low-priority poll tactics (in seconds)
-    pc.queue_delay = 5
+    pc.queue_delay = 0.1
   end
   c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
     # max threads count (per worker process)

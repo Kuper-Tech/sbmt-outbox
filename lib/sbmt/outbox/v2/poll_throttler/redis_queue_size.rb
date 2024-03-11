@@ -9,7 +9,7 @@ module Sbmt
         class RedisQueueSize < Base
           delegate :redis_job_queue_size, to: "Yabeda.box_worker"
 
-          def initialize(redis:, min_size: -1, max_size: 100, delay: 5)
+          def initialize(redis:, min_size: -1, max_size: 100, delay: 0)
             super()
 
             @redis = redis
@@ -25,12 +25,12 @@ module Sbmt
 
             if queue_size < @min_size || queue_size > @max_size
               sleep(@delay)
-              return Success(THROTTLE_STATUS)
+              return Success(SKIP_STATUS)
             end
 
-            Failure(SKIP_STATUS)
-          rescue
-            Failure(SKIP_STATUS)
+            Success(NOOP_STATUS)
+          rescue => ex
+            Failure(ex.message)
           end
         end
       end

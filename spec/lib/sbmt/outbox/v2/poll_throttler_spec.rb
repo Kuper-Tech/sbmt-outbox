@@ -27,8 +27,8 @@ describe Sbmt::Outbox::V2::PollThrottler do
 
         expect(throttler).to be_an_instance_of(described_class::Composite)
         expect(throttler.throttlers.count).to eq(2)
-        expect(throttler.throttlers[0]).to be_an_instance_of(described_class::RateLimited)
-        expect(throttler.throttlers[1]).to be_an_instance_of(described_class::RedisQueueSize)
+        expect(throttler.throttlers[0]).to be_an_instance_of(described_class::RedisQueueSize)
+        expect(throttler.throttlers[1]).to be_an_instance_of(described_class::RateLimited)
       end
     end
 
@@ -41,9 +41,9 @@ describe Sbmt::Outbox::V2::PollThrottler do
 
         expect(throttler).to be_an_instance_of(described_class::Composite)
         expect(throttler.throttlers.count).to eq(3)
-        expect(throttler.throttlers[0]).to be_an_instance_of(described_class::RateLimited)
-        expect(throttler.throttlers[1]).to be_an_instance_of(described_class::RedisQueueSize)
-        expect(throttler.throttlers[2]).to be_an_instance_of(described_class::RedisQueueTimeLag)
+        expect(throttler.throttlers[0]).to be_an_instance_of(described_class::RedisQueueSize)
+        expect(throttler.throttlers[1]).to be_an_instance_of(described_class::RedisQueueTimeLag)
+        expect(throttler.throttlers[2]).to be_an_instance_of(described_class::RateLimited)
       end
     end
 

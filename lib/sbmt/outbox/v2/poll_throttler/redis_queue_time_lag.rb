@@ -10,7 +10,7 @@ module Sbmt
         class RedisQueueTimeLag < Base
           delegate :redis_job_queue_time_lag, to: "Yabeda.box_worker"
 
-          def initialize(redis:, min_lag: 5, delay: 5)
+          def initialize(redis:, min_lag: 5, delay: 0)
             super()
 
             @redis = redis
@@ -21,7 +21,7 @@ module Sbmt
           def wait(worker_num, poll_task, _task_result)
             # LINDEX is O(1) for first/last element
             oldest_job = @redis.call("LINDEX", poll_task.redis_queue, -1)
-            return Failure(SKIP_STATUS) if oldest_job.nil?
+            return Success(NOOP_STATUS) if oldest_job.nil?
 
             job = RedisJob.deserialize!(oldest_job)
             time_lag = Time.current.to_i - job.timestamp
@@ -30,13 +30,13 @@ module Sbmt
 
             if time_lag <= @min_lag
               sleep(@delay)
-              return Success(THROTTLE_STATUS)
+              return Success(SKIP_STATUS)
             end
 
-            Failure(SKIP_STATUS)
-          rescue
+            Success(NOOP_STATUS)
+          rescue => ex
             # noop, just skip any redis / serialization errors
-            Failure(SKIP_STATUS)
+            Failure(ex.message)
           end
         end
       end

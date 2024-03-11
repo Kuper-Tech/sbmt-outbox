@@ -21,8 +21,8 @@ module Sbmt
             # composite of RateLimited & RedisQueueSize (upper bound only)
             # optimal polling performance for most cases
             Composite.new(throttlers: [
-              RateLimited.new(limit: poller_config.rate_limit, interval: poller_config.rate_interval),
-              RedisQueueSize.new(redis: redis, max_size: poller_config.max_queue_size, delay: poller_config.queue_delay)
+              RedisQueueSize.new(redis: redis, max_size: poller_config.max_queue_size, delay: poller_config.queue_delay),
+              RateLimited.new(limit: poller_config.rate_limit, interval: poller_config.rate_interval)
             ])
           elsif tactic == "low-priority"
             # composite of RateLimited & RedisQueueSize (with lower & upper bounds) & RedisQueueTimeLag,
@@ -30,9 +30,9 @@ module Sbmt
             # and also by min redis queue oldest item lag
             # optimal polling performance for low-intensity data flow
             Composite.new(throttlers: [
-              RateLimited.new(limit: poller_config.rate_limit, interval: poller_config.rate_interval),
               RedisQueueSize.new(redis: redis, min_size: poller_config.min_queue_size, max_size: poller_config.max_queue_size, delay: poller_config.queue_delay),
-              RedisQueueTimeLag.new(redis: redis, min_lag: poller_config.min_queue_timelag, delay: poller_config.queue_delay)
+              RedisQueueTimeLag.new(redis: redis, min_lag: poller_config.min_queue_timelag, delay: poller_config.queue_delay),
+              RateLimited.new(limit: poller_config.rate_limit, interval: poller_config.rate_interval)
             ])
           elsif tactic == "aggressive"
             # throttles only by max job queue size, max polling performance

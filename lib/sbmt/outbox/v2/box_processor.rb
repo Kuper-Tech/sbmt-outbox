@@ -36,7 +36,7 @@ module Sbmt
             result = ThreadPool::PROCESSED
             last_result = Thread.current[:last_polling_result]
 
-            throttle(worker_number, scheduled_task, last_result)
+            next ThreadPool::SKIPPED if throttle(worker_number, scheduled_task, last_result) == PollThrottler::Base::SKIP_STATUS
 
             lock_task(scheduled_task) do |locked_task|
               base_labels = scheduled_task.yabeda_labels.merge(worker_name: worker_name)

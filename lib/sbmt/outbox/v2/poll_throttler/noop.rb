@@ -8,7 +8,7 @@ module Sbmt
       module PollThrottler
         class Noop < Base
           def wait(worker_num, poll_task, _task_result)
-            Failure(SKIP_STATUS)
+            Success(NOOP_STATUS)
           end
         end
       end

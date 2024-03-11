@@ -3,7 +3,7 @@
 Rails.application.config.outbox.tap do |config|
   config.poller.tap do |pc|
     pc.tactic = "noop"
-    pc.queue_delay = 0.1
+    pc.queue_delay = 0
   end
 
   config.processor.tap do |pc|

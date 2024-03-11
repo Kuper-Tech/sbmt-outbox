@@ -15,7 +15,7 @@ module Sbmt
           end
 
           def wait(worker_num, poll_task, task_result)
-            return Failure(SKIP_STATUS) unless task_result == Sbmt::Outbox::V2::ThreadPool::PROCESSED
+            return Success(NOOP_STATUS) unless task_result == Sbmt::Outbox::V2::ThreadPool::PROCESSED
 
             sleep(@delay)
 

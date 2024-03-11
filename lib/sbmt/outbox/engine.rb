@@ -40,7 +40,7 @@ module Sbmt
           pc.min_queue_size = ENV.fetch("OUTBOX__POLLER__MIN_QUEUE_SIZE", 10).to_i
           pc.max_queue_size = ENV.fetch("OUTBOX__POLLER__MAX_QUEUE_SIZE", 100).to_i
           pc.min_queue_timelag = ENV.fetch("OUTBOX__POLLER__MIN_QUEUE_TIMELAG", 5).to_i
-          pc.queue_delay = ENV.fetch("OUTBOX__POLLER__QUEUE_DELAY", 5).to_i
+          pc.queue_delay = ENV.fetch("OUTBOX__POLLER__QUEUE_DELAY", 0.01).to_f
         end
         c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
           pc.threads_count = 4
