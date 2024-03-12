@@ -70,11 +70,11 @@ describe Sbmt::Outbox::V2::Poller do
     context "when default poll tactic is used" do
       let(:throttler_tactic) { "default" }
 
-      it "throttles processing if redis queue is oversized" do
+      it "skips poll-cycle if redis queue is oversized" do
         expect(redis).to receive(:call).with("LLEN", "inbox_item:job_queue").and_return(200)
-        expect(poller.send(:lock_manager)).to receive(:lock).with("sbmt:outbox:poller:inbox_item:0:lock", 1000)
+        expect(poller.send(:lock_manager)).not_to receive(:lock)
 
-        expect(poller.start).to be(Sbmt::Outbox::V2::ThreadPool::PROCESSED)
+        expect(poller.start).to be(Sbmt::Outbox::V2::ThreadPool::SKIPPED)
       end
 
       it "does not throttle processing if redis queue is not oversized" do

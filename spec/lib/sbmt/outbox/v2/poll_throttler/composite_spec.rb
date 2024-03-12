@@ -31,4 +31,36 @@ describe Sbmt::Outbox::V2::PollThrottler::Composite do
       .to increment_yabeda_counter(Yabeda.box_worker.poll_throttling_counter).with_tags(status: "skip", throttler: "Sbmt::Outbox::V2::PollThrottler::RedisQueueSize", name: "inbox_item", type: :inbox, worker_name: "poller", worker_version: 2).by(1)
       .and measure_yabeda_histogram(Yabeda.box_worker.poll_throttling_runtime).with_tags(throttler: "Sbmt::Outbox::V2::PollThrottler::RedisQueueSize", name: "inbox_item", type: :inbox, worker_name: "poller", worker_version: 2)
   end
+
+  context "with return status" do
+    let(:failure_throttler) { instance_double(Sbmt::Outbox::V2::PollThrottler::Base) }
+    let(:skip_throttler) { instance_double(Sbmt::Outbox::V2::PollThrottler::Base) }
+    let(:noop_throttler) { instance_double(Sbmt::Outbox::V2::PollThrottler::Base) }
+    let(:throttle_throttler) { instance_double(Sbmt::Outbox::V2::PollThrottler::Base) }
+
+    before do
+      allow(failure_throttler).to receive(:call).and_return(Dry::Monads::Result::Failure.new("some err"))
+      allow(skip_throttler).to receive(:call).and_return(Dry::Monads::Result::Success.new(Sbmt::Outbox::V2::PollThrottler::Base::SKIP_STATUS))
+      allow(noop_throttler).to receive(:call).and_return(Dry::Monads::Result::Success.new(Sbmt::Outbox::V2::PollThrottler::Base::NOOP_STATUS))
+      allow(throttle_throttler).to receive(:call).and_return(Dry::Monads::Result::Success.new(Sbmt::Outbox::V2::PollThrottler::Base::THROTTLE_STATUS))
+    end
+
+    it "return skip if present" do
+      expect(described_class.new(throttlers: [
+        throttle_throttler, noop_throttler, skip_throttler, failure_throttler
+      ]).call(0, task, nil).value!).to eq(Sbmt::Outbox::V2::PollThrottler::Base::SKIP_STATUS)
+    end
+
+    it "return failure if present" do
+      expect(described_class.new(throttlers: [
+        throttle_throttler, noop_throttler, failure_throttler
+      ]).call(0, task, nil).failure).to eq("some err")
+    end
+
+    it "return throttle if present" do
+      expect(described_class.new(throttlers: [
+        throttle_throttler, noop_throttler
+      ]).call(0, task, nil).value!).to eq(Sbmt::Outbox::V2::PollThrottler::Base::THROTTLE_STATUS)
+    end
+  end
 end

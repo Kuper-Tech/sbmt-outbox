@@ -23,7 +23,14 @@ module Sbmt
             queue_size = @redis.call("LLEN", poll_task.redis_queue).to_i
             redis_job_queue_size.set(metric_tags(poll_task), queue_size)
 
-            if queue_size < @min_size || queue_size > @max_size
+            if queue_size < @min_size
+              # just throttle (not skip) to wait for job queue size becomes acceptable
+              sleep(@delay)
+              return Success(THROTTLE_STATUS)
+            end
+
+            if queue_size > @max_size
+              # completely skip poll-cycle if job queue is oversized
               sleep(@delay)
               return Success(SKIP_STATUS)
             end
