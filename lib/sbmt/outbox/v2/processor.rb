@@ -72,8 +72,6 @@ module Sbmt
               task.ids.each do |id|
                 ProcessItem.call(task.item_class, id)
 
-                sleep(rand * ENV.fetch("OUTBOX__PROCESSOR__MAX_RANDOM_SLEEP", 0).to_i)
-
                 box_worker.job_items_counter.increment(task.yabeda_labels)
                 last_id = id
                 lock_timer.checkpoint!
