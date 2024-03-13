@@ -1,5 +1,7 @@
-stages:
-  - test
+include:
+  - project: "nstmrt/rubygems/templates"
+    ref: master
+    file: "build-rubygems.yml"
 
 lint:
   stage: test
