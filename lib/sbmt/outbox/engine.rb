@@ -25,6 +25,7 @@ module Sbmt
           c.rate_interval = 60
           c.shuffle_jobs = true
         end
+        c.default_worker_version = 2
 
         # worker v2
         c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|

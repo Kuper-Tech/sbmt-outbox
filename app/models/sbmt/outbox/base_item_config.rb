@@ -23,7 +23,11 @@ module Sbmt
       end
 
       def partition_size
-        @partition_size ||= (options[:partition_size] || 1).to_i
+        @partition_size ||= (partition_size_raw || 1).to_i
+      end
+
+      def partition_size_raw
+        @partition_size_raw ||= options[:partition_size]
       end
 
       def retention

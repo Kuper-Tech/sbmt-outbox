@@ -63,6 +63,10 @@ module Sbmt
       @processor_config ||= config.processor
     end
 
+    def default_worker_version
+      @default_worker_version ||= config.default_worker_version&.to_i || 2
+    end
+
     def active_record_base_class
       @active_record_base_class ||= config.active_record_base_class.safe_constantize || ::ActiveRecord::Base
     end

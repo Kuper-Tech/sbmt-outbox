@@ -28,7 +28,6 @@ module Sbmt
       option :poll_threads,
         aliases: "-n",
         type: :numeric,
-        default: 1,
         desc: "Number of threads (poller)"
       option :poll_tactic,
         aliases: "-t",
@@ -37,21 +36,23 @@ module Sbmt
       option :worker_version,
         aliases: "-w",
         type: :numeric,
-        default: 2,
         desc: "Worker version: [1 | 2]"
       def start
-        version = options[:worker_version]
+        load_environment
 
-        load_environment(version)
+        version = options[:worker_version] || Outbox.default_worker_version
+
+        boxes = format_boxes(options[:box])
+        check_deprecations!(boxes, version)
 
         worker = if version == 1
           Sbmt::Outbox::V1::Worker.new(
-            boxes: format_boxes(options[:box]),
+            boxes: boxes,
             concurrency: options[:concurrency] || 10
           )
         elsif version == 2
           Sbmt::Outbox::V2::Worker.new(
-            boxes: format_boxes(options[:box]),
+            boxes: boxes,
             poll_tactic: options[:poll_tactic],
             poller_threads_count: options[:poll_threads],
             poller_partitions_count: options[:poll_concurrency],
@@ -76,12 +77,22 @@ module Sbmt
 
       private
 
-      def load_environment(version)
+      def check_deprecations!(boxes, version)
+        return unless version == 2
+
+        boxes.each do |item_class|
+          next if item_class.config.partition_size_raw.blank?
+
+          raise "partition_size option is invalid and cannot be used with worker v2, please remove it from config/outbox.yml for #{item_class.name.underscore}"
+        end
+      end
+
+      def load_environment
         load(lookup_outboxfile)
 
         require "sbmt/outbox"
-        require "sbmt/outbox/v1/worker" if version == 1
-        require "sbmt/outbox/v2/worker" if version == 2
+        require "sbmt/outbox/v1/worker"
+        require "sbmt/outbox/v2/worker"
       end
 
       def lookup_outboxfile

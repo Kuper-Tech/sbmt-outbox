@@ -242,7 +242,7 @@ Rails.application.config.outbox.tap do |config|
     # poll tactic: low-priority is for low-intencity data: rate limits + redis job-queue size threshold + + redis job-queue lag threshold
     pc.tactic = "default"
     # number of batches that one thread will process per rate interval
-    pc.rate_limit = 20
+    pc.rate_limit = 60
     # rate interval in seconds
     pc.rate_interval = 60
     # mix / max redis job queue thresholds per box-item for default / aggressive / low-priority poll tactics
