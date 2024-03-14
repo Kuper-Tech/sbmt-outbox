@@ -109,11 +109,17 @@ describe Sbmt::Outbox::BaseItem do
     context "when transport was built by factory" do
       let(:outbox_item) { Fabricate.build(:outbox_item) }
 
-      it "returns valid transports" do
+      it "returns disposable transport" do
+        # init transports for the first time
+        outbox_item.transports
+
+        transport = instance_double(Producer)
+        expect(Producer)
+          .to receive(:new)
+          .with(topic: "outbox_item_topic", kafka: {"required_acks" => -1}).and_return(transport)
+        expect(transport).to receive(:call)
         expect(outbox_item.transports.size).to eq 1
-        expect(outbox_item.transports.first).to be_a(Producer)
-        expect(outbox_item.transports.first.topic).to eq "outbox_item_topic"
-        expect(outbox_item.transports.first.kafka).to include("required_acks" => -1)
+        outbox_item.transports.first.call(outbox_item, "payload")
       end
     end
 
@@ -121,19 +127,30 @@ describe Sbmt::Outbox::BaseItem do
       let(:inbox_item) { Fabricate.build(:inbox_item) }
 
       it "returns valid transports" do
-        expect(inbox_item.transports.size).to eq 1
+        # init transports for the first time
+        inbox_item.transports
+
+        expect(ImportOrder).not_to receive(:new)
         expect(inbox_item.transports.first).to be_a(ImportOrder)
         expect(inbox_item.transports.first.source).to eq "kafka_consumer"
+        inbox_item.transports.first.call(inbox_item, "payload")
       end
     end
 
     context "when transports were selected by event name" do
       let(:outbox_item) { Fabricate.build(:combined_outbox_item, event_name: "orders_completed") }
 
-      it "returns valid transports" do
+      it "returns disposable transport" do
+        # init transports for the first time
+        outbox_item.transports
+
+        transport = instance_double(Producer)
+        expect(Producer)
+          .to receive(:new)
+          .with(topic: "orders_completed_topic", kafka: {}).and_return(transport)
+        expect(transport).to receive(:call)
         expect(outbox_item.transports.size).to eq 1
-        expect(outbox_item.transports.first).to be_a(Producer)
-        expect(outbox_item.transports.first.topic).to eq "orders_completed_topic"
+        outbox_item.transports.first.call(outbox_item, "payload")
       end
     end
   end

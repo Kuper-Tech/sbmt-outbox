@@ -131,6 +131,10 @@ default: &default
       max_retries: 3 # default: 0
       transports:
         sbmt/kafka_producer:
+          # transport reserved options
+          class: sbmt/kafka_producer # optional; default is inferred from transport name
+          disposable: false # optional; default false; if true, the transport class will be instantiated only once
+          # Sbmt::KafkaProducer::OutboxTransportFactory instance params
           topic: "my-topic-name"
 
 development:
@@ -153,8 +157,10 @@ production:
 outbox_items:
   my_outbox_item:
     transports:
+        # transport reserved options
       - class: sbmt/kafka_producer
         event_name: "order_created"
+        # Sbmt::KafkaProducer class instance params
         topic: "order_created_topic"
       - class: sbmt/kafka_producer
         event_name: "orders_completed"
@@ -418,7 +424,7 @@ end
 
 ### Tracing
 
-В гем интегрирован опциональный трейсинг opentelemetry. Если в клиентском приложении подключены гемы opentelemetry-*, трейсер будет сконфигурирован автоматически 
+В гем интегрирован опциональный трейсинг opentelemetry. Если в клиентском приложении подключены гемы opentelemetry-*, трейсер будет сконфигурирован автоматически
 
 ## Usage
 

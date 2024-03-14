@@ -12,7 +12,9 @@ test:
         - exponential_backoff
         - compacted_log
       transports:
-        kafka_producer:
+        producer:
+          class: kafka_producer
+          disposable: true
           topic: "outbox_item_topic"
           kafka:
             required_acks: -1
@@ -32,6 +34,7 @@ test:
             required_acks: -1
         - class: kafka_producer
           event_name: "orders_completed"
+          disposable: true
           topic: "orders_completed_topic"
 
   inbox_items:

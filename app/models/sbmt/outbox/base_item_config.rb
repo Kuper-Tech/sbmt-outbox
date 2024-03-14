@@ -76,12 +76,22 @@ module Sbmt
           memo[event_name] ||= []
           namespace = params.delete(:class)&.camelize
           raise ArgumentError, "Transport name cannot be blank" if namespace.blank?
+          disposable = params.key?(:disposable) ? params.delete(:disposable) : false
 
           factory = "#{namespace}::OutboxTransportFactory".safe_constantize
           memo[event_name] << if factory
-            factory.build(**params.symbolize_keys)
+            if disposable
+              ->(*args) { factory.build(**params).call(*args) }
+            else
+              factory.build(**params)
+            end
           else
-            namespace.constantize.new(**params.symbolize_keys)
+            klass = namespace.constantize
+            if disposable
+              ->(*args) { klass.new(**params).call(*args) }
+            else
+              klass.new(**params)
+            end
           end
         end
       end

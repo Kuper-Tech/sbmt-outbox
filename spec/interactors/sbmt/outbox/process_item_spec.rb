@@ -5,10 +5,10 @@ describe Sbmt::Outbox::ProcessItem do
     subject(:result) { described_class.call(OutboxItem, outbox_item.id) }
 
     let(:max_retries) { 0 }
-    let(:producer) { OutboxItem.config.transports[:_all_].first }
+    let(:producer) { instance_double(Producer, call: true) }
 
     before do
-      allow(producer).to receive(:publish).and_return(true)
+      allow(Producer).to receive(:new).and_return(producer)
       allow_any_instance_of(Sbmt::Outbox::OutboxItemConfig).to receive(:max_retries).and_return(max_retries)
     end
 
@@ -86,7 +86,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "tracks Yabeda sent counter and last_sent_event_id and process_latency" do
         expect { result }.to increment_yabeda_counter(Yabeda.outbox.sent_counter).by(1)
           .and update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
-        expect { result }.to measure_yabeda_histogram(Yabeda.outbox.process_latency)
+          .and measure_yabeda_histogram(Yabeda.outbox.process_latency)
 
         result
       end
@@ -96,7 +96,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
-        allow(producer).to receive(:publish).and_return(false)
+        allow(producer).to receive(:call).and_return(false)
       end
 
       it "returns error" do
@@ -151,7 +151,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
-        allow(producer).to receive(:publish).and_raise("boom")
+        allow(producer).to receive(:call).and_raise("boom")
       end
 
       it "returns error" do
@@ -183,7 +183,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { Fabricate(:outbox_item) }
 
       before do
-        allow(producer).to receive(:publish)
+        allow(producer).to receive(:call)
           .and_return(Dry::Monads::Result::Failure.new("some error"))
       end
 
@@ -234,7 +234,7 @@ describe Sbmt::Outbox::ProcessItem do
       let(:max_retries) { 1 }
 
       before do
-        allow(producer).to receive(:publish).and_return(false)
+        allow(producer).to receive(:call).and_return(false)
       end
 
       it "doesn't change status to failed" do
