@@ -150,7 +150,11 @@ default: &default
       max_retries: 3 # default 0, the number of retries before the item will be marked as failed
       transports: # transports section
         produce_message: # underscored transport class name
-          topic: "my-topic-name" # default transport arguments
+          # transport reserved options
+          class: produce_message # optional; default is inferred from transport name
+          disposable: false # optional; default false; if true, the transport class will be instantiated only once
+          # ProduceMessage instance arguments
+          topic: "my-topic-name"
 
 development:
   <<: *default
@@ -186,9 +190,11 @@ Transports are defined as follows when `event_name` is used:
 outbox_items:
   my_outbox_item:
     transports:
+        # transport reserved options
       - class: produce_message
         event_name: "order_created" # event name marker
-        topic: "order_created_topic" # some transport default argument
+        # ProduceMessage instance arguments
+        topic: "order_created_topic" # some transport argument
       - class: produce_message
         event_name: "orders_completed"
         topic: "orders_completed_topic"

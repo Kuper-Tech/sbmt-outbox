@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [5.0.3] - 14-03-2024
+
+### Changed
+
+- A transport might be invoked as a disposable object.
+
 ## [5.0.1] - 2024-02-29
 
 ### Fixed

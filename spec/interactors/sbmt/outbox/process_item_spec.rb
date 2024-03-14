@@ -5,12 +5,12 @@ describe Sbmt::Outbox::ProcessItem do
     subject(:result) { described_class.call(OutboxItem, outbox_item.id) }
 
     let(:max_retries) { 0 }
-    let(:producer) { OutboxItem.config.transports[:_all_].first }
+    let(:producer) { instance_double(Producer, call: true) }
     let(:dummy_middleware_class) { instance_double(Class, new: dummy_middleware) }
     let(:dummy_middleware) { ->(*_args, &b) { b.call } }
 
     before do
-      allow(producer).to receive(:publish).and_return(true)
+      allow(Producer).to receive(:new).and_return(producer)
       allow_any_instance_of(Sbmt::Outbox::OutboxItemConfig).to receive(:max_retries).and_return(max_retries)
       allow(Sbmt::Outbox).to receive(:item_process_middlewares).and_return([dummy_middleware_class])
       allow(dummy_middleware).to receive(:call).and_call_original
@@ -106,7 +106,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { create(:outbox_item) }
 
       before do
-        allow(producer).to receive(:publish).and_return(false)
+        allow(producer).to receive(:call).and_return(false)
       end
 
       it "returns error" do
@@ -167,7 +167,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { create(:outbox_item) }
 
       before do
-        allow(producer).to receive(:publish).and_raise("boom")
+        allow(producer).to receive(:call).and_raise("boom")
       end
 
       it "returns error" do
@@ -204,7 +204,7 @@ describe Sbmt::Outbox::ProcessItem do
       let!(:outbox_item) { create(:outbox_item) }
 
       before do
-        allow(producer).to receive(:publish)
+        allow(producer).to receive(:call)
           .and_return(Dry::Monads::Result::Failure.new("some error"))
       end
 
@@ -262,7 +262,7 @@ describe Sbmt::Outbox::ProcessItem do
       let(:max_retries) { 1 }
 
       before do
-        allow(producer).to receive(:publish).and_return(false)
+        allow(producer).to receive(:call).and_return(false)
       end
 
       it "doesn't change status to failed" do
