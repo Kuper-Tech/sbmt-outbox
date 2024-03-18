@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [5.0.4] - 18-03-2024
+
+### Added
+
+- Add global config option `disposable_transports`, and set to `false` by default.
+
 ## [5.0.3] - 14-03-2024
 
 ### Changed

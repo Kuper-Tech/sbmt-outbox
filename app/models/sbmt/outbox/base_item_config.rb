@@ -76,7 +76,7 @@ module Sbmt
           memo[event_name] ||= []
           namespace = params.delete(:class)&.camelize
           raise ArgumentError, "Transport name cannot be blank" if namespace.blank?
-          disposable = params.key?(:disposable) ? params.delete(:disposable) : false
+          disposable = params.key?(:disposable) ? params.delete(:disposable) : Outbox.config.disposable_transports
 
           factory = "#{namespace}::OutboxTransportFactory".safe_constantize
           memo[event_name] << if factory

@@ -14,6 +14,7 @@ module Sbmt
         c.outbox_item_classes = []
         c.inbox_item_classes = []
         c.paths = []
+        c.disposable_transports = false
         c.redis = {url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")}
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
           c.general_timeout = 120
