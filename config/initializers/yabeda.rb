@@ -3,6 +3,8 @@
 Yabeda.configure do
   # error_counter retry_counter sent_counter fetch_error_counter discarded_counter
   group :outbox do
+    default_tag(:worker_version, 1)
+
     counter :created_counter,
       tags: %i[type name partition owner],
       comment: "The total number of created messages"

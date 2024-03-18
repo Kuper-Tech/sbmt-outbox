@@ -39,7 +39,7 @@ module Sbmt
           pc.rate_limit = 60
           pc.rate_interval = 60
           pc.min_queue_size = 10
-          pc.max_queue_size = 25
+          pc.max_queue_size = 100
           pc.min_queue_timelag = 5
           pc.queue_delay = 0.1
         end
