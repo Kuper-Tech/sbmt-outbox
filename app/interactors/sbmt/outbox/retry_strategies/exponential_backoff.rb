@@ -3,13 +3,11 @@
 module Sbmt
   module Outbox
     module RetryStrategies
-      class ExponentialBackoff < Outbox::DryInteractor
-        param :outbox_item
-
+      class ExponentialBackoff < Base
         def call
-          delay = backoff(outbox_item.config).interval_at(outbox_item.errors_count - 1)
+          delay = backoff(item.config).interval_at(item.errors_count - 1)
 
-          still_early = outbox_item.processed_at + delay.seconds > Time.current
+          still_early = item.processed_at + delay.seconds > Time.current
 
           if still_early
             Failure(:skip_processing)

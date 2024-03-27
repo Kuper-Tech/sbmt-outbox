@@ -5,6 +5,7 @@ module Sbmt
     class ProcessItem < Sbmt::Outbox::DryInteractor
       param :item_class, reader: :private
       param :item_id, reader: :private
+      option :worker_version, reader: :private, optional: true, default: -> { 1 }
 
       METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter discarded_counter].freeze
 
@@ -254,7 +255,7 @@ module Sbmt
       end
 
       def labels_for(item)
-        {type: box_type, name: box_name, owner: owner, partition: item&.partition}
+        {worker_version: worker_version, type: box_type, name: box_name, owner: owner, partition: item&.partition}
       end
 
       def counters

@@ -20,15 +20,47 @@ module Sbmt
       option :concurrency,
         aliases: "-c",
         type: :numeric,
-        default: 10,
-        desc: "Number of threads"
+        desc: "Number of threads (processor)"
+      option :poll_concurrency,
+        aliases: "-p",
+        type: :numeric,
+        desc: "Number of poller partitions"
+      option :poll_threads,
+        aliases: "-n",
+        type: :numeric,
+        desc: "Number of threads (poller)"
+      option :poll_tactic,
+        aliases: "-t",
+        type: :string,
+        desc: "Poll tactic: [default, low-priority, aggressive]"
+      option :worker_version,
+        aliases: "-w",
+        type: :numeric,
+        desc: "Worker version: [1 | 2]"
       def start
         load_environment
 
-        worker = Sbmt::Outbox::Worker.new(
-          boxes: format_boxes(options[:box]),
-          concurrency: options[:concurrency]
-        )
+        version = options[:worker_version] || Outbox.default_worker_version
+
+        boxes = format_boxes(options[:box])
+        check_deprecations!(boxes, version)
+
+        worker = if version == 1
+          Sbmt::Outbox::V1::Worker.new(
+            boxes: boxes,
+            concurrency: options[:concurrency] || 10
+          )
+        elsif version == 2
+          Sbmt::Outbox::V2::Worker.new(
+            boxes: boxes,
+            poll_tactic: options[:poll_tactic],
+            poller_threads_count: options[:poll_threads],
+            poller_partitions_count: options[:poll_concurrency],
+            processor_concurrency: options[:concurrency] || 4
+          )
+        else
+          raise "Worker version #{version} is invalid, available versions: 1|2"
+        end
 
         Sbmt::Outbox.current_worker = worker
 
@@ -45,11 +77,22 @@ module Sbmt
 
       private
 
+      def check_deprecations!(boxes, version)
+        return unless version == 2
+
+        boxes.each do |item_class|
+          next if item_class.config.partition_size_raw.blank?
+
+          raise "partition_size option is invalid and cannot be used with worker v2, please remove it from config/outbox.yml for #{item_class.name.underscore}"
+        end
+      end
+
       def load_environment
         load(lookup_outboxfile)
 
         require "sbmt/outbox"
-        require "sbmt/outbox/worker"
+        require "sbmt/outbox/v1/worker"
+        require "sbmt/outbox/v2/worker"
       end
 
       def lookup_outboxfile

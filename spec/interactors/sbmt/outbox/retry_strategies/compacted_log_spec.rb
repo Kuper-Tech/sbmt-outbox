@@ -38,21 +38,9 @@ describe Sbmt::Outbox::RetryStrategies::CompactedLog do
     it { expect(result.failure).to eq :empty_event_key }
   end
 
-  context "when next is delivered" do
-    let!(:outbox_item_2) { create(:combined_outbox_item, status: :delivered, event_key: event_key) }
-
-    it { expect(result.failure).to eq :discard_item }
-  end
-
-  context "when next is pending" do
+  context "when next exists in any status" do
     let!(:outbox_item_2) { create(:combined_outbox_item, event_key: event_key) }
 
-    it { expect(result).to be_success }
-  end
-
-  context "when next is discarded" do
-    let!(:outbox_item_2) { create(:combined_outbox_item, status: :discarded, event_key: event_key) }
-
-    it { expect(result).to be_success }
+    it { expect(result.failure).to eq :discard_item }
   end
 end

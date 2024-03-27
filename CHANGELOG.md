@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.0.0] - 2024-02-04
+
+### Added
+- support of worker v2 architecture, which simplifies outbox configuration (no manual selection of partitions / concurrency anymore)
+- worker v2: worker process is now consists of two parts: poller + processor
+- worker v2: each worker process contains X (1 by default) poll-thread and Y (4 by default) process-threads
+- worker v2: poller is responsible for async polling database (usually RO-replicas) changes, i.e. inbox/outbox items ready for processing
+- worker v2: processor is responsible for transactional processing of inbox/outbox items
+- worker v2: poller / processor communicate via redis job queue per inbox/outbox item
+- worker v2: poller / processor consistency is backed by redis locks per box/bucket
+- worker v2: more poller / processor metrics to simplify process scaling (i.e. HPA)
+- worker v2: poller's poll tactics for different performance profiles: default, aggressive, low-priority
+
 ## [5.0.4] - 18-03-2024
 
 ### Added

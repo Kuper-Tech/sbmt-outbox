@@ -23,7 +23,11 @@ module Sbmt
       end
 
       def partition_size
-        @partition_size ||= (options[:partition_size] || 1).to_i
+        @partition_size ||= (partition_size_raw || 1).to_i
+      end
+
+      def partition_size_raw
+        @partition_size_raw ||= options[:partition_size]
       end
 
       def retention
@@ -47,7 +51,12 @@ module Sbmt
       end
 
       def retry_strategies
-        @retry_strategies ||= Array.wrap(options[:retry_strategies]).map do |str_name|
+        return @retry_strategies if defined?(@retry_strategies)
+
+        configured_strategies = options[:retry_strategies]
+        strategies = configured_strategies.presence || %w[exponential_backoff latest_available]
+
+        @retry_strategies ||= Array.wrap(strategies).map do |str_name|
           "Sbmt::Outbox::RetryStrategies::#{str_name.camelize}".constantize
         end
       end
