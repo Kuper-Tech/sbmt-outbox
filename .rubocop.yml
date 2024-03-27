@@ -51,7 +51,7 @@ RSpec/ExampleLength:
   Max: 35
 
 RSpec/MultipleMemoizedHelpers:
-  Max: 10
+  Max: 15
 
 RSpec/DescribeClass:
   Exclude:

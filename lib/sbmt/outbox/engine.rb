@@ -26,6 +26,31 @@ module Sbmt
           c.rate_interval = 60
           c.shuffle_jobs = true
         end
+        c.default_worker_version = 2
+
+        # worker v2
+        c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
+          pc.concurrency = 6
+          pc.threads_count = 2
+          pc.general_timeout = 60
+          pc.regular_items_batch_size = 200
+          pc.retryable_items_batch_size = 100
+
+          pc.tactic = "default"
+          pc.rate_limit = 60
+          pc.rate_interval = 60
+          pc.min_queue_size = 10
+          pc.max_queue_size = 100
+          pc.min_queue_timelag = 5
+          pc.queue_delay = 0.1
+        end
+        c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
+          pc.threads_count = 4
+          pc.general_timeout = 120
+          pc.cutoff_timeout = 60
+          pc.brpop_delay = 2
+        end
+
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
         c.batch_process_middlewares = []
         c.item_process_middlewares = []

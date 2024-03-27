@@ -21,6 +21,17 @@ describe Sbmt::Outbox::BaseItem do
     end
   end
 
+  describe "#retry_strategies" do
+    let(:outbox_item) { create(:combined_outbox_item) }
+
+    it "has proper defaults" do
+      expect(outbox_item.config.retry_strategies).to eq([
+        Sbmt::Outbox::RetryStrategies::ExponentialBackoff,
+        Sbmt::Outbox::RetryStrategies::LatestAvailable
+      ])
+    end
+  end
+
   describe "#options" do
     let(:outbox_item) { create(:outbox_item) }
     let(:dispatched_at_header_name) { Sbmt::Outbox::OutboxItem::DISPATCH_TIME_HEADER_NAME }

@@ -3,6 +3,8 @@
 Yabeda.configure do
   # error_counter retry_counter sent_counter fetch_error_counter discarded_counter
   group :outbox do
+    default_tag(:worker_version, 1)
+
     counter :created_counter,
       tags: %i[type name partition owner],
       comment: "The total number of created messages"
@@ -44,28 +46,53 @@ Yabeda.configure do
   end
 
   group :box_worker do
+    default_tag(:worker_version, 1)
+    default_tag(:worker_name, "worker")
+
     counter :job_counter,
-      tags: %i[type name partition worker_number state],
+      tags: %i[type name partition state],
       comment: "The total number of processed jobs"
 
     counter :job_timeout_counter,
-      tags: %i[type name partition_key worker_number],
+      tags: %i[type name partition_key],
       comment: "Requeue of a job that occurred while processing the batch"
 
     counter :job_items_counter,
-      tags: %i[type name partition worker_number],
+      tags: %i[type name partition],
       comment: "The total number of processed items in jobs"
 
     histogram :job_execution_runtime,
       comment: "A histogram of the job execution time",
       unit: :seconds,
-      tags: %i[type name partition worker_number],
+      tags: %i[type name partition],
       buckets: [0.5, 1, 2.5, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 300, 600]
 
     histogram :item_execution_runtime,
       comment: "A histogram of the item execution time",
       unit: :seconds,
-      tags: %i[type name partition worker_number],
+      tags: %i[type name partition],
+      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300]
+
+    counter :batches_per_poll_counter,
+      tags: %i[type name partition],
+      comment: "The total number of poll batches per poll"
+
+    gauge :redis_job_queue_size,
+      tags: %i[type name partition],
+      comment: "The total size of redis job queue"
+
+    gauge :redis_job_queue_time_lag,
+      tags: %i[type name partition],
+      comment: "The total time lag of redis job queue"
+
+    counter :poll_throttling_counter,
+      tags: %i[type name partition throttler status],
+      comment: "The total number of poll throttlings"
+
+    histogram :poll_throttling_runtime,
+      comment: "A histogram of the poll throttling time",
+      unit: :seconds,
+      tags: %i[type name partition throttler],
       buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300]
   end
 end

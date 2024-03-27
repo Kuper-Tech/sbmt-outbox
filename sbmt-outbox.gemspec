@@ -41,6 +41,7 @@ Gem::Specification.new do |s|
   s.add_dependency "redlock", "> 1.0", "< 3.0"
   s.add_dependency "redis-client", ">= 0.14.1", "< 1.0.0"
   s.add_dependency "http_health_check", "~> 0.5"
+  s.add_dependency "ruby-limiter", "~> 2.3"
 
   s.add_development_dependency "appraisal"
   s.add_development_dependency "bundler"

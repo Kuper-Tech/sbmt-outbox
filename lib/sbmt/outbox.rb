@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "rails"
+require "active_job"
+require "active_record"
 require "dry-initializer"
 require "dry-monads"
 require "dry/monads/do"
@@ -53,12 +55,24 @@ module Sbmt
       @logger ||= Sbmt::Outbox::Logger.new
     end
 
+    def poller_config
+      @poller_config ||= config.poller
+    end
+
+    def processor_config
+      @processor_config ||= config.processor
+    end
+
+    def default_worker_version
+      @default_worker_version ||= config.default_worker_version&.to_i || 2
+    end
+
     def active_record_base_class
-      @active_record_base_class ||= config.active_record_base_class.safe_constantize || ActiveRecord::Base
+      @active_record_base_class ||= config.active_record_base_class.safe_constantize || ::ActiveRecord::Base
     end
 
     def active_job_base_class
-      @active_job_base_class ||= config.active_job_base_class.safe_constantize || ActiveJob::Base
+      @active_job_base_class ||= config.active_job_base_class.safe_constantize || ::ActiveJob::Base
     end
 
     def error_tracker
