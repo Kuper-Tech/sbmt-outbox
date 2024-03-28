@@ -48,7 +48,7 @@ module Sbmt
           pc.threads_count = 4
           pc.general_timeout = 120
           pc.cutoff_timeout = 60
-          pc.brpop_delay = 2
+          pc.brpop_delay = 1
         end
 
         c.database_switcher = "Sbmt::Outbox::DatabaseSwitcher"
