@@ -12,6 +12,8 @@ module Sbmt
         delegate :processor_config, :batch_process_middlewares, :logger, to: "Sbmt::Outbox"
         attr_reader :lock_timeout, :brpop_delay
 
+        REDIS_BRPOP_MIN_DELAY = 0.1
+
         def initialize(
           boxes,
           threads_count: nil,
@@ -20,7 +22,7 @@ module Sbmt
           redis: nil
         )
           @lock_timeout = lock_timeout || processor_config.general_timeout
-          @brpop_delay = brpop_delay || processor_config.brpop_delay
+          @brpop_delay = brpop_delay || redis_brpop_delay(boxes.count, processor_config.brpop_delay)
 
           super(boxes: boxes, threads_count: threads_count || processor_config.threads_count, name: "processor", redis: redis)
         end
@@ -94,6 +96,12 @@ module Sbmt
 
         def redis_block_timeout
           redis.read_timeout + brpop_delay
+        end
+
+        def redis_brpop_delay(boxes_count, default_delay)
+          return default_delay if boxes_count == 1
+
+          REDIS_BRPOP_MIN_DELAY
         end
       end
     end

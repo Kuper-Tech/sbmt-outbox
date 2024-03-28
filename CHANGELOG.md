@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.0.1] - 2024-03-28
+
+### Added
+- `PollThrottler::RateLimited` is now per box-based
+
+### Fixed
+- `BRPOP` timeout default for queue processing
+
 ## [6.0.0] - 2024-02-04
 
 ### Added
