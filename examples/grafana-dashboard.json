@@ -1,6 +1,25 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
@@ -569,6 +588,7 @@
       "type": "table"
     },
     {
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -576,6 +596,7 @@
         "y": 4
       },
       "id": 51,
+      "panels": [],
       "title": "Overview",
       "type": "row"
     },
@@ -719,24 +740,9 @@
           "legendFormat": "delivered",
           "range": true,
           "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(inbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name)",
-          "hide": false,
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "delivered",
-          "range": true,
-          "refId": "C"
         }
       ],
-      "title": "Creating VS delivering rate",
+      "title": "Creating rate VS processing rate",
       "type": "timeseries"
     },
     {
@@ -898,7 +904,7 @@
           "editorMode": "code",
           "expr": "sum(rate(outbox_fetch_error_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name)",
           "hide": false,
-          "legendFormat": "not found",
+          "legendFormat": "already processed",
           "range": true,
           "refId": "D"
         },
@@ -1386,7 +1392,7 @@
           "refId": "D"
         }
       ],
-      "title": "Processing item latency",
+      "title": "Processing time",
       "type": "timeseries"
     },
     {
@@ -1397,9 +1403,9 @@
         "x": 0,
         "y": 38
       },
-      "id": 25,
+      "id": 75,
       "panels": [],
-      "title": "Delivery metrics",
+      "title": "Worker V2",
       "type": "row"
     },
     {
@@ -1419,7 +1425,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 11,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1427,13 +1433,16 @@
               "viz": false
             },
             "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
-            "spanNulls": false,
+            "showPoints": "auto",
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -1456,17 +1465,18 @@
               }
             ]
           },
-          "unit": "items/s"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 9,
         "w": 12,
         "x": 0,
         "y": 39
       },
-      "id": 29,
+      "id": 76,
+      "interval": "1m",
       "options": {
         "legend": {
           "calcs": [],
@@ -1475,11 +1485,11 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "mode": "single",
+          "sort": "none"
         }
       },
-      "pluginVersion": "9.0.7",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -1487,32 +1497,402 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(outbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name, pod)",
+          "exemplar": false,
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_job_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\", worker_name=\"poller\"}[$__rate_interval])) by (le, partition))",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
           "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
+        }
+      ],
+      "title": "Poll runtime (p95) per partition",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 11,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
         },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 39
+      },
+      "id": 83,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(inbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name, pod)",
+          "exemplar": false,
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_job_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\", worker_name=\"processor\"}[$__rate_interval])) by (le))",
+          "format": "time_series",
           "hide": false,
+          "instant": false,
           "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "{{pod}}",
+          "legendFormat": "p95",
           "range": true,
-          "refId": "B"
+          "refId": "A"
         }
       ],
-      "title": "Delivered rate by pod",
+      "title": "Process bucket runtime (p95)",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 11,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "id": 81,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(box_worker_batches_per_poll_counter{name=~\"$box_name\", namespace=\"$namespace\", worker_version=\"2\"}[1m])) by (partition)",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{partition}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "DB replica reqs/poll per sec",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 9,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "id": 84,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "avg(increase(box_worker_job_items_counter{name=~\"$box_name\", namespace=\"$namespace\", worker_version=\"2\", worker_name=\"poller\"}[$__rate_interval]))",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "items per poll",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Items per poll cycle (avg)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 57
+      },
+      "id": 80,
+      "interval": "1m",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "100 * sum(rate(box_worker_poll_throttling_counter{name=~\"$box_name\", namespace=\"$namespace\", worker_version=\"2\", status != \"noop\"}[$__rate_interval])) by (throttler)\n/ \nsum(rate(box_worker_poll_throttling_counter{name=~\"$box_name\", namespace=\"$namespace\", worker_version=\"2\"}[$__rate_interval])) by (throttler)",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{throttler}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Poll throttle",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1544,7 +1924,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1568,17 +1948,18 @@
               }
             ]
           },
-          "unit": "items/s"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 9,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 57
       },
-      "id": 34,
+      "id": 79,
+      "interval": "1m",
       "options": {
         "legend": {
           "calcs": [],
@@ -1587,11 +1968,10 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "mode": "single",
+          "sort": "none"
         }
       },
-      "pluginVersion": "9.0.7",
       "targets": [
         {
           "datasource": {
@@ -1599,31 +1979,18 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(outbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name, partition) > 0 ",
+          "exemplar": false,
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_poll_throttling_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval])) by (partition, le))",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
           "interval": "",
-          "intervalFactor": 2,
           "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(inbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name, partition) > 0 ",
-          "hide": false,
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "{{partition}}",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "Delivered rate by partition",
+      "title": "Poll throttle cycle runtime (p95)",
       "type": "timeseries"
     },
     {
@@ -1637,48 +2004,76 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 11,
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
           "mappings": [],
-          "unit": "items"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 12,
+        "h": 9,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 66
       },
-      "id": 61,
+      "id": 78,
+      "interval": "1m",
       "options": {
-        "displayLabels": [],
         "legend": {
+          "calcs": [],
           "displayMode": "list",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "value"
-          ]
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "sum"
-          ],
-          "fields": "",
-          "values": false
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "9.0.7",
       "targets": [
         {
           "datasource": {
@@ -1686,33 +2081,19 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(outbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}) by (name, partition)",
+          "exemplar": false,
+          "expr": "max(box_worker_redis_job_queue_time_lag{name=~\"$box_name\", namespace=\"$namespace\", worker_version=\"2\"}[$__rate_interval]) by (name)",
+          "format": "time_series",
           "hide": false,
+          "instant": false,
           "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "{{partition}}",
+          "legendFormat": "{{name}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(inbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}) by (name, partition)",
-          "hide": false,
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "{{partition}}",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "Total delivered items by partition",
-      "type": "piechart"
+      "title": "Redis job-queue time-lag",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -1725,51 +2106,76 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 11,
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
           "mappings": [],
-          "unit": "items"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 12,
+        "h": 9,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 66
       },
-      "id": 64,
+      "id": 77,
+      "interval": "1m",
       "options": {
-        "displayLabels": [
-          "percent"
-        ],
         "legend": {
+          "calcs": [],
           "displayMode": "list",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "value",
-            "percent"
-          ]
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "sum"
-          ],
-          "fields": "",
-          "values": false
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "9.0.7",
       "targets": [
         {
           "datasource": {
@@ -1778,19 +2184,18 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(outbox_created_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name, partition) - sum(increase(outbox_sent_counter{namespace=\"$namespace\", name=~\"$box_name\"}[$__rate_interval])) by (name, partition) >= 0",
+          "expr": "max(box_worker_redis_job_queue_size{name=~\"$box_name\", namespace=\"$namespace\", worker_version=\"2\"}[$__rate_interval]) by (name)",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "{{partition}}",
+          "legendFormat": "{{name}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Queue lag increase by partition",
-      "type": "piechart"
+      "title": "Redis job-queue size",
+      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -1798,7 +2203,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 75
       },
       "id": 23,
       "panels": [],
@@ -1868,7 +2273,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 62
+        "y": 76
       },
       "id": 13,
       "options": {
@@ -1890,13 +2295,25 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (name, partition) (rate(box_worker_job_items_counter{name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval]))",
+          "expr": "sum by (name, partition) (rate(box_worker_job_items_counter{name=~\"$box_name\", namespace=~\"$namespace\", worker_version != \"2\"}[$__rate_interval]))",
           "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum by (name) (rate(box_worker_job_items_counter{name=~\"$box_name\", namespace=~\"$namespace\", worker_version = \"2\", worker_name=\"processor\"}[$__rate_interval]))",
+          "hide": false,
+          "legendFormat": "$box_name",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Processing item rate by partition",
+      "title": "Processing item rate",
       "type": "timeseries"
     },
     {
@@ -1962,7 +2379,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 62
+        "y": 76
       },
       "id": 16,
       "options": {
@@ -1984,14 +2401,26 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(box_worker_item_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval])) by (le, partition))",
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_item_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\", worker_version != \"2\"}[$__rate_interval])) by (le, partition))",
           "hide": false,
           "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_item_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\", worker_version = \"2\", worker_name=\"processor\"}[$__rate_interval])) by (le, partition))",
+          "hide": false,
+          "legendFormat": "$box_name",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Processing item latency by partition (95th percentile)",
+      "title": "Processing item latency (95th percentile)",
       "type": "timeseries"
     },
     {
@@ -2057,7 +2486,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 73
+        "y": 87
       },
       "id": 14,
       "options": {
@@ -2151,7 +2580,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 73
+        "y": 87
       },
       "id": 17,
       "options": {
@@ -2210,7 +2639,7 @@
         "h": 11,
         "w": 12,
         "x": 6,
-        "y": 84
+        "y": 98
       },
       "id": 60,
       "options": {
@@ -2246,11 +2675,23 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(box_worker_item_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval])) by (le, partition))",
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_item_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\", worker_version != \"2\"}[$__rate_interval])) by (le, partition))",
           "hide": false,
           "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(box_worker_item_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\", worker_version = \"2\", worker_name=\"processor\"}[$__rate_interval])) by (le))",
+          "hide": true,
+          "legendFormat": "{{partition}}",
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Mean processing item latency by partition (95th percentile)",
@@ -2262,7 +2703,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 95
+        "y": 109
       },
       "id": 59,
       "panels": [],
@@ -2329,9 +2770,9 @@
       },
       "gridPos": {
         "h": 11,
-        "w": 12,
-        "x": 6,
-        "y": 96
+        "w": 24,
+        "x": 0,
+        "y": 110
       },
       "id": 57,
       "options": {
@@ -2437,7 +2878,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 107
+        "y": 121
       },
       "id": 19,
       "options": {
@@ -2531,7 +2972,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 107
+        "y": 121
       },
       "id": 6,
       "options": {
@@ -2602,195 +3043,6 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisSoftMin": 0,
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 12,
-        "x": 0,
-        "y": 118
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "asc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum by (name, partition) (rate(box_worker_job_counter{state=\"processed\", name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval]))",
-          "legendFormat": "{{partition}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Processing batch rate by partition",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic",
-            "seriesBy": "last"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 12,
-        "x": 12,
-        "y": 118
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "asc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(box_worker_job_execution_runtime_seconds_bucket{name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval])) by (le, partition))",
-          "hide": false,
-          "legendFormat": "{{partition}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Processing batch latency by partition (95th percentile)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -2841,7 +3093,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 129
+        "y": 132
       },
       "id": 9,
       "options": {
@@ -2935,7 +3187,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 129
+        "y": 132
       },
       "id": 11,
       "options": {
@@ -3030,7 +3282,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 140
+        "y": 143
       },
       "id": 8,
       "options": {
@@ -3052,7 +3304,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (name, partition) (rate(box_worker_job_counter{state=\"failed\", name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval]))",
+          "expr": "sum by (name) (rate(box_worker_job_counter{state=\"failed\", name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval]))",
           "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
@@ -3123,7 +3375,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 140
+        "y": 143
       },
       "id": 3,
       "options": {
@@ -3145,13 +3397,25 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (name, partition) (rate(box_worker_job_counter{state=\"skipped\", name=~\"$box_name\", namespace=~\"$namespace\"}[$__rate_interval]))",
+          "expr": "sum by (name, partition) (rate(box_worker_job_counter{state=\"skipped\", name=~\"$box_name\", namespace=~\"$namespace\", worker_version != \"2\"}[$__rate_interval]))",
           "legendFormat": "{{partition}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum by (name) (rate(box_worker_job_counter{state=\"skipped\", name=~\"$box_name\", namespace=~\"$namespace\", worker_version = \"2\"}[$__rate_interval]))",
+          "hide": false,
+          "legendFormat": "{{name}}",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Skipping batch rate by partition",
+      "title": "Skipping batch rate",
       "type": "timeseries"
     },
     {
@@ -3160,7 +3424,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 151
+        "y": 154
       },
       "id": 36,
       "panels": [],
@@ -3232,7 +3496,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 152
+        "y": 155
       },
       "id": 38,
       "interval": "1m",
@@ -3371,7 +3635,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 152
+        "y": 155
       },
       "id": 40,
       "interval": "1m",
@@ -3454,21 +3718,21 @@
         "query": "prometheus",
         "queryValue": "",
         "refresh": 1,
-        "regex": "/^k8s (Prod|Staging)$/",
+        "regex": "/^k8s (Prod|Staging|sb-stage-staging01)$/",
         "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "current": {
           "selected": false,
-          "text": "",
-          "value": ""
+          "text": "paas-content-delivery-conditions",
+          "value": "paas-content-delivery-conditions"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(box_worker_job_counter,namespace) ",
+        "definition": "label_values(outbox_created_counter,namespace)",
         "hide": 0,
         "includeAll": false,
         "label": "Namespace",
@@ -3476,8 +3740,8 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(box_worker_job_counter,namespace) ",
-          "refId": "StandardVariableQuery"
+          "query": "label_values(outbox_created_counter,namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
         "regex": "",
@@ -3488,14 +3752,14 @@
       {
         "current": {
           "selected": false,
-          "text": "",
-          "value": ""
+          "text": "delivery_window_inbox_item",
+          "value": "delivery_window_inbox_item"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(box_worker_job_counter{namespace=\"$namespace\"},name)",
+        "definition": "label_values(outbox_created_counter{namespace=\"$namespace\"},name)",
         "hide": 0,
         "includeAll": false,
         "label": "Box name",
@@ -3503,7 +3767,7 @@
         "name": "box_name",
         "options": [],
         "query": {
-          "query": "label_values(box_worker_job_counter{namespace=\"$namespace\"},name)",
+          "query": "label_values(outbox_created_counter{namespace=\"$namespace\"},name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -3515,13 +3779,13 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Outbox",
+  "title": "Outbox / Inbox",
   "uid": "vMyPDav4z",
-  "version": 139,
+  "version": 163,
   "weekStart": ""
 }
