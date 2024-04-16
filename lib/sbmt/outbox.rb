@@ -12,6 +12,7 @@ require "cutoff"
 require "http_health_check"
 require "redis-client"
 require "connection_pool"
+require "ostruct"
 
 begin
   require "sentry-rails"
@@ -75,12 +76,26 @@ module Sbmt
       @active_job_base_class ||= config.active_job_base_class.safe_constantize || ::ActiveJob::Base
     end
 
+    def action_controller_base_class
+      @action_controller_base_class ||= config.action_controller_base_class.safe_constantize || ::ActionController::API
+    end
+
     def error_tracker
       @error_tracker ||= config.error_tracker.constantize
     end
 
     def database_switcher
       @database_switcher ||= config.database_switcher.constantize
+    end
+
+    def redis
+      @redis ||= ConnectionPool::Wrapper.new(size: ENV.fetch("RAILS_MAX_THREADS", 5).to_i) do
+        RedisClientFactory.build(config.redis)
+      end
+    end
+
+    def memory_store
+      @memory_store ||= ActiveSupport::Cache::MemoryStore.new
     end
 
     def outbox_item_classes

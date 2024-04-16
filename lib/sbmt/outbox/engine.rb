@@ -10,12 +10,18 @@ module Sbmt
       config.outbox = ActiveSupport::OrderedOptions.new.tap do |c|
         c.active_record_base_class = "ApplicationRecord"
         c.active_job_base_class = "ApplicationJob"
+        c.action_controller_base_class = "ActionController::API"
         c.error_tracker = "Sbmt::Outbox::ErrorTracker"
         c.outbox_item_classes = []
         c.inbox_item_classes = []
         c.paths = []
         c.disposable_transports = false
         c.redis = {url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379")}
+        c.ui = ActiveSupport::OrderedOptions.new.tap do |c|
+          c.serve_local = false
+          c.local_endpoint = "http://localhost:5173"
+          c.cdn_url = "https://cdn.jsdelivr.net/npm/sbmt-outbox-ui@0.0.6/dist/assets/index.js"
+        end
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
           c.general_timeout = 120
           c.cutoff_timeout = 60

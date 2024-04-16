@@ -10,7 +10,7 @@ ENV["RAILS_ENV"] = "test"
 require "combustion"
 
 begin
-  Combustion.initialize! :active_record, :active_job do
+  Combustion.initialize! :active_record, :active_job, :action_controller do
     if ENV["LOG"].to_s.empty?
       config.logger = ActiveSupport::TaggedLogging.new(Logger.new(nil))
       config.log_level = :fatal
@@ -65,5 +65,6 @@ RSpec.configure do |config|
   redis = RedisClient.new(url: ENV["REDIS_URL"])
   config.before do
     redis.call("FLUSHDB")
+    Sbmt::Outbox.memory_store.clear
   end
 end
