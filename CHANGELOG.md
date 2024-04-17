@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.2.0] - 2024-04-17
+
+### Added
+- buckets for the histogram are brought to a single form
+
 ## [6.1.0] - 2024-04-15
 
 ### Added

@@ -41,7 +41,7 @@ Yabeda.configure do
     histogram :process_latency,
       tags: %i[type name partition owner],
       unit: :seconds,
-      buckets: [1, 2.5, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 300, 600, 1200].freeze,
+      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 300].freeze,
       comment: "A histogram outbox process latency"
   end
 
@@ -65,13 +65,13 @@ Yabeda.configure do
       comment: "A histogram of the job execution time",
       unit: :seconds,
       tags: %i[type name partition],
-      buckets: [0.5, 1, 2.5, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 300, 600]
+      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 300]
 
     histogram :item_execution_runtime,
       comment: "A histogram of the item execution time",
       unit: :seconds,
       tags: %i[type name partition],
-      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300]
+      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 300]
 
     counter :batches_per_poll_counter,
       tags: %i[type name partition],
@@ -93,6 +93,6 @@ Yabeda.configure do
       comment: "A histogram of the poll throttling time",
       unit: :seconds,
       tags: %i[type name partition throttler],
-      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300]
+      buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 300]
   end
 end
