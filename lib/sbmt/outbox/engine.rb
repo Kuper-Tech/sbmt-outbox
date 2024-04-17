@@ -10,7 +10,9 @@ module Sbmt
       config.outbox = ActiveSupport::OrderedOptions.new.tap do |c|
         c.active_record_base_class = "ApplicationRecord"
         c.active_job_base_class = "ApplicationJob"
-        c.action_controller_base_class = "ActionController::API"
+        c.action_controller_api_base_class = "ActionController::API"
+        # We cannot use ApplicationController because often it could be inherited from ActionController::API
+        c.action_controller_base_class = "ActionController::Base"
         c.error_tracker = "Sbmt::Outbox::ErrorTracker"
         c.outbox_item_classes = []
         c.inbox_item_classes = []

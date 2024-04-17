@@ -3,7 +3,7 @@
 module Sbmt
   module Outbox
     module Api
-      class BaseController < Sbmt::Outbox.action_controller_base_class
+      class BaseController < Sbmt::Outbox.action_controller_api_base_class
         private
 
         def render_ok

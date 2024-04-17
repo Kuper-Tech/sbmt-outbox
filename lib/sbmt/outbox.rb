@@ -76,8 +76,12 @@ module Sbmt
       @active_job_base_class ||= config.active_job_base_class.safe_constantize || ::ActiveJob::Base
     end
 
+    def action_controller_api_base_class
+      @action_controller_api_base_class ||= config.action_controller_api_base_class.safe_constantize || ::ActionController::API
+    end
+
     def action_controller_base_class
-      @action_controller_base_class ||= config.action_controller_base_class.safe_constantize || ::ActionController::API
+      @action_controller_base_class ||= config.action_controller_base_class.safe_constantize || ::ActionController::Base
     end
 
     def error_tracker
