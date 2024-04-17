@@ -62,8 +62,17 @@ describe Sbmt::Outbox::V1::Worker do
       expect_to_process_item(@inbox_item_4) do
         worker.stop
       end
+      yabeda_labels = {owner: nil, worker_name: "worker", worker_version: 1}
 
-      worker.start
+      expect { worker.start }
+        .to increment_yabeda_counter(Yabeda.box_worker.job_counter)
+        .with_tags(name: "outbox_item", state: "processed", partition: 0, type: :outbox, **yabeda_labels).by(1)
+        .and increment_yabeda_counter(Yabeda.box_worker.job_counter)
+        .with_tags(name: "outbox_item", state: "processed", partition: 1, type: :outbox, **yabeda_labels).by(1)
+        .and increment_yabeda_counter(Yabeda.box_worker.job_counter)
+        .with_tags(name: "inbox_item", state: "processed", partition: 0, type: :inbox, **yabeda_labels).by(1)
+        .and increment_yabeda_counter(Yabeda.box_worker.job_counter)
+        .with_tags(name: "inbox_item", state: "processed", partition: 1, type: :inbox, **yabeda_labels).by(1)
 
       expect(processed_info[:processed]).to eq [1, 3, 4, 2]
       expect(processed_info[:processed_by_thread][thread_1]).to eq [1, 3, 4]

@@ -7,6 +7,8 @@ module Sbmt
         class Base
           attr_reader :item_class, :worker_name, :worker_version, :log_tags, :yabeda_labels
 
+          delegate :owner, to: :item_class
+
           def initialize(item_class:, worker_name:, worker_version: 2)
             @item_class = item_class
             @worker_name = worker_name
@@ -22,6 +24,7 @@ module Sbmt
             @yabeda_labels = {
               type: item_class.box_type,
               name: metric_safe(item_class.box_name),
+              owner: owner,
               worker_version: 2,
               worker_name: worker_name
             }

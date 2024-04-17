@@ -12,8 +12,8 @@ describe Sbmt::Outbox::V2::Tasks::Base do
   end
 
   it "properly formats yabeda labels" do
-    expect(described_class.new(item_class: InboxItem, worker_name: worker_name).yabeda_labels).to eq(name: "inbox_item", type: :inbox, worker_name: "worker", worker_version: 2)
-    expect(described_class.new(item_class: OutboxItem, worker_name: worker_name).yabeda_labels).to eq(name: "outbox_item", type: :outbox, worker_name: "worker", worker_version: 2)
-    expect(described_class.new(item_class: Combined::OutboxItem, worker_name: worker_name).yabeda_labels).to eq(name: "combined-outbox_item", type: :outbox, worker_name: "worker", worker_version: 2)
+    expect(described_class.new(item_class: InboxItem, worker_name: worker_name).yabeda_labels).to eq(name: "inbox_item", owner: nil, type: :inbox, worker_name: "worker", worker_version: 2)
+    expect(described_class.new(item_class: OutboxItem, worker_name: worker_name).yabeda_labels).to eq(name: "outbox_item", owner: nil, type: :outbox, worker_name: "worker", worker_version: 2)
+    expect(described_class.new(item_class: Combined::OutboxItem, worker_name: worker_name).yabeda_labels).to eq(name: "combined-outbox_item", owner: nil, type: :outbox, worker_name: "worker", worker_version: 2)
   end
 end

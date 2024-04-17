@@ -127,7 +127,8 @@ module Sbmt
                 yabeda_labels: {
                   type: item_class.box_type,
                   name: item_class.box_name,
-                  partition: partition
+                  partition: partition,
+                  owner: item_class.owner
                 },
                 resource_key: resource_key,
                 resource_path: "sbmt/outbox/worker/#{resource_key}"

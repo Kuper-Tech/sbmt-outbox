@@ -49,7 +49,7 @@ describe Sbmt::Outbox::V2::BoxProcessor do
       expect(Sbmt::Outbox.logger).to receive(:with_tags).with(**task.log_tags)
 
       expect { processor.start }
-        .to increment_yabeda_counter(Yabeda.box_worker.job_counter).with_tags(name: "inbox_item", state: "processed", type: :inbox, worker_name: "abstract_worker", worker_version: 2).by(1)
+        .to increment_yabeda_counter(Yabeda.box_worker.job_counter).with_tags(name: "inbox_item", state: "processed", type: :inbox, owner: nil, worker_name: "abstract_worker", worker_version: 2).by(1)
         .and measure_yabeda_histogram(Yabeda.box_worker.job_execution_runtime).with_tags(name: "inbox_item", type: :inbox, worker_name: "abstract_worker", worker_version: 2)
     end
   end

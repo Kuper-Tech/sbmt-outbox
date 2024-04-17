@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "ostruct"
+
 describe Sbmt::Outbox::Middleware::Sentry::TracingBatchProcessMiddleware do
   let(:job) { OpenStruct.new(log_tags: {}) }
   let(:scope) { double("scope") } # rubocop:disable RSpec/VerifiedDoubles

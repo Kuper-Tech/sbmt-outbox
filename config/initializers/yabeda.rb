@@ -50,7 +50,7 @@ Yabeda.configure do
     default_tag(:worker_name, "worker")
 
     counter :job_counter,
-      tags: %i[type name partition state],
+      tags: %i[type name partition state owner],
       comment: "The total number of processed jobs"
 
     counter :job_timeout_counter,
