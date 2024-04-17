@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.1.0] - 2024-04-15
+
+### Added
+- Add `owner` label to `job_counter` metric 
+ 
 ## [6.0.1] - 2024-03-28
 
 ### Added

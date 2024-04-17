@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "ostruct"
+
 describe Sbmt::Outbox::ProcessItem do
   describe "#call" do
     subject(:result) { described_class.call(OutboxItem, outbox_item.id) }
