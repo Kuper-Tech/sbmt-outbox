@@ -124,7 +124,7 @@ module Sbmt
       end
 
       def polling_auto_disabled?
-        return @polling_auto_disabled if defined?(polling_auto_disabled)
+        return @polling_auto_disabled if defined?(@polling_auto_disabled)
         @polling_auto_disabled = yaml_config.fetch(:polling_auto_disabled, false)
       end
 
