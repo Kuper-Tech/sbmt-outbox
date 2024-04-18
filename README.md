@@ -97,6 +97,91 @@ Example of a Grafana dashboard that you can import [from a file](./examples/graf
 
 ## Manual configuration
 
+### `Outboxfile`
+
+First of all you shoudl create an `Outboxfile` at the root of your application with the following code:
+
+```ruby
+# frozen_string_literal: true
+
+require_relative "config/environment"
+
+# Comment out this line if you don't want to use a metrics exporter
+Yabeda::Prometheus::Exporter.start_metrics_server!
+```
+
+### `config/initializers/outbox.rb`
+
+The `config/initializers/outbox.rb` file contains the overall general configuration.
+
+```ruby
+# config/initializers/outbox.rb
+
+Rails.application.config.outbox.tap do |config|
+  config.redis = {url: ENV.fetch("REDIS_URL")} # Redis is used as a coordinator service
+  config.paths << Rails.root.join("config/outbox.yml").to_s # optional; configuration file paths, deep merged at the application start, useful with Rails engines
+
+  # optional (worker v2: default)
+  c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
+    # max parallel threads (per box-item, globally)
+    pc.concurrency = 6
+    # max threads count (per worker process)
+    pc.threads_count = 1
+    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    pc.general_timeout = 60
+    # poll buffer consists of regular items (errors_count = 0, i.e. without any processing errors) and retryable items (errors_count > 0)
+    # max poll buffer size = regular_items_batch_size + retryable_items_batch_size
+    pc.regular_items_batch_size = 200
+    pc.retryable_items_batch_size = 100
+
+    # poll tactic: default is optimal for most cases: rate limit + redis job-queue size threshold
+    # poll tactic: aggressive is for high-intencity data: without rate limits + redis job-queue size threshold
+    # poll tactic: low-priority is for low-intencity data: rate limits + redis job-queue size threshold + + redis job-queue lag threshold
+    pc.tactic = "default"
+    # number of batches that one thread will process per rate interval
+    pc.rate_limit = 60
+    # rate interval in seconds
+    pc.rate_interval = 60
+    # mix / max redis job queue thresholds per box-item for default / aggressive / low-priority poll tactics
+    pc.min_queue_size = 10
+    pc.max_queue_size = 100
+    # min redis job queue time lag threshold per box-item for low-priority poll tactic (in seconds)
+    pc.min_queue_timelag = 5
+    # throttling delay for default / aggressive / low-priority poll tactics (in seconds)
+    pc.queue_delay = 0.1
+  end
+
+  # optional (worker v2: default)
+  c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
+    # max threads count (per worker process)
+    pc.threads_count = 4
+    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    pc.general_timeout = 120
+    # BRPOP delay (in seconds) for polling redis job queue per box-item
+    pc.brpop_delay = 2
+  end
+
+  # optional (worker v1: DEPRECATED)
+  config.process_items.tap do |x|
+    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
+    x.general_timeout = 180
+    # maximum batch processing time, after which the processing of the batch will be aborted in the current thread,
+    # and the next thread that picks up the batch will start processing from the same place
+    x.cutoff_timeout = 60
+    # batch size
+    x.batch_size = 200
+  end
+
+  # optional (worker v1: DEPRECATED)
+  config.worker.tap do |worker|
+    # number of batches that one thread will process per rate interval
+    worker.rate_limit = 10
+    # rate interval in seconds
+    worker.rate_interval = 60
+  end
+end
+```
+
 ### Outbox pattern
 
 You should create a database table in order for the process to view your outgoing messages.
@@ -197,76 +282,6 @@ outbox_items:
       - class: produce_message
         event_name: "orders_completed"
         topic: "orders_completed_topic"
-```
-
-#### outbox.rb
-
-The `outbox.rb` file contains the overall general configuration.
-
-```ruby
-# config/initializers/outbox.rb
-
-Rails.application.config.outbox.tap do |config|
-  config.redis = {url: ENV.fetch("REDIS_URL")} # Redis is used as a coordinator service
-  config.paths << Rails.root.join("config/outbox.yml").to_s # optional; configuration file paths, deep merged at the application start, useful with Rails engines
-
-  # optional
-  config.process_items.tap do |x|
-    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
-    x[:general_timeout] = 180
-    # maximum batch processing time, after which the processing of the batch will be aborted in the current thread,
-    # and the next thread that picks up the batch will start processing from the same place
-    x[:cutoff_timeout] = 60
-    # batch size
-    x[:batch_size] = 200
-  end
-
-  # optional (worker v1: DEPRECATED)
-  config.worker.tap do |worker|
-    # number of batches that one thread will process per rate interval
-    worker[:rate_limit] = 10
-    # rate interval in seconds
-    worker[:rate_interval] = 60
-  end
-  
-  # optional (worker v2: default)
-  c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
-    # max parallel threads (per box-item, globally)
-    pc.concurrency = 6
-    # max threads count (per worker process)
-    pc.threads_count = 1
-    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
-    pc.general_timeout = 60
-    # poll buffer consists of regular items (errors_count = 0, i.e. without any processing errors) and retryable items (errors_count > 0)
-    # max poll buffer size = regular_items_batch_size + retryable_items_batch_size
-    pc.regular_items_batch_size = 200
-    pc.retryable_items_batch_size = 100
-
-    # poll tactic: default is optimal for most cases: rate limit + redis job-queue size threshold
-    # poll tactic: aggressive is for high-intencity data: without rate limits + redis job-queue size threshold
-    # poll tactic: low-priority is for low-intencity data: rate limits + redis job-queue size threshold + + redis job-queue lag threshold
-    pc.tactic = "default"
-    # number of batches that one thread will process per rate interval
-    pc.rate_limit = 60
-    # rate interval in seconds
-    pc.rate_interval = 60
-    # mix / max redis job queue thresholds per box-item for default / aggressive / low-priority poll tactics
-    pc.min_queue_size = 10
-    pc.max_queue_size = 100
-    # min redis job queue time lag threshold per box-item for low-priority poll tactic (in seconds)
-    pc.min_queue_timelag = 5
-    # throttling delay for default / aggressive / low-priority poll tactics (in seconds)
-    pc.queue_delay = 0.1
-  end
-  c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
-    # max threads count (per worker process)
-    pc.threads_count = 4
-    # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
-    pc.general_timeout = 120
-    # BRPOP delay (in seconds) for polling redis job queue per box-item
-    pc.brpop_delay = 2
-  end
-end
 ```
 
 ### Inbox pattern
@@ -376,7 +391,7 @@ outbox_items:
 
 The worker process consists of a poller and a processor, each of which has its own thread pool.
 The poller is responsible for fetching messages ready for processing from the database table.
-The processor, in turn, is used for their consistent processing (while preserving the order of messages and the partitioning key). 
+The processor, in turn, is used for their consistent processing (while preserving the order of messages and the partitioning key).
 Each bunch of buckets (i.e. buckets partition) is consistently fetched by poller one at a time. Each bucket is processed one at a time by a processor.
 A bucket is a number in a row in the `bucket` column generated by the partitioning strategy based on the `event_key` column when a message was committed to the database within the range of zero to `bucket_size`.
 The number of bucket partitions, which poller uses is 6 by default. The number of poller threads is 2 by default and is not intended for customization.
@@ -469,12 +484,41 @@ end
 
 The gem is optionally integrated with OpenTelemetry. If your main application has `opentelemetry-*` gems, the tracing will be configured automatically.
 
-## CLI Arguments (v1: DEPRECATED)
+## Web UI
 
-| Key                   | Description                                                               |
-|-----------------------|---------------------------------------------------------------------------|
-| `--boxes or -b`       | Outbox/Inbox processors to start`                                         |
-| `--concurrency or -c` | Number of threads. Default 10.                                            |
+Outbox comes with a [Ract web application](https://github.com/SberMarket-Tech/sbmt-outbox-ui) that can list existing outbox and inbox models.
+
+```ruby
+Rails.application.routes.draw do
+  mount Sbmt::Outbox::Engine => "/outbox-ui"
+end
+```
+
+**The path `/outbox-ui` cannot be changed for now**
+
+Under the hood it uses a React application provided as [npm package](https://www.npmjs.com/package/sbmt-outbox-ui).
+
+By default, the npm packages is served from `https://cdn.jsdelivr.net/npm/sbmt-outbox-ui@x.y.z/dist/assets/index.js`. It could be changed by the following config option:
+```ruby
+# config/initializers/outbox.rb
+Rails.application.config.outbox.tap do |config|
+  config.cdn_url = "https://some-cdn-url"
+end
+```
+
+### UI development
+
+If you want to implement some features for Outbox UI, you can serve javascript locally like the following:
+1. Start React application by `npm run dev`
+2. Configure Outbox to serve UI scripts locally:
+```ruby
+# config/initializers/outbox.rb
+Rails.application.config.outbox.tap do |config|
+  config.ui.serve_local = true
+end
+```
+
+We would like to see more features added to the web UI. If you have any suggestions, please feel free to submit a pull request 🤗.
 
 ## CLI Arguments (v2: default)
 
@@ -486,6 +530,13 @@ The gem is optionally integrated with OpenTelemetry. If your main application ha
 | `--poll-threads or -n`     | Number of poll threads. Default 1.                                   |
 | `--poll-tactic or -t`      | Poll tactic. Default "default".                                      |
 | `--worker-version or -w`   | Worker version. Default 2.                                           |
+
+## CLI Arguments (v1: DEPRECATED)
+
+| Key                   | Description                                                               |
+|-----------------------|---------------------------------------------------------------------------|
+| `--boxes or -b`       | Outbox/Inbox processors to start`                                         |
+| `--concurrency or -c` | Number of threads. Default 10.                                            |
 
 ## Development & Test
 
