@@ -3,21 +3,21 @@
 module Sbmt
   module Outbox
     module Api
-      class OutboxItemsController < BaseController
+      class OutboxClassesController < BaseController
         def index
           render_list(Sbmt::Outbox.outbox_item_classes.map do |item|
-            Api::OutboxItem.find_or_initialize(item.box_name)
+            Api::OutboxClass.find_or_initialize(item.box_name)
           end)
         end
 
         def show
-          render_one Api::OutboxItem.find_or_initialize(params.require(:id))
+          render_one Api::OutboxClass.find_or_initialize(params.require(:id))
         end
 
         def update
-          record = Api::OutboxItem.find_or_initialize(params.require(:id))
+          record = Api::OutboxClass.find_or_initialize(params.require(:id))
           record.assign_attributes(
-            params.require(:outbox_item).permit(:polling_enabled)
+            params.require(:outbox_class).permit(:polling_enabled)
           )
           record.save
 
@@ -25,7 +25,7 @@ module Sbmt
         end
 
         def destroy
-          record = Api::OutboxItem.find(params.require(:id))
+          record = Api::OutboxClass.find(params.require(:id))
           unless record
             render_ok
             return

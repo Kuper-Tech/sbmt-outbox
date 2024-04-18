@@ -3,7 +3,7 @@
 module Sbmt
   module Outbox
     module Api
-      class OutboxItem < Api::BaseItem
+      class OutboxClass < Api::BoxClass
       end
     end
   end

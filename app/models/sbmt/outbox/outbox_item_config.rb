@@ -4,7 +4,7 @@ module Sbmt
   module Outbox
     class OutboxItemConfig < BaseItemConfig
       def polling_enabled?
-        polling_enabled_for?(Sbmt::Outbox::Api::OutboxItem)
+        polling_enabled_for?(Sbmt::Outbox::Api::OutboxClass)
       end
 
       private

@@ -22,7 +22,7 @@ module Sbmt
         c.ui = ActiveSupport::OrderedOptions.new.tap do |c|
           c.serve_local = false
           c.local_endpoint = "http://localhost:5173"
-          c.cdn_url = "https://cdn.jsdelivr.net/npm/sbmt-outbox-ui@0.0.6/dist/assets/index.js"
+          c.cdn_url = "https://cdn.jsdelivr.net/npm/sbmt-outbox-ui@0.0.7/dist/assets/index.js"
         end
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
           c.general_timeout = 120

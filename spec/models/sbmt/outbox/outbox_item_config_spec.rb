@@ -8,7 +8,7 @@ describe Sbmt::Outbox::OutboxItemConfig do
   end
 
   context "when polling is disabled" do
-    before { Sbmt::Outbox::Api::OutboxItem.new(id: OutboxItem.box_name, polling_enabled: false).save }
+    before { Sbmt::Outbox::Api::OutboxClass.new(id: OutboxItem.box_name, polling_enabled: false).save }
 
     it { expect(config.polling_enabled?).to be false }
   end
@@ -19,7 +19,7 @@ describe Sbmt::Outbox::OutboxItemConfig do
     it { expect(config.polling_enabled?).to be false }
 
     context "when polling is enabled on the box" do
-      before { Sbmt::Outbox::Api::OutboxItem.new(id: OutboxItem.box_name, polling_enabled: true).save }
+      before { Sbmt::Outbox::Api::OutboxClass.new(id: OutboxItem.box_name, polling_enabled: true).save }
 
       it { expect(config.polling_enabled?).to be true }
     end

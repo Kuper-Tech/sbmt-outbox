@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe Sbmt::Outbox::Api::OutboxItemsController do
+describe Sbmt::Outbox::Api::OutboxClassesController do
   routes { Sbmt::Outbox::Engine.routes }
 
   let(:box_id) { OutboxItem.box_name }
