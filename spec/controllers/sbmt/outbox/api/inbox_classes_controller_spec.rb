@@ -27,7 +27,7 @@ describe Sbmt::Outbox::Api::InboxClassesController do
 
   describe "#update" do
     it "updates API config for inbox item" do
-      put :update, params: {id: box_id, inbox_item: {polling_enabled: "false"}}
+      put :update, params: {id: box_id, inbox_class: {polling_enabled: "false"}}
 
       expect(response).to be_successful
       expect(response.parsed_body["id"]).to eq box_id
