@@ -1,11 +1,12 @@
 [![Gem Version](https://badge.fury.io/rb/sbmt-outbox.svg)](https://badge.fury.io/rb/sbmt-outbox)
 [![Build Status](https://github.com/SberMarket-Tech/sbmt-outbox/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/SberMarket-Tech/sbmt-outbox/actions?query=branch%3Amaster)
 
-# Sbmt-Outbox
 
-<img src="https://raw.githubusercontent.com/SberMarket-Tech/sbmt-outbox/master/.github/outbox-logo.png" alt="sbmt-outbox logo" height="140" />
+<img src="https://raw.githubusercontent.com/SberMarket-Tech/sbmt-outbox/master/.github/outbox-logo.png" alt="sbmt-outbox logo" height="180" />
 
 Microservices often publish messages after a transaction has been committed. Writing to the database and publishing a message are two separate transactions, so they must be atomic. A failed publication of a message could lead to a critical failure of the business process.
+
+# Sbmt-Outbox
 
 The Outbox pattern provides a reliable solution for message publishing. The idea behind this approach is to have an "outgoing message table" in the service's database. Before the main transaction completes, a new message row is added to this table. As a result, two actions take place as part of a single transaction. An asynchronous process retrieves new rows from the database table and, if they exist, publishes the messages to the broker.
 
