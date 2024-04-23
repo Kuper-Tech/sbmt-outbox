@@ -3,7 +3,6 @@
 # See compatibility table at https://www.fastruby.io/blog/ruby/rails/versions/compatibility-table.html
 
 versions_map = {
-  "5.2" => %w[2.7],
   "6.0" => %w[2.7],
   "6.1" => %w[3.0 3.1],
   "7.0" => %w[3.2],

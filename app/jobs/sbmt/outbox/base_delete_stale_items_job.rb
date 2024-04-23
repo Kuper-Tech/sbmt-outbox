@@ -31,7 +31,7 @@ module Sbmt
         self.item_class = item_class_name.constantize
 
         client = if Gem::Version.new(Redlock::VERSION) >= Gem::Version.new("2.0.0")
-          RedisClientFactory.build(config.redis)
+          Sbmt::Outbox.redis
         else
           Redis.new(config.redis)
         end

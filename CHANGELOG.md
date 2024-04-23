@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.3.0] - 2024-04-18
+
+- Add support for [Outbox UI](https://github.com/SberMarket-Tech/sbmt-outbox-ui)
+- Add ability to pause poller v2
+
 ## [6.2.0] - 2024-04-17
 
 ### Added
@@ -15,8 +20,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [6.1.0] - 2024-04-15
 
 ### Added
-- Add `owner` label to `job_counter` metric 
- 
+- Add `owner` label to `job_counter` metric
+
 ## [6.0.1] - 2024-03-28
 
 ### Added

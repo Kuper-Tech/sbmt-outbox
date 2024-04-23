@@ -6,6 +6,8 @@ module Sbmt
       DEFAULT_BUCKET_SIZE = 16
       DEFAULT_PARTITION_STRATEGY = :number
 
+      delegate :yaml_config, :memory_store, to: "Sbmt::Outbox"
+
       def initialize(box_name)
         self.box_name = box_name
 
@@ -15,11 +17,11 @@ module Sbmt
       def owner
         return @owner if defined? @owner
 
-        @owner = options[:owner].presence || Outbox.yaml_config[:owner].presence
+        @owner = options[:owner].presence || yaml_config[:owner].presence
       end
 
       def bucket_size
-        @bucket_size ||= (options[:bucket_size] || Outbox.yaml_config.fetch(:bucket_size, DEFAULT_BUCKET_SIZE)).to_i
+        @bucket_size ||= (options[:bucket_size] || yaml_config.fetch(:bucket_size, DEFAULT_BUCKET_SIZE)).to_i
       end
 
       def partition_size
@@ -119,6 +121,23 @@ module Sbmt
 
       def validate!
         raise ConfigError, "Bucket size should be greater or equal to partition size" if partition_size > bucket_size
+      end
+
+      def polling_auto_disabled?
+        return @polling_auto_disabled if defined?(@polling_auto_disabled)
+        @polling_auto_disabled = yaml_config.fetch(:polling_auto_disabled, false)
+      end
+
+      def polling_enabled_for?(api_model)
+        record = memory_store.fetch("sbmt/outbox/outbox_item_config/#{box_name}", expires_in: 10) do
+          api_model.find(box_name)
+        end
+
+        if record.nil?
+          !polling_auto_disabled?
+        else
+          record.polling_enabled?
+        end
       end
     end
   end

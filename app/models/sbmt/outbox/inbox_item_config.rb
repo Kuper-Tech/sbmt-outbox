@@ -3,10 +3,14 @@
 module Sbmt
   module Outbox
     class InboxItemConfig < BaseItemConfig
+      def polling_enabled?
+        polling_enabled_for?(Sbmt::Outbox::Api::InboxClass)
+      end
+
       private
 
       def lookup_config
-        Outbox.yaml_config.dig(:inbox_items, box_name)
+        yaml_config.dig(:inbox_items, box_name)
       end
     end
   end
