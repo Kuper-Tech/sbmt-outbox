@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [6.3.0] - 2024-04-18
 
 - Add support for [Outbox UI](https://github.com/SberMarket-Tech/sbmt-outbox-ui)
+- Add ability to pause poller v2
 
 ## [6.2.0] - 2024-04-17
 
