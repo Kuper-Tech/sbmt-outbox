@@ -12,7 +12,7 @@ describe Sbmt::Outbox::Api::OutboxClassesController do
       expect(response).to be_successful
       data = response.parsed_body
       expect(data).not_to be_empty
-      expect(data.pluck("id")).to include("outbox_item", "combined/outbox_item")
+      expect(data.pluck("id")).to include("outbox-item", "combined-outbox-item")
     end
   end
 

@@ -6,7 +6,7 @@ module Sbmt
       class InboxClassesController < BaseController
         def index
           render_list(Sbmt::Outbox.inbox_item_classes.map do |item|
-            Sbmt::Outbox::Api::InboxClass.find_or_initialize(item.box_name)
+            Sbmt::Outbox::Api::InboxClass.find_or_initialize(item.box_id)
           end)
         end
 

@@ -8,7 +8,8 @@ module Sbmt
 
       delegate :yaml_config, :memory_store, to: "Sbmt::Outbox"
 
-      def initialize(box_name)
+      def initialize(box_id:, box_name:)
+        self.box_id = box_id
         self.box_name = box_name
 
         validate!
@@ -109,7 +110,7 @@ module Sbmt
 
       private
 
-      attr_accessor :box_name
+      attr_accessor :box_id, :box_name
 
       def options
         @options ||= lookup_config || {}
@@ -129,8 +130,8 @@ module Sbmt
       end
 
       def polling_enabled_for?(api_model)
-        record = memory_store.fetch("sbmt/outbox/outbox_item_config/#{box_name}", expires_in: 10) do
-          api_model.find(box_name)
+        record = memory_store.fetch("sbmt/outbox/outbox_item_config/#{box_id}", expires_in: 10) do
+          api_model.find(box_id)
         end
 
         if record.nil?
