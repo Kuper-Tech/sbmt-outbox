@@ -16,8 +16,12 @@ module Sbmt
           @box_name ||= name.underscore
         end
 
+        def box_id
+          @box_id ||= name.underscore.tr("/", "-").dasherize
+        end
+
         def config
-          @config ||= lookup_config.new(box_name)
+          @config ||= lookup_config.new(box_id: box_id, box_name: box_name)
         end
 
         def calc_bucket_partitions(count)

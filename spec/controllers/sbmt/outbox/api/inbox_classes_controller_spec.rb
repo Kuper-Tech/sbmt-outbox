@@ -12,7 +12,7 @@ describe Sbmt::Outbox::Api::InboxClassesController do
       expect(response).to be_successful
       data = response.parsed_body
       expect(data).not_to be_empty
-      expect(data.pluck("id")).to include("inbox_item")
+      expect(data.pluck("id")).to include("inbox-item")
     end
   end
 

@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.3.1] - 2024-05-01
+
+### Added
+
+- Add box_id to make it url safe for use in the API.
+
 ## [6.3.0] - 2024-04-18
+
+### Added
 
 - Add support for [Outbox UI](https://github.com/SberMarket-Tech/sbmt-outbox-ui)
 - Add ability to pause poller v2
