@@ -38,6 +38,7 @@ require_relative "outbox/engine"
 require_relative "outbox/middleware/builder"
 require_relative "outbox/middleware/runner"
 require_relative "outbox/probes/probe"
+require_relative "outbox/probes/metrics"
 require_relative "outbox/redis_client_factory"
 
 module Sbmt
