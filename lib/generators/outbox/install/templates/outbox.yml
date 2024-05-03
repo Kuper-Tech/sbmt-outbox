@@ -1,6 +1,8 @@
 default: &default
   owner: owner-team
   bucket_size: 16
+  metrics:
+    enabled: true
 
   probes:
       port: SET-UP-YOUR-HEALTHCHECK-PORT-HERE

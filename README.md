@@ -224,7 +224,11 @@ The `outbox.yml` configuration file is the main configuration for the gem, where
 default: &default
   owner: foo-team # optional, used in Yabeda metrics
   bucket_size: 16 # optional, default 16, see into about the buckets at the #Concurrency section
+  metrics:
+    enabled: true # default false, yabeda server autostart with port: 9090 and path: /metrics
+    port: 9090 # optional, default, used in Yabeda metrics
   probes:
+    enabled: false # optional, default true
     port: 5555 # default, used for Kubernetes probes
 
   outbox_items: # outbox items section

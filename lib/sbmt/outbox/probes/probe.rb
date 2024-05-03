@@ -7,6 +7,10 @@ module Sbmt
         DEFAULT_PROBE_PORT = 5555
         class << self
           def run_probes
+            return unless autostart_probe?
+
+            $stdout.puts "Starting probes..."
+
             ::HttpHealthCheck.run_server_async(
               port: probe_port,
               rack_app: HttpHealthCheck::RackApp.configure do |c|
@@ -30,6 +34,12 @@ module Sbmt
             return DEFAULT_PROBE_PORT if Outbox.yaml_config["probes"].nil?
 
             Sbmt::Outbox.yaml_config.fetch(:probes).fetch(:port)
+          end
+
+          def autostart_probe?
+            value = Sbmt::Outbox.yaml_config.dig(:probes, :enabled)
+            value = true if value.nil?
+            value
           end
         end
       end

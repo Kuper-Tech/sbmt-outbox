@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.4.0] - 2024-05-02
+
+### Added
+- added autostart of the yabeda server via the `enabled` option
+- added disabling autorun of probes via the `enabled` option
+
 ## [6.3.1] - 2024-05-01
 
 ### Added
