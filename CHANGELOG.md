@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.4.1] - 2024-05-06
+
+### Fixed
+
+- Add process the SIGQUIT signal.
+
 ## [6.4.0] - 2024-05-02
 
 ### Added

@@ -137,6 +137,13 @@ module Sbmt
           $stdout.puts "Going to shut down..."
           worker.stop
         end
+
+        # normal kill with number 3
+        Signal.trap("SIGQUIT") do
+          $stdout.puts AsciiArt.shutdown
+          $stdout.puts "Going to shut down..."
+          worker.stop
+        end
       end
     end
   end
