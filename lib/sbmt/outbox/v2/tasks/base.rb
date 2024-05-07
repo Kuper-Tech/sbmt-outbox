@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "sbmt/outbox/metrics/utils"
+
 module Sbmt
   module Outbox
     module V2
@@ -23,7 +25,7 @@ module Sbmt
 
             @yabeda_labels = {
               type: item_class.box_type,
-              name: metric_safe(item_class.box_name),
+              name: Sbmt::Outbox::Metrics::Utils.metric_safe(item_class.box_name),
               owner: owner,
               worker_version: 2,
               worker_name: worker_name
@@ -37,12 +39,6 @@ module Sbmt
               result[iv.to_sym] = instance_variable_get(:"@#{iv}")
             end
             result
-          end
-
-          private
-
-          def metric_safe(str)
-            str.tr("/", "-")
           end
         end
       end

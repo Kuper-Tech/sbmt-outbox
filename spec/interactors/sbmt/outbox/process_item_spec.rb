@@ -104,6 +104,17 @@ describe Sbmt::Outbox::ProcessItem do
       end
     end
 
+    context "when combined outbox item produce to transport successfully" do
+      let!(:outbox_item) { create(:combined_outbox_item) }
+
+      it "tracks Yabeda sent counter and last_sent_event_id and process_latency with proper box name" do
+        expect { described_class.call(Combined::OutboxItem, outbox_item.id) }
+          .to increment_yabeda_counter(Yabeda.outbox.sent_counter).with_tags(name: "combined-outbox_item", owner: nil, partition: 0, type: :outbox, worker_version: 1).by(1)
+          .and update_yabeda_gauge(Yabeda.outbox.last_sent_event_id).with_tags(name: "combined-outbox_item", owner: nil, partition: 0, type: :outbox, worker_version: 1)
+          .and measure_yabeda_histogram(Yabeda.outbox.process_latency).with_tags(name: "combined-outbox_item", owner: nil, partition: 0, type: :outbox, worker_version: 1)
+      end
+    end
+
     context "when outbox item produce to transport unsuccessfully" do
       let!(:outbox_item) { create(:outbox_item) }
 

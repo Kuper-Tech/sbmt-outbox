@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.4.2] - 2024-05-07
+
+### Fixed
+
+- replace `/` with `-` in label `name` in box metrics
+
 ## [6.4.1] - 2024-05-06
 
 ### Fixed
