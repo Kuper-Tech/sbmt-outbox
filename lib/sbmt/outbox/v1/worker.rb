@@ -2,6 +2,7 @@
 
 require "redlock"
 require "sbmt/outbox/v1/thread_pool"
+require "sbmt/outbox/metrics/utils"
 
 module Sbmt
   module Outbox
@@ -126,7 +127,7 @@ module Sbmt
                 },
                 yabeda_labels: {
                   type: item_class.box_type,
-                  name: item_class.box_name,
+                  name: Sbmt::Outbox::Metrics::Utils.metric_safe(item_class.box_name),
                   partition: partition,
                   owner: item_class.owner
                 },

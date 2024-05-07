@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "sbmt/outbox/metrics/utils"
+
 module Sbmt
   module Outbox
     class ProcessItem < Sbmt::Outbox::DryInteractor
@@ -255,7 +257,7 @@ module Sbmt
       end
 
       def labels_for(item)
-        {worker_version: worker_version, type: box_type, name: box_name, owner: owner, partition: item&.partition}
+        {worker_version: worker_version, type: box_type, name: Sbmt::Outbox::Metrics::Utils.metric_safe(box_name), owner: owner, partition: item&.partition}
       end
 
       def counters

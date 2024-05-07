@@ -24,7 +24,7 @@ describe Sbmt::Outbox::V1::Worker do
   end
 
   describe "threads concurrency" do
-    let(:boxes) { [OutboxItem, InboxItem] }
+    let(:boxes) { [OutboxItem, InboxItem, Combined::OutboxItem] }
     let(:concurrency) { 2 }
 
     # TODO: [Rails 5.1] Database transactions are shared between test threads
@@ -34,6 +34,8 @@ describe Sbmt::Outbox::V1::Worker do
       @outbox_item_2 = create(:outbox_item, event_key: 2, bucket: 1)
       @inbox_item_3 = create(:inbox_item, event_key: 3, bucket: 0)
       @inbox_item_4 = create(:inbox_item, event_key: 4, bucket: 1)
+
+      @outbox_item_5 = create(:combined_outbox_item, event_key: 5, bucket: 0)
     end
 
     after(:context) do
@@ -41,6 +43,7 @@ describe Sbmt::Outbox::V1::Worker do
       @outbox_item_2.destroy!
       @inbox_item_3.destroy!
       @inbox_item_4.destroy!
+      @outbox_item_5.destroy!
     end
     # rubocop:enable RSpec/BeforeAfterAll
 
@@ -50,7 +53,7 @@ describe Sbmt::Outbox::V1::Worker do
       thread_1 = nil
       thread_2 = nil
 
-      expect(worker).to receive(:process_job).exactly(4).times.and_call_original
+      expect(worker).to receive(:process_job).exactly(5).times.and_call_original
 
       expect_to_process_item(@outbox_item_1, sleep_time: 3) do
         thread_1 = thread_pool.worker_number
@@ -59,7 +62,8 @@ describe Sbmt::Outbox::V1::Worker do
         thread_2 = thread_pool.worker_number
       end
       expect_to_process_item(@inbox_item_3)
-      expect_to_process_item(@inbox_item_4) do
+      expect_to_process_item(@inbox_item_4)
+      expect_to_process_item(@outbox_item_5) do
         worker.stop
       end
       yabeda_labels = {owner: nil, worker_name: "worker", worker_version: 1}
@@ -73,9 +77,11 @@ describe Sbmt::Outbox::V1::Worker do
         .with_tags(name: "inbox_item", state: "processed", partition: 0, type: :inbox, **yabeda_labels).by(1)
         .and increment_yabeda_counter(Yabeda.box_worker.job_counter)
         .with_tags(name: "inbox_item", state: "processed", partition: 1, type: :inbox, **yabeda_labels).by(1)
+        .and increment_yabeda_counter(Yabeda.box_worker.job_counter)
+        .with_tags(name: "combined-outbox_item", state: "processed", partition: 0, type: :outbox, **yabeda_labels).by(1)
 
-      expect(processed_info[:processed]).to eq [1, 3, 4, 2]
-      expect(processed_info[:processed_by_thread][thread_1]).to eq [1, 3, 4]
+      expect(processed_info[:processed]).to eq [1, 3, 4, 5, 2]
+      expect(processed_info[:processed_by_thread][thread_1]).to eq [1, 3, 4, 5]
       expect(processed_info[:processed_by_thread][thread_2]).to eq [2]
     end
   end
