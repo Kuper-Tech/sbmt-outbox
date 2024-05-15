@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "sbmt/outbox/metrics/utils"
+
 module Sbmt
   module Outbox
     class BaseCreateItem < Outbox::DryInteractor
@@ -41,14 +43,14 @@ module Sbmt
         Yabeda
           .outbox
           .last_stored_event_id
-          .set({type: box_type, name: box_name, owner: owner, partition: partition}, item_id)
+          .set({type: box_type, name: Sbmt::Outbox::Metrics::Utils.metric_safe(box_name), owner: owner, partition: partition}, item_id)
       end
 
       def track_counter(partition)
         Yabeda
           .outbox
           .created_counter
-          .increment({type: box_type, name: box_name, owner: owner, partition: partition}, by: 1)
+          .increment({type: box_type, name: Sbmt::Outbox::Metrics::Utils.metric_safe(box_name), owner: owner, partition: partition}, by: 1)
       end
     end
   end

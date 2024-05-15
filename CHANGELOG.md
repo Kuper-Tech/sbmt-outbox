@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.4.3] - 2024-05-16
+
+### Fixed
+
+- replace `/` with `-` in label `name` in outbox_last_stored_event_id / outbox_created_counter
+
 ## [6.4.2] - 2024-05-07
 
 ### Fixed

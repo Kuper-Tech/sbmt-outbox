@@ -17,7 +17,9 @@ describe Sbmt::Outbox::CreateInboxItem do
   end
 
   it "tracks Yabeda metrics" do
-    expect { result }.to update_yabeda_gauge(Yabeda.outbox.last_stored_event_id)
+    expect { result }
+      .to update_yabeda_gauge(Yabeda.outbox.last_stored_event_id).with_tags(name: "inbox_item", type: :inbox, owner: nil, partition: 0)
+      .and increment_yabeda_counter(Yabeda.outbox.created_counter).with_tags(name: "inbox_item", type: :inbox, owner: nil, partition: 0)
   end
 
   context "when got errors" do
@@ -26,7 +28,9 @@ describe Sbmt::Outbox::CreateInboxItem do
     end
 
     it "does not track Yabeda metrics" do
-      expect { result }.not_to update_yabeda_gauge(Yabeda.outbox.last_stored_event_id)
+      expect { result }
+        .to not_update_yabeda_gauge(Yabeda.outbox.last_stored_event_id)
+        .and not_increment_yabeda_counter(Yabeda.outbox.created_counter)
     end
 
     it "returns errors" do
