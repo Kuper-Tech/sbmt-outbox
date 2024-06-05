@@ -64,9 +64,12 @@ module Sbmt
       def delete_stale_items(waterline)
         logger.log_info("Start deleting #{box_type} items for #{box_name} older than #{waterline}")
 
-        scope = item_class.where("created_at < ?", waterline)
+        loop do
+          ids = Outbox.database_switcher.use_slave do
+            item_class.where("created_at < ?", waterline).limit(BATCH_SIZE).ids
+          end
+          break if ids.empty?
 
-        while (ids = scope.limit(BATCH_SIZE).ids).present?
           item_class.where(id: ids).delete_all
           sleep SLEEP_TIME
         end

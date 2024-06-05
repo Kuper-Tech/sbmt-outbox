@@ -94,7 +94,7 @@ module Sbmt
             end
           end
         rescue Cutoff::CutoffExceededError
-          box_worker.job_timeout_counter.increment(labels)
+          box_worker.job_timeout_counter.increment(task.yabeda_labels)
           logger.log_info("Lock timeout while processing #{task.resource_key} at id #{last_id}")
         end
 

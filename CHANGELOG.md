@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [6.5.0] - 2024-06-05
+
+### Added
+
+- use db replica to select stale item ids  
+
+### Fixed
+
+- fix undefined local variable or method labels for Sbmt::Outbox::V2::Poller
+
 ## [6.4.3] - 2024-05-16
 
 ### Fixed
