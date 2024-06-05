@@ -5,21 +5,21 @@ include:
 
 lint:
   stage: test
-  image: ruby:3.3
+  image: ${BUILD_CONF_HARBOR_REGISTRY}/dhub/library/ruby:3.3
   script:
     - bundle install
     - bundle exec rubocop
 
 tests:
   stage: test
-  image: ruby:$RUBY_VERSION
+  image: ${BUILD_CONF_HARBOR_REGISTRY}/dhub/library/ruby:$RUBY_VERSION
   parallel:
     matrix:
       - RUBY_VERSION: ['2.7', '3.0', '3.1', '3.2', '3.3']
   services:
-    - name: postgres:13
+    - name: ${BUILD_CONF_HARBOR_REGISTRY}/dhub/library/postgres:13
       alias: postgres
-    - name: redis:7
+    - name: ${BUILD_CONF_HARBOR_REGISTRY}/dhub/library/redis:7
       alias: redis
   variables:
     POSTGRES_PASSWORD: secret
