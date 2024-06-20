@@ -122,7 +122,7 @@ Rails.application.config.outbox.tap do |config|
   config.paths << Rails.root.join("config/outbox.yml").to_s # optional; configuration file paths, deep merged at the application start, useful with Rails engines
 
   # optional (worker v2: default)
-  c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
+  config.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
     # max parallel threads (per box-item, globally)
     pc.concurrency = 6
     # max threads count (per worker process)
@@ -152,7 +152,7 @@ Rails.application.config.outbox.tap do |config|
   end
 
   # optional (worker v2: default)
-  c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
+  config.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
     # max threads count (per worker process)
     pc.threads_count = 4
     # maximum processing time of the batch, after which the batch will be considered hung and processing will be aborted
@@ -236,6 +236,7 @@ default: &default
       owner: my_outbox_item_team # optional, used in Yabeda metrics
       retention: P1W # retention period, https://en.wikipedia.org/wiki/ISO_8601#Durations
       max_retries: 3 # default 0, the number of retries before the item will be marked as failed
+      strict_order: false # optional, default
       transports: # transports section
         produce_message: # underscored transport class name
           # transport reserved options
@@ -255,6 +256,10 @@ production:
   <<: *default
   bucket_size: 256
 ```
+__CAUTION__:
+- ⚠️ If this option is enabled and an error occurs while processing a message in a bucket, 
+subsequent messages in that bucket won't be processed until the current message is either skipped or successfully processed
+- ⚠️ Cannot use `retry_strategies` and the `strict_order` option at the same time
 
 ```ruby
 # app/services/import_order.rb

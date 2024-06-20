@@ -47,6 +47,8 @@ require "yabeda/rspec"
 
 RSpec::Matchers.define_negated_matcher :not_increment_yabeda_counter, :increment_yabeda_counter
 RSpec::Matchers.define_negated_matcher :not_update_yabeda_gauge, :update_yabeda_gauge
+RSpec::Matchers.define_negated_matcher :not_measure_yabeda_histogram, :measure_yabeda_histogram
+RSpec::Matchers.define_negated_matcher :not_change, :change
 
 require "sbmt/outbox/instrumentation/open_telemetry_loader"
 

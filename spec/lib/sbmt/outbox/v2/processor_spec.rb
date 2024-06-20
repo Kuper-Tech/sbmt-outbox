@@ -77,6 +77,56 @@ describe Sbmt::Outbox::V2::Processor do
 
         expect(processor.start).to be(Sbmt::Outbox::V2::ThreadPool::SKIPPED)
       end
+
+      context "when use option strict_order" do
+        context "when strict_order is true" do
+          before do
+            allow(task.item_class).to receive(:config).and_return(OpenStruct.new(strict_order: true))
+          end
+
+          it "stops processing on failure" do
+            expect(processor.send(:lock_manager)).to receive(:lock)
+              .with("sbmt:outbox:processor:inbox_item:0:lock", 1000)
+              .and_yield(task)
+
+            allow(Sbmt::Outbox::ProcessItem).to receive(:call).with(any_args).and_return(OpenStruct.new(failure?: true))
+
+            expect { processor.start }.to not_change(InboxItem.delivered, :count)
+              .and measure_yabeda_histogram(Yabeda.box_worker.item_execution_runtime).with_tags(name: "inbox_item", type: :inbox, worker_name: "processor", worker_version: 2)
+              .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", type: :inbox, worker_name: "processor", worker_version: 2).by(1)
+              .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.sent_counter)
+              .and not_update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
+              .and not_measure_yabeda_histogram(Yabeda.outbox.process_latency)
+              .and not_increment_yabeda_counter(Yabeda.outbox.error_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.retry_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.discarded_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.fetch_error_counter)
+          end
+        end
+
+        context "when strict_order is false" do
+          it "continues processing on failure" do
+            expect(processor.send(:lock_manager)).to receive(:lock)
+              .with("sbmt:outbox:processor:inbox_item:0:lock", 1000)
+              .and_yield(task)
+
+            allow(Sbmt::Outbox::ProcessItem).to receive(:call).with(any_args).and_return(OpenStruct.new(failure?: true))
+
+            expect { processor.start }.to not_change(InboxItem.delivered, :count)
+              .and measure_yabeda_histogram(Yabeda.box_worker.item_execution_runtime).with_tags(name: "inbox_item", type: :inbox, worker_name: "processor", worker_version: 2)
+              .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", type: :inbox, worker_name: "processor", worker_version: 2).by(2)
+              .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.sent_counter)
+              .and not_update_yabeda_gauge(Yabeda.outbox.last_sent_event_id)
+              .and not_measure_yabeda_histogram(Yabeda.outbox.process_latency)
+              .and not_increment_yabeda_counter(Yabeda.outbox.error_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.retry_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.discarded_counter)
+              .and not_increment_yabeda_counter(Yabeda.outbox.fetch_error_counter)
+          end
+        end
+      end
     end
 
     context "when redis job queue is empty" do

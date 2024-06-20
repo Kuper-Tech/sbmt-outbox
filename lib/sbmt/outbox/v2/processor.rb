@@ -68,15 +68,18 @@ module Sbmt
         def process(task)
           lock_timer = Cutoff.new(lock_timeout)
           last_id = 0
+          strict_order = task.item_class.config.strict_order
 
           box_worker.item_execution_runtime.measure(task.yabeda_labels) do
             Outbox.database_switcher.use_master do
               task.ids.each do |id|
-                ProcessItem.call(task.item_class, id, worker_version: task.yabeda_labels[:worker_version])
+                result = ProcessItem.call(task.item_class, id, worker_version: task.yabeda_labels[:worker_version])
 
                 box_worker.job_items_counter.increment(task.yabeda_labels)
                 last_id = id
                 lock_timer.checkpoint!
+
+                break if strict_order == true && result.failure?
               end
             end
           end

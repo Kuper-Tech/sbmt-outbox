@@ -19,16 +19,51 @@ describe Sbmt::Outbox::BaseItem do
         expect(outbox_item).to be_max_retries_exceeded
       end
     end
+
+    context "when strict order is enabled" do
+      before do
+        allow(outbox_item.config).to receive(:strict_order).and_return(true)
+      end
+
+      it "does not consider retries when strict order is enabled" do
+        expect(outbox_item).not_to be_max_retries_exceeded
+      end
+    end
   end
 
   describe "#retry_strategies" do
     let(:outbox_item) { create(:combined_outbox_item) }
+    let(:config) { Sbmt::Outbox::OutboxItemConfig.new(box_id: Combined::OutboxItem.box_id, box_name: Combined::OutboxItem.box_name) }
 
-    it "has proper defaults" do
-      expect(outbox_item.config.retry_strategies).to eq([
-        Sbmt::Outbox::RetryStrategies::ExponentialBackoff,
-        Sbmt::Outbox::RetryStrategies::LatestAvailable
-      ])
+    before { allow(outbox_item).to receive(:config).and_return(config) }
+
+    context "when retry_strategies are not configured" do
+      it "uses default retry strategies" do
+        expect(outbox_item.config.retry_strategies).to eq([
+          Sbmt::Outbox::RetryStrategies::ExponentialBackoff,
+          Sbmt::Outbox::RetryStrategies::LatestAvailable
+        ])
+      end
+    end
+
+    context "when both retry_strategies and strict_order are present" do
+      before do
+        allow(outbox_item.config).to receive_messages(strict_order: true, options: {retry_strategies: ["exponential_backoff"]})
+      end
+
+      it "raises a ConfigError" do
+        expect { outbox_item.config.retry_strategies }.to raise_error(Sbmt::Outbox::ConfigError, "You cannot use retry_strategies and the strict_order option at the same time.")
+      end
+    end
+
+    context "when only strict_order is configured without retry_strategies" do
+      before do
+        allow(outbox_item.config).to receive_messages(strict_order: true, options: {})
+      end
+
+      it "retry strategies are not used" do
+        expect(outbox_item.config.retry_strategies).to eq([])
+      end
     end
   end
 
