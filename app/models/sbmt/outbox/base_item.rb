@@ -6,7 +6,7 @@ module Sbmt
       self.abstract_class = true
 
       class << self
-        delegate :owner, to: :config
+        delegate :owner, :strict_order, to: :config
 
         def box_type
           raise NotImplementedError
@@ -134,6 +134,7 @@ module Sbmt
       end
 
       def max_retries_exceeded?
+        return false if config.strict_order
         return true unless retriable?
 
         errors_count > config.max_retries

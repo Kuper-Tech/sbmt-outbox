@@ -16,7 +16,7 @@ module Sbmt
       end
 
       def owner
-        return @owner if defined? @owner
+        return @owner if defined?(@owner)
 
         @owner = options[:owner].presence || yaml_config[:owner].presence
       end
@@ -57,7 +57,14 @@ module Sbmt
         return @retry_strategies if defined?(@retry_strategies)
 
         configured_strategies = options[:retry_strategies]
-        strategies = configured_strategies.presence || %w[exponential_backoff latest_available]
+
+        raise ConfigError, "You cannot use retry_strategies and the strict_order option at the same time." if strict_order.present? && configured_strategies.present?
+
+        strategies = if strict_order.present? && configured_strategies.nil?
+          []
+        else
+          configured_strategies.presence || %w[exponential_backoff latest_available]
+        end
 
         @retry_strategies ||= Array.wrap(strategies).map do |str_name|
           "Sbmt::Outbox::RetryStrategies::#{str_name.camelize}".constantize
@@ -106,6 +113,12 @@ module Sbmt
             end
           end
         end
+      end
+
+      def strict_order
+        return @strict_order if defined?(@strict_order)
+
+        @strict_order = options[:strict_order].presence
       end
 
       private

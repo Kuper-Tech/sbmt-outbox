@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [6.6.0] - 2024-06-17
+
+### Added
+
+- add option `strict_order`
+
+### Fixed
+- fix README
+
 ## [6.5.0] - 2024-06-05
 
 ### Added
