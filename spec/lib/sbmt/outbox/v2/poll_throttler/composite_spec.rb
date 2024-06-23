@@ -45,19 +45,19 @@ describe Sbmt::Outbox::V2::PollThrottler::Composite do
       allow(throttle_throttler).to receive(:call).and_return(Dry::Monads::Result::Success.new(Sbmt::Outbox::V2::Throttler::THROTTLE_STATUS))
     end
 
-    it "return skip if present" do
+    it "returns skip if present" do
       expect(described_class.new(throttlers: [
         throttle_throttler, noop_throttler, skip_throttler, failure_throttler
       ]).call(0, task, nil).value!).to eq(Sbmt::Outbox::V2::Throttler::SKIP_STATUS)
     end
 
-    it "return failure if present" do
+    it "returns failure if present" do
       expect(described_class.new(throttlers: [
         throttle_throttler, noop_throttler, failure_throttler
       ]).call(0, task, nil).failure).to eq("some err")
     end
 
-    it "return throttle if present" do
+    it "returns throttle if present" do
       expect(described_class.new(throttlers: [
         throttle_throttler, noop_throttler
       ]).call(0, task, nil).value!).to eq(Sbmt::Outbox::V2::Throttler::THROTTLE_STATUS)
