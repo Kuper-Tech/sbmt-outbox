@@ -25,7 +25,7 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
       .to change(OutboxItem, :count).by(-1)
   end
 
-  context "when item is too yang" do
+  context "when item is too young" do
     let(:created_at) { 1.hour.ago }
 
     it "doesn't delete item" do

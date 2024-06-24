@@ -93,7 +93,7 @@ module Sbmt
           track_discarded(item)
           Failure(:discard_item)
         else
-          track_failed("retry stratagy returned unknown failure: #{result.failure}")
+          track_failed("retry strategy returned unknown failure: #{result.failure}")
           Failure(:retry_strategy_failure)
         end
       end
