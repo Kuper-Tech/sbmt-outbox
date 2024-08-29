@@ -85,6 +85,39 @@ transaction do
 end
 ```
 
+To create multiple Outbox items in batch, you should call the Interactor with the Item Model Class and batch attributes, each item should have same list of keys. Each item should have `event_key` element, it will be the Partitioning Key.
+
+```ruby
+transaction do
+  some_record.save!
+  another_record.save!
+
+  result = Sbmt::Outbox::CreateOutboxBatch.call(
+    MyOutboxItem,
+    batch_attributes: [
+      {
+        event_key: some_record.id,
+        payload: some_record.generate_payload,
+        options: {
+          key: some_record.id, # optional, may be used when producing to a Kafka topic
+          headers: {'FOO_BAR' => 'baz'} # optional, you can add custom headers
+        }
+      },
+      {
+        event_key: another_record.id,
+        payload: another_record.generate_payload,
+        options: {
+          key: another_record.id, # optional, may be used when producing to a Kafka topic
+          headers: {'FOO_BAR' => 'baz'} # optional, you can add custom headers
+        }
+      }
+    ]
+  )
+
+  raise result.failure unless result.success?
+end
+```
+
 ## Monitoring
 
 We use [Yabeda](https://github.com/yabeda-rb/yabeda) to collect [all kind of metrics](./config/initializers/yabeda.rb).
@@ -435,11 +468,23 @@ Rails.application.config.outbox.tap do |config|
   config.create_item_middlewares.push(
     'MyCreateItemMiddleware'
   )
+  config.create_batch_middlewares.push(
+    'MyCreateBatchMiddleware'
+  )
 end
 
 # my_create_item_middleware.rb
 class MyCreateItemMiddleware
   def call(item_class, item_attributes)
+    # your code
+    yield
+    # your code
+  end
+end
+
+# my_create_batch_middleware.rb
+class MyCreateBatchMiddleware
+  def call(item_class, batch_attributes)
     # your code
     yield
     # your code

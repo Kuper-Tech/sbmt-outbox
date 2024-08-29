@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- class `Sbmt::Outbox::CreateOutboxBatch` for batch import of outbox items 
+
 ### Changed
 
 ### Fixed
