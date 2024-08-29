@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- class `Sbmt::Outbox::CreateOutboxBatch` for batch import of outbox items 
-
 ### Changed
 
 ### Fixed
+
+## [6.7.0] - 2024-08-29
+
+### Added
+
+- Implement an ability to create outbox items in batches through `Sbmt::Outbox::CreateOutboxBatch`
 
 ## [6.6.0] - 2024-06-17
 
@@ -28,7 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- use db replica to select stale item ids  
+- use db replica to select stale item ids
 
 ### Fixed
 
