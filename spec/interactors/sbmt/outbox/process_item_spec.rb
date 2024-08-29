@@ -170,7 +170,7 @@ describe Sbmt::Outbox::ProcessItem do
       context "when retry process" do
         let!(:outbox_item) { create(:outbox_item, processed_at: Time.current) }
 
-        it "do not track process_latency" do
+        it "doesn't track process_latency" do
           expect { result }.not_to measure_yabeda_histogram(Yabeda.outbox.process_latency)
         end
       end
@@ -288,7 +288,7 @@ describe Sbmt::Outbox::ProcessItem do
         expect(dummy_middleware).to have_received(:call).with(outbox_item)
       end
 
-      it "increment errors count" do
+      it "increments errors count" do
         expect { result }.to change { outbox_item.reload.errors_count }.from(0).to(1)
       end
 
@@ -316,7 +316,7 @@ describe Sbmt::Outbox::ProcessItem do
           create(:outbox_item, processed_at: 1.hour.ago)
         end
 
-        it "increment errors count" do
+        it "increments errors count" do
           expect { result }.to change { outbox_item.reload.errors_count }.from(0).to(1)
         end
 

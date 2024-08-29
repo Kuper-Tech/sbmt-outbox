@@ -43,7 +43,7 @@ rails g outbox:install
 
 ### Outbox/inbox items creation
 
-An ActiveRecord model can be generated for the outbox/ inbox item like this:
+An ActiveRecord model can be generated for the outbox/inbox item like this:
 
 ```shell
 rails g outbox:item MaybeNamespaced::SomeOutboxItem --kind outbox
@@ -132,7 +132,7 @@ Example of a Grafana dashboard that you can import [from a file](./examples/graf
 
 ### `Outboxfile`
 
-First of all you shoudl create an `Outboxfile` at the root of your application with the following code:
+First of all you should create an `Outboxfile` at the root of your application with the following code:
 
 ```ruby
 # frozen_string_literal: true
@@ -168,8 +168,8 @@ Rails.application.config.outbox.tap do |config|
     pc.retryable_items_batch_size = 100
 
     # poll tactic: default is optimal for most cases: rate limit + redis job-queue size threshold
-    # poll tactic: aggressive is for high-intencity data: without rate limits + redis job-queue size threshold
-    # poll tactic: low-priority is for low-intencity data: rate limits + redis job-queue size threshold + + redis job-queue lag threshold
+    # poll tactic: aggressive is for high-intensity data: without rate limits + redis job-queue size threshold
+    # poll tactic: low-priority is for low-intensity data: rate limits + redis job-queue size threshold + + redis job-queue lag threshold
     pc.tactic = "default"
     # number of batches that one thread will process per rate interval
     pc.rate_limit = 60
@@ -290,7 +290,7 @@ production:
   bucket_size: 256
 ```
 __CAUTION__:
-- ⚠️ If this option is enabled and an error occurs while processing a message in a bucket, 
+- ⚠️ If this option is enabled and an error occurs while processing a message in a bucket,
 subsequent messages in that bucket won't be processed until the current message is either skipped or successfully processed
 - ⚠️ Cannot use `retry_strategies` and the `strict_order` option at the same time
 
