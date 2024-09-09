@@ -69,6 +69,11 @@ module Sbmt
           c.batch_process_middlewares.push("Sbmt::Outbox::Middleware::Sentry::TracingBatchProcessMiddleware")
           c.item_process_middlewares.push("Sbmt::Outbox::Middleware::Sentry::TracingItemProcessMiddleware")
         end
+
+        if defined?(ActiveSupport::ExecutionContext)
+          require_relative "middleware/execution_context/context_item_process_middleware"
+          c.item_process_middlewares.push("Sbmt::Outbox::Middleware::ExecutionContext::ContextItemProcessMiddleware")
+        end
       end
 
       rake_tasks do

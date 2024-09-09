@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.8.0] - 2024-09-05
+
+### Added
+
+- Add outbox context to ActiveRecord query log tags
+
 ## [6.7.0] - 2024-08-29
 
 ### Added
