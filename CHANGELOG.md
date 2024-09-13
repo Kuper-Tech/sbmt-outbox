@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.9.0] - 2024-09-13
+
+### Added
+
+- Replaced index `add_index :#{table_name}, [:status, :bucket, :errors_count]` to `add_index :#{table_name}, [:status, :id, :bucket], algorithm: :concurrently, include: [:errors_count]`
+
 ## [6.8.0] - 2024-09-05
 
 ### Added

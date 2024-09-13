@@ -235,7 +235,7 @@ create_table :my_outbox_items do |t|
 end
 
 add_index :my_outbox_items, :uuid, unique: true
-add_index :my_outbox_items, [:status, :bucket, :errors_count]
+add_index :my_outbox_items, [:status, :id, :bucket], algorithm: :concurrently, include: [:errors_count]
 add_index :my_outbox_items, [:event_name, :event_key, :id]
 add_index :my_outbox_items, :created_at
 ```
