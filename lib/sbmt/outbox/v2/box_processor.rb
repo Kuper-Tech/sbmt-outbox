@@ -134,7 +134,7 @@ module Sbmt
 
           logger.log_error(
             "Failed processing #{task} with error: #{e.class} #{e.message}",
-            backtrace: backtrace
+            stacktrace: backtrace
           )
         end
 

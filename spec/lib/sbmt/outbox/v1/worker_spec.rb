@@ -139,7 +139,7 @@ describe Sbmt::Outbox::V1::Worker do
       end
 
       expect(Sbmt::Outbox.logger).to receive(:log_error)
-        .with(/test error/, hash_including(:backtrace))
+        .with(/test error/, hash_including(:stacktrace))
         .and_call_original
 
       worker.start

@@ -11,7 +11,7 @@ module Sbmt
 
       METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter discarded_counter].freeze
 
-      delegate :log_success, :log_failure, to: "Sbmt::Outbox.logger"
+      delegate :log_success, :log_info, :log_failure, to: "Sbmt::Outbox.logger"
       delegate :item_process_middlewares, to: "Sbmt::Outbox"
       delegate :box_type, :box_name, :owner, to: :item_class
 
@@ -73,7 +73,7 @@ module Sbmt
         end
 
         unless item.for_processing?
-          log_error("already processed")
+          log_info("already processed")
           counters[:fetch_error_counter] += 1
           return Failure(:already_processed)
         end
@@ -154,7 +154,7 @@ module Sbmt
       # rubocop:enable Metrics/MethodLength
 
       def track_failed(ex_or_msg, item = nil)
-        log_error(ex_or_msg, item)
+        log_processing_error(ex_or_msg, item)
 
         item&.touch_processed_at
         item&.add_error(ex_or_msg)
@@ -170,6 +170,8 @@ module Sbmt
           counters[:retry_counter] += 1
           item.pending!
         end
+      rescue => e
+        log_error_handling_error(e, item)
       end
 
       def track_successed(item)
@@ -196,18 +198,28 @@ module Sbmt
         counters[:discarded_counter] += 1
       end
 
-      def log_error(ex_or_msg, item = nil)
+      def log_processing_error(ex_or_msg, item = nil)
         text = format_exception_error(ex_or_msg)
 
         msg = "Failed processing #{box_type} item with error: #{text}.\n" \
               "Record: #{item_class.name}##{item_id}.\n" \
               "#{item&.log_details&.to_json}"
 
-        log_failure(msg, backtrace: format_backtrace(ex_or_msg))
+        log_failure(msg, stacktrace: format_backtrace(ex_or_msg))
       end
 
-      def format_exception_error(e)
-        text = if e.respond_to?(:cause) && !e.cause.nil?
+      def log_error_handling_error(handling_error, item = nil)
+        text = format_exception_error(handling_error, extract_cause: false)
+
+        msg = "Could not persist status of failed #{box_type} item due to error: #{text}.\n" \
+          "Record: #{item_class.name}##{item_id}.\n" \
+          "#{item&.log_details&.to_json}"
+
+        log_failure(msg, stacktrace: format_backtrace(handling_error))
+      end
+
+      def format_exception_error(e, extract_cause: true)
+        text = if extract_cause && e.respond_to?(:cause) && !e.cause.nil?
           "#{format_exception_error(e.cause)}. "
         else
           ""

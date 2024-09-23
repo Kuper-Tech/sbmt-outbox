@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.10.0] - 2024-09-19
+
+### Changed
+
+- Renamed `backtrace` log tag to `stacktrace` 
+
+### Fixed
+
+- Fixed handling of errors if database is not available 
+
 ## [6.9.0] - 2024-09-13
 
 ### Added
