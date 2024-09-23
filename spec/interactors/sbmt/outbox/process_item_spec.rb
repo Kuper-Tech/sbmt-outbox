@@ -24,7 +24,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "returns error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
-          .with(/Failed processing outbox item with error: not found/, backtrace: nil)
+          .with(/Failed processing outbox item with error: not found/, stacktrace: nil)
         expect(result).not_to be_success
         expect(dummy_middleware).not_to have_received(:call)
         expect(result.failure).to eq :not_found
@@ -45,8 +45,9 @@ describe Sbmt::Outbox::ProcessItem do
 
       it "doesn't report error" do
         expect(Sbmt::Outbox.error_tracker).not_to receive(:error)
-        expect(Sbmt::Outbox.logger).to receive(:log_failure)
+        allow(Sbmt::Outbox.logger).to receive(:log_info)
         expect(result).not_to be_success
+        expect(Sbmt::Outbox.logger).to have_received(:log_info).with("already processed")
         expect(dummy_middleware).not_to have_received(:call)
         expect(result.failure).to eq :already_processed
       end
@@ -200,7 +201,7 @@ describe Sbmt::Outbox::ProcessItem do
       it "tracks error" do
         expect(Sbmt::Outbox.error_tracker).to receive(:error)
         expect(Sbmt::Outbox.logger).to receive(:log_failure)
-          .with(/Failed processing outbox item with error: RuntimeError boom/, backtrace: kind_of(String))
+          .with(/Failed processing outbox item with error: RuntimeError boom/, stacktrace: kind_of(String))
         expect(result.failure).to eq :transport_failure
       end
 
@@ -210,6 +211,34 @@ describe Sbmt::Outbox::ProcessItem do
 
       it "tracks Yabeda error counter" do
         expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter).by(1)
+      end
+
+      context "when error persisting fails" do
+        before do
+          allow_any_instance_of(OutboxItem).to receive(:failed!).and_raise("boom")
+        end
+
+        it "returns error" do
+          expect(result).to be_failure
+        end
+
+        it "logs failure" do
+          expect(Sbmt::Outbox.error_tracker).to receive(:error)
+          allow(Sbmt::Outbox.logger).to receive(:log_failure)
+          expect(result.failure).to eq :transport_failure
+          expect(Sbmt::Outbox.logger)
+            .to have_received(:log_failure)
+            .with(/Could not persist status of failed outbox item due to error: RuntimeError boom/, stacktrace: kind_of(String))
+        end
+
+        it "calls middleware" do
+          result
+          expect(dummy_middleware).to have_received(:call).with(outbox_item)
+        end
+
+        it "tracks Yabeda error counter" do
+          expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter).by(1)
+        end
       end
     end
 

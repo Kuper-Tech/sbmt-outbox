@@ -218,7 +218,7 @@ module Sbmt
 
           logger.log_error(
             "Failed processing #{job.resource_key} with error: #{e.class} #{e.message}",
-            backtrace: backtrace
+            stacktrace: backtrace
           )
         end
 
