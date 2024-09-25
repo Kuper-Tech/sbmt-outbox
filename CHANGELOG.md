@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.10.1] - 2024-09-23
+
+### Fixed
+ 
+- log OTEL `trace_id`
+
 ## [6.10.0] - 2024-09-19
 
 ### Changed
