@@ -16,7 +16,6 @@ module Sbmt
 
             # transaction will be nil if sentry tracing is not enabled
             transaction = start_transaction(scope, job)
-            job.log_tags[:trace_id] = scope&.tags&.[](:trace_id)
 
             begin
               yield

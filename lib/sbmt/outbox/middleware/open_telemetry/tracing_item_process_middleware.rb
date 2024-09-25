@@ -28,7 +28,9 @@ module Sbmt
             extracted_context = ::OpenTelemetry.propagation.extract(item_options_headers)
             ::OpenTelemetry::Context.with_current(extracted_context) do
               tracer.in_span(span_name(item_class), attributes: span_attributes.compact, kind: :consumer) do
-                yield
+                Sbmt::Outbox.logger.with_tags(trace_id: trace_id) do
+                  yield
+                end
               end
             end
           end
@@ -41,6 +43,12 @@ module Sbmt
 
           def span_name(item_class)
             "#{item_class.box_type}/#{item_class.box_name} process item"
+          end
+
+          def trace_id
+            context = ::OpenTelemetry::Trace.current_span.context
+
+            context.valid? ? context.hex_trace_id : nil
           end
         end
       end
