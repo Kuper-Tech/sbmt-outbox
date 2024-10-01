@@ -74,7 +74,7 @@ module Sbmt
       def partition_strategy
         return @partition_strategy if defined?(@partition_strategy)
 
-        str_name = options.fetch(:partition_strategy, DEFAULT_PARTITION_STRATEGY)
+        str_name = options.fetch(:partition_strategy, DEFAULT_PARTITION_STRATEGY).to_s
         @partition_strategy = "Sbmt::Outbox::PartitionStrategies::#{str_name.camelize}Partitioning".constantize
       end
 

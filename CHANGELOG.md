@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.10.2] - 2024-09-30
+
+### Fixed
+ 
+- change `DEFAULT_PARTITION_STRATEGY` to string
+
 ## [6.10.1] - 2024-09-23
 
 ### Fixed
