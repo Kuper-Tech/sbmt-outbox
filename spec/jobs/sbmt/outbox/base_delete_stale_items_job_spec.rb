@@ -12,7 +12,12 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
   end
 
   let!(:item) { create(:outbox_item, created_at: created_at) }
+  let!(:item_2) { create(:outbox_item, created_at: created_at) }
   let(:created_at) { 1.month.ago }
+
+  before do
+    stub_const("Sbmt::Outbox::BaseDeleteStaleItemsJob::BATCH_SIZE", 1)
+  end
 
   describe ".enqueue" do
     it "enqueue all item classes" do
@@ -22,7 +27,7 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
 
   it "deletes item" do
     expect { job_class.perform_now("OutboxItem") }
-      .to change(OutboxItem, :count).by(-1)
+      .to change(OutboxItem, :count).by(-2)
   end
 
   context "when item is too young" do

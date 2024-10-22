@@ -13,27 +13,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.10.3] - 2024-10-22
+
+### Fixed
+
+- fix deleting stale items from MySQL and PostgreSQL
+
 ## [6.10.2] - 2024-09-30
 
 ### Fixed
- 
+
 - change `DEFAULT_PARTITION_STRATEGY` to string
 
 ## [6.10.1] - 2024-09-23
 
 ### Fixed
- 
+
 - log OTEL `trace_id`
 
 ## [6.10.0] - 2024-09-19
 
 ### Changed
 
-- Renamed `backtrace` log tag to `stacktrace` 
+- Renamed `backtrace` log tag to `stacktrace`
 
 ### Fixed
 
-- Fixed handling of errors if database is not available 
+- Fixed handling of errors if database is not available
 
 ## [6.9.0] - 2024-09-13
 
