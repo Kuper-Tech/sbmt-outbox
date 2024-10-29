@@ -148,7 +148,7 @@ module Sbmt
       def database_type
         adapter_name = item_class.connection.adapter_name.downcase
         case adapter_name
-        when "postgresql"
+        when "postgresql", "postgis"
           :postgresql
         when "mysql2"
           :mysql
