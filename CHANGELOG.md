@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.10.4] - 2024-10-29
+
+### Fixed
+
+- fix deleting stale items from Postgis
+
 ## [6.10.3] - 2024-10-22
 
 ### Fixed
