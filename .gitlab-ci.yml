@@ -28,7 +28,7 @@ tests:
     REDIS_URL: redis://redis:6379/0
   before_script:
     - gem sources --remove https://rubygems.org/
-    - gem sources --add https://nexus.sbmt.io/repository/rubygems/
+    - gem sources --add ${NEXUS_PUBLIC_SOURCE_URL}
     - gem update --system 3.4.22
     - bin/setup
   script:
