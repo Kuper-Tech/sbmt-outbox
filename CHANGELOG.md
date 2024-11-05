@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.10.5] - 2024-11-05
+
+### Fixed
+
+- use Nexus URL environment variable for internal releases
+
 ## [6.10.4] - 2024-10-29
 
 ### Fixed
