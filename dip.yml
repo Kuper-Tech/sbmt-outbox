@@ -35,8 +35,6 @@ interaction:
     subcommands:
       all:
         command: bundle exec appraisal rspec
-      rails-5.2:
-        command: bundle exec appraisal rails-5.2 rspec
       rails-6.0:
         command: bundle exec appraisal rails-6.0 rspec
       rails-6.1:
@@ -45,6 +43,10 @@ interaction:
         command: bundle exec appraisal rails-7.0 rspec
       rails-7.1:
         command: bundle exec appraisal rails-7.1 rspec
+      rails-7.2:
+        command: bundle exec appraisal rails-7.2 rspec
+      rails-8.0:
+        command: bundle exec appraisal rails-8.0 rspec
 
   rubocop:
     description: Run Ruby linter

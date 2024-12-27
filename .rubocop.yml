@@ -8,7 +8,7 @@ inherit_mode:
 
 AllCops:
   TargetRubyVersion: 2.7
-  TargetRailsVersion: 5.2
+  TargetRailsVersion: 6.0
   NewCops: enable
   SuggestExtensions: false
 
@@ -56,8 +56,3 @@ RSpec/MultipleMemoizedHelpers:
 RSpec/DescribeClass:
   Exclude:
     - spec/lib/sbmt/outbox/tasks/*
-
-RSpec/InstanceVariable:
-  Exclude:
-    # TODO: Remove this when changing the minimum Rails version to 5.1
-    - spec/lib/sbmt/outbox/worker_spec.rb

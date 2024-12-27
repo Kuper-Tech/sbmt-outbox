@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.11.0] - 2024-12-23
+
+### Added
+
+- Add support of Rails 8.0
+
+### Changed
+
+- Dropped support of Rails 5.2
+
 ## [6.10.5] - 2024-11-05
 
 ### Fixed

@@ -134,7 +134,7 @@ module Sbmt
       def mysql_delete_in_batches(waterline)
         loop do
           deleted_count = item_class
-            .where("created_at < ?", waterline)
+            .where(created_at: ...waterline)
             .limit(BATCH_SIZE)
             .delete_all
 

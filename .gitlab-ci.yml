@@ -6,6 +6,8 @@ include:
 lint:
   stage: test
   image: ${BUILD_CONF_HARBOR_REGISTRY}/dhub/library/ruby:3.3
+  tags:
+    - paas-stage
   script:
     - bundle install
     - bundle exec rubocop
@@ -13,6 +15,8 @@ lint:
 tests:
   stage: test
   image: ${BUILD_CONF_HARBOR_REGISTRY}/dhub/library/ruby:$RUBY_VERSION
+  tags:
+    - paas-medium
   parallel:
     matrix:
       - RUBY_VERSION: ['2.7', '3.0', '3.1', '3.2', '3.3']
