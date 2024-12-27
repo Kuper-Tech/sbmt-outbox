@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
+require_relative "../../../../lib/sbmt/outbox/enum_refinement"
+
 module Sbmt
   module Outbox
     class BaseItem < Outbox.active_record_base_class
+      # For compatibility with rails < 7
+      # Remove when drop support of Rails < 7
+      using EnumRefinement
+
       self.abstract_class = true
 
       class << self
@@ -26,8 +32,8 @@ module Sbmt
 
         def calc_bucket_partitions(count)
           (0...count).to_a
-            .each_with_object({}) do |x, m|
-            m[x] = (0...config.bucket_size).to_a
+            .index_with do |x|
+            (0...config.bucket_size).to_a
               .select { |p| p % count == x }
           end
         end
@@ -46,7 +52,7 @@ module Sbmt
         end
       end
 
-      enum status: {
+      enum :status, {
         pending: 0,
         failed: 1,
         delivered: 2,
