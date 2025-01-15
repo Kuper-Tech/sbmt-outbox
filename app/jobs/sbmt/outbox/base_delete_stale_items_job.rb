@@ -116,12 +116,17 @@ module Sbmt
         delete_statement = Arel::Nodes::DeleteStatement.new
         delete_statement.relation = table
         delete_statement.wheres = [table[:id].in(subquery)]
+        deleted_count = nil
 
         loop do
-          deleted_count = item_class
-            .connection
-            .execute(delete_statement.to_sql)
-            .cmd_tuples
+          track_deleted_latency do
+            deleted_count = item_class
+              .connection
+              .execute(delete_statement.to_sql)
+              .cmd_tuples
+          end
+
+          track_deleted_counter(deleted_count)
 
           logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
           break if deleted_count == 0
@@ -158,8 +163,14 @@ module Sbmt
       end
 
       def delete_items_in_batches_mysql(query)
+        deleted_count = nil
+
         loop do
-          deleted_count = query.limit(BATCH_SIZE).delete_all
+          track_deleted_latency do
+            deleted_count = query.limit(BATCH_SIZE).delete_all
+          end
+
+          track_deleted_counter(deleted_count)
 
           logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
           break if deleted_count == 0
@@ -177,6 +188,22 @@ module Sbmt
           :mysql
         else
           :unknown
+        end
+      end
+
+      def track_deleted_counter(deleted_count)
+        ::Yabeda
+          .outbox
+          .deleted_counter
+          .increment({box_type: box_type, box_name: box_name}, by: deleted_count)
+      end
+
+      def track_deleted_latency
+        ::Yabeda
+          .outbox
+          .delete_latency
+          .measure({box_type: box_type, box_name: box_name}) do
+          yield
         end
       end
     end

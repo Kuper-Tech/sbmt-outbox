@@ -43,6 +43,16 @@ Yabeda.configure do
       unit: :seconds,
       buckets: [0.5, 1, 2.5, 5, 10, 15, 20, 30, 45, 60, 300].freeze,
       comment: "A histogram outbox process latency"
+
+    histogram :delete_latency,
+      tags: %i[box_type box_name],
+      unit: :seconds,
+      buckets: [0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30].freeze,
+      comment: "A histogram for outbox/inbox deletion latency"
+
+    counter :deleted_counter,
+      tags: %i[box_type box_name],
+      comment: "A counter for the number of deleted outbox/inbox items"
   end
 
   group :box_worker do
