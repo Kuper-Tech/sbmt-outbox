@@ -13,7 +13,8 @@ module Sbmt
       class << self
         def enqueue
           item_classes.each do |item_class|
-            perform_later(item_class.to_s)
+            delay = rand(15).seconds
+            set(wait: delay).perform_later(item_class.to_s)
           end
         end
 
@@ -41,12 +42,13 @@ module Sbmt
 
         lock_manager.lock("#{self.class.name}:#{item_class_name}:lock", LOCK_TTL) do |locked|
           if locked
-            duration = item_class.config.retention
+            duration_failed = item_class.config.retention
+            duration_delivered = item_class.config.retention_delivered_items
 
-            validate_retention!(duration)
+            validate_retention!(duration_failed)
 
             logger.with_tags(box_type: box_type, box_name: box_name) do
-              delete_stale_items(Time.current - duration)
+              delete_stale_items(Time.current - duration_failed, Time.current - duration_delivered)
             end
           else
             logger.log_info("Failed to acquire lock #{self.class.name}:#{item_class_name}")
@@ -58,25 +60,25 @@ module Sbmt
 
       private
 
-      def validate_retention!(duration)
-        return if duration >= MIN_RETENTION_PERIOD
+      def validate_retention!(duration_failed)
+        return if duration_failed >= MIN_RETENTION_PERIOD
 
         raise "Retention period for #{box_name} must be longer than #{MIN_RETENTION_PERIOD.inspect}"
       end
 
-      def delete_stale_items(waterline)
-        logger.log_info("Start deleting #{box_type} items for #{box_name} older than #{waterline}")
+      def delete_stale_items(waterline_failed, waterline_delivered)
+        logger.log_info("Start deleting #{box_type} items for #{box_name} older than: failed and discarded items #{waterline_failed} and delivered items #{waterline_delivered}")
 
         case database_type
         when :postgresql
-          postgres_delete_in_batches(waterline)
+          postgres_delete_in_batches(waterline_failed, waterline_delivered)
         when :mysql
-          mysql_delete_in_batches(waterline)
+          mysql_delete_in_batches(waterline_failed, waterline_delivered)
         else
           raise "Unsupported database type"
         end
 
-        logger.log_info("Successfully deleted #{box_type} items for #{box_name} older than #{waterline}")
+        logger.log_info("Successfully deleted #{box_type} items for #{box_name} older than: failed and discarded items #{waterline_failed} and delivered items #{waterline_delivered}")
       end
 
       # Deletes stale items from PostgreSQL database in batches
@@ -90,12 +92,22 @@ module Sbmt
       #   WHERE "items"."id" IN (
       #     SELECT "items"."id"
       #     FROM "items"
-      #     WHERE "items"."created_at" < '2023-05-01 00:00:00'
+      #     WHERE (
+      #       "items"."status" = 1 AND "items"."created_at" < '2023-05-01 00:00:00'
+      #     )
       #     LIMIT 1000
       #   )
-      def postgres_delete_in_batches(waterline)
+      def postgres_delete_in_batches(waterline_failed, waterline_delivered)
         table = item_class.arel_table
-        condition = table[:created_at].lt(waterline)
+
+        status_delivered = item_class.statuses[:delivered]
+        status_failed_discarded = item_class.statuses.values_at(:failed, :discarded)
+
+        delete_items_in_batches(table, table[:status].eq(status_delivered).and(table[:created_at].lt(waterline_delivered)))
+        delete_items_in_batches(table, table[:status].in(status_failed_discarded).and(table[:created_at].lt(waterline_failed)))
+      end
+
+      def delete_items_in_batches(table, condition)
         subquery = table
           .project(table[:id])
           .where(condition)
@@ -129,14 +141,25 @@ module Sbmt
       #
       # Example SQL generated for deletion:
       #   DELETE FROM `items`
-      #   WHERE `items`.`created_at` < '2023-05-01 00:00:00'
+      #   WHERE (
+      #     `items`.`status` = 1 AND `items`.`created_at` < '2023-05-01 00:00:00'
+      #   )
       #   LIMIT 1000
-      def mysql_delete_in_batches(waterline)
+      def mysql_delete_in_batches(waterline_failed, waterline_delivered)
+        status_delivered = item_class.statuses[:delivered]
+        status_failed_discarded = [item_class.statuses.values_at(:failed, :discarded)]
+
+        delete_items_in_batches_mysql(
+          item_class.where(status: status_delivered, created_at: ...waterline_delivered)
+        )
+        delete_items_in_batches_mysql(
+          item_class.where(status: status_failed_discarded).where(created_at: ...waterline_failed)
+        )
+      end
+
+      def delete_items_in_batches_mysql(query)
         loop do
-          deleted_count = item_class
-            .where(created_at: ...waterline)
-            .limit(BATCH_SIZE)
-            .delete_all
+          deleted_count = query.limit(BATCH_SIZE).delete_all
 
           logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
           break if deleted_count == 0

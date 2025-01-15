@@ -8,6 +8,7 @@ test:
       partition_size: 2
       partition_strategy: number
       retention: P1W
+      retention_delivered_items: PT6H
       retry_strategies:
         - exponential_backoff
         - compacted_log

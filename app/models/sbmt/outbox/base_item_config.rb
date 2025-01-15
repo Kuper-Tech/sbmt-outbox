@@ -37,6 +37,13 @@ module Sbmt
         @retention ||= ActiveSupport::Duration.parse(options[:retention] || "P1W")
       end
 
+      def retention_delivered_items
+        @retention_delivered_items ||= begin
+          value = options[:retention_delivered_items] || retention
+          value.is_a?(String) ? ActiveSupport::Duration.parse(value) : value
+        end
+      end
+
       def max_retries
         @max_retries ||= (options[:max_retries] || 0).to_i
       end

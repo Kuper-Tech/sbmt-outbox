@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.12.0] - 2025-01-10
+
+### Added
+
+- Random seconds have been added to the item removal tasks to prevent tasks from running simultaneously
+- Add option `retention_delivered_items` to remove successful items. Default equals option `retention`
+
+### Changed
+
+- `retention` removes items with statuses: `failed` and `discarded`
+
 ## [6.11.0] - 2024-12-23
 
 ### Added
