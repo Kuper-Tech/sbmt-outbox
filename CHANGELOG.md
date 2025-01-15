@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.13.1] - 2025-01-15
+
+### Fixed
+
+- Fix support enum for rails < 7
+
 ## [6.13.0] - 2025-01-15
 
 ### Added

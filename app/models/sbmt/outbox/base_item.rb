@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
+# For compatibility with rails < 7
+# Remove when drop support of Rails < 7
 require_relative "../../../../lib/sbmt/outbox/enum_refinement"
+using Sbmt::Outbox::EnumRefinement
 
 module Sbmt
   module Outbox
     class BaseItem < Outbox.active_record_base_class
-      # For compatibility with rails < 7
-      # Remove when drop support of Rails < 7
-      using EnumRefinement
-
       self.abstract_class = true
 
       class << self
