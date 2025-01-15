@@ -11,8 +11,8 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
     end
   end
 
-  let!(:item) { create(:outbox_item, created_at: created_at) }
-  let!(:item_2) { create(:outbox_item, created_at: created_at) }
+  let!(:item_delivered) { create(:outbox_item, created_at: created_at, status: 2) }
+  let!(:item_failed) { create(:outbox_item, created_at: created_at, status: 1) }
   let(:created_at) { 1.month.ago }
 
   before do
@@ -25,17 +25,17 @@ describe Sbmt::Outbox::BaseDeleteStaleItemsJob do
     end
   end
 
-  it "deletes item" do
+  it "deletes items with status 2 and old items with status 1" do
     expect { job_class.perform_now("OutboxItem") }
       .to change(OutboxItem, :count).by(-2)
   end
 
-  context "when item is too young" do
-    let(:created_at) { 1.hour.ago }
+  context "when an element with status 1 does not retention" do
+    let(:created_at) { 6.hours.ago }
 
-    it "doesn't delete item" do
+    it "doesn't delete item with status 1 but deletes item with status 2" do
       expect { job_class.perform_now("OutboxItem") }
-        .not_to change(OutboxItem, :count)
+        .to change(OutboxItem, :count).by(-1)
     end
   end
 end
