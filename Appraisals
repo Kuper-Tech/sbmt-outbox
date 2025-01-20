@@ -19,6 +19,7 @@ versions_map.each do |rails_version, ruby_versions|
 
     appraise "rails-#{rails_version}" do
       gem "rails", "~> #{rails_version}.0"
+      gem "concurrent-ruby", "1.3.4" if rails_version.to_f < 7.1
     end
   end
 end

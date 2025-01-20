@@ -5,10 +5,7 @@ require "redlock"
 module Sbmt
   module Outbox
     class BaseDeleteStaleItemsJob < Outbox.active_job_base_class
-      MIN_RETENTION_PERIOD = 1.day
       LOCK_TTL = 10_800_000
-      BATCH_SIZE = 1_000
-      SLEEP_TIME = 0.5
 
       class << self
         def enqueue
@@ -45,7 +42,7 @@ module Sbmt
             duration_failed = item_class.config.retention
             duration_delivered = item_class.config.retention_delivered_items
 
-            validate_retention!(duration_failed)
+            validate_retention!(duration_delivered, duration_failed)
 
             logger.with_tags(box_type: box_type, box_name: box_name) do
               delete_stale_items(Time.current - duration_failed, Time.current - duration_delivered)
@@ -60,10 +57,22 @@ module Sbmt
 
       private
 
-      def validate_retention!(duration_failed)
-        return if duration_failed >= MIN_RETENTION_PERIOD
+      def validate_retention!(duration_delivered, duration_failed)
+        validate_retention_for!(
+          duration: duration_delivered,
+          min_period: item_class.config.delivered_min_retention_period,
+          error_message: "Retention period for #{box_name} must be longer than #{item_class.config.delivered_min_retention_period.inspect}"
+        )
 
-        raise "Retention period for #{box_name} must be longer than #{MIN_RETENTION_PERIOD.inspect}"
+        validate_retention_for!(
+          duration: duration_failed,
+          min_period: item_class.config.min_retention_period,
+          error_message: "Retention period for #{box_name} must be longer than #{item_class.config.min_retention_period.inspect}"
+        )
+      end
+
+      def validate_retention_for!(duration:, min_period:, error_message:)
+        raise error_message if duration < min_period
       end
 
       def delete_stale_items(waterline_failed, waterline_delivered)
@@ -111,7 +120,7 @@ module Sbmt
         subquery = table
           .project(table[:id])
           .where(condition)
-          .take(BATCH_SIZE)
+          .take(item_class.config.deletion_batch_size)
 
         delete_statement = Arel::Nodes::DeleteStatement.new
         delete_statement.relation = table
@@ -131,7 +140,7 @@ module Sbmt
           logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
           break if deleted_count == 0
           lock_timer.checkpoint!
-          sleep(SLEEP_TIME)
+          sleep(item_class.config.deletion_sleep_time)
         end
       end
 
@@ -167,7 +176,7 @@ module Sbmt
 
         loop do
           track_deleted_latency do
-            deleted_count = query.limit(BATCH_SIZE).delete_all
+            deleted_count = query.limit(item_class.config.deletion_batch_size).delete_all
           end
 
           track_deleted_counter(deleted_count)
@@ -175,7 +184,7 @@ module Sbmt
           logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
           break if deleted_count == 0
           lock_timer.checkpoint!
-          sleep(SLEEP_TIME)
+          sleep(item_class.config.deletion_sleep_time)
         end
       end
 

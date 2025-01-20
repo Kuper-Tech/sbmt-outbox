@@ -44,6 +44,22 @@ module Sbmt
         end
       end
 
+      def deletion_batch_size
+        @deletion_batch_size ||= (options[:deletion_batch_size] || 1_000).to_i
+      end
+
+      def deletion_sleep_time
+        @deletion_sleep_time ||= (options[:deletion_sleep_time] || 0.5).to_f
+      end
+
+      def min_retention_period
+        @min_retention_period ||= ActiveSupport::Duration.parse(options[:min_retention_period] || "P1D")
+      end
+
+      def delivered_min_retention_period
+        @delivered_min_retention_period ||= ActiveSupport::Duration.parse(options[:delivered_min_retention_period] || "PT1H")
+      end
+
       def max_retries
         @max_retries ||= (options[:max_retries] || 0).to_i
       end

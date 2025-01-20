@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.14.0] - 2025-01-20
+
+### Added
+
+- Added options for configuring jobs to remove old items:
+  - `deletion_batch_size` - default 1_000
+  - `deletion_sleep_time` - pauses between `batch_size`
+  - `min_retention_period` - for items with statuses: `failed` and `discarded`
+  - `delivered_min_retention_period` - for items with statuses: `delivered`
+
 ## [6.13.1] - 2025-01-15
 
 ### Fixed
