@@ -17,6 +17,11 @@ default: &default
 #      partition_size: 2
 #      partition_strategy: number
 #      retention: P1W
+#      min_retention_period: P1D
+#      retention_delivered_items: PT6H 
+#      delivered_min_retention_period: PT1H 
+#      deletion_batch_size: 1_000
+#      deletion_sleep_time: 0.5
 #      retry_strategies:
 #        - exponential_backoff
 #        - compacted_log
@@ -32,6 +37,11 @@ default: &default
 #      partition_size: 2
 #      partition_strategy: number
 #      retention: P1W
+#      min_retention_period: P1D
+#      retention_delivered_items: PT6H 
+#      delivered_min_retention_period: PT1H 
+#      deletion_batch_size: 1_000
+#      deletion_sleep_time: 0.5
 #      retry_strategies:
 #        - exponential_backoff
 #      transports:
