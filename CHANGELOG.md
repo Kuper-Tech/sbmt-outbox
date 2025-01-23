@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.15.0] - 2025-01-23
+
+### Added
+
+- Add rake tasks:
+  - rake outbox:delete_items
+  - rake outbox:update_status_items
+
+
 ## [6.14.0] - 2025-01-20
 
 ### Added

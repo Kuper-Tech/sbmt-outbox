@@ -79,6 +79,8 @@ module Sbmt
       rake_tasks do
         load "sbmt/outbox/tasks/retry_failed_items.rake"
         load "sbmt/outbox/tasks/delete_failed_items.rake"
+        load "sbmt/outbox/tasks/delete_items.rake"
+        load "sbmt/outbox/tasks/update_status_items.rake"
       end
     end
   end
