@@ -439,6 +439,42 @@ outbox_items:
     partition_strategy: hash
 ```
 
+## Rake tasks
+
+```shell
+rake outbox:delete_items
+rake outbox:update_status_items
+```
+
+Example run:
+```shell
+rake outbox:delete_items[OutboxItem,1] # Mandatory parameters box class and status
+rake outbox:update_status_items[OutboxItem,0,3] # Mandatory parameters box class, current status and new status
+
+```
+
+Both tasks have optional parameters:
+```ruby
+- start_time # boxes are younger than the specified time, by default nil, time is specified in the format "2025-01-05T23:59:59"
+- end_time # boxes are older than the specified time, by default 6.hours.ago, time is specified in the format "2025-01-05T23:59:59"
+- batch_size # batch size, by default 1_000
+- sleep_time # sleep time between batches, by default 0.5
+```
+
+Example with optional parameters:
+  - format optional parameters:
+  ```shell
+    rake outbox:delete_items[klass_name,status,start_time,end_time,batch_size,sleep_time]
+
+    rake outbox:update_status_items[klass_name,status,new_status,start_time,end_time,batch_size,sleep_time]
+  ```
+  - example:
+  ```shell
+    rake outbox:delete_items[OutboxItem,1,"2025-01-05T23:59:59","2025-01-05T00:00:00",10_000,5]
+
+    rake outbox:update_status_items[OutboxItem,0,3,"2025-01-05T23:59:59","2025-01-05T00:00:00",10_000,5]
+  ```
+
 ## Concurrency
 
 The worker process consists of a poller and a processor, each of which has its own thread pool.
