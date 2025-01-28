@@ -10,9 +10,9 @@ module Sbmt
   module Outbox
     module V2
       class Poller < BoxProcessor
-        delegate :poller_config, :logger, to: "Sbmt::Outbox"
+        delegate :poller_config, :polling_item_middlewares, :logger, to: "Sbmt::Outbox"
         delegate :box_worker, to: "Yabeda"
-        attr_reader :partitions_count, :lock_timeout, :regular_items_batch_size, :retryable_items_batch_size, :max_buffer_size, :max_batch_size, :throttler
+        attr_reader :partitions_count, :lock_timeout, :regular_items_batch_size, :retryable_items_batch_size, :max_buffer_size, :max_batch_size, :throttler, :middleware_builder
 
         def initialize(
           boxes,
@@ -35,6 +35,7 @@ module Sbmt
           super(boxes: boxes, threads_count: threads_count || poller_config.threads_count, name: "poller", redis: redis)
 
           @throttler = PollThrottler.build(throttler_tactic || poller_config.tactic || "default", self.redis, poller_config)
+          @middleware_builder = Middleware::Builder.new(polling_item_middlewares)
         end
 
         def throttle(worker_number, poll_task, result)
@@ -42,7 +43,7 @@ module Sbmt
         end
 
         def process_task(_worker_number, task)
-          poll(task)
+          middleware_builder.call(task) { poll(task) }
         end
 
         private

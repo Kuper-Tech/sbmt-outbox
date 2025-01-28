@@ -493,6 +493,7 @@ You can wrap item processing within middlewares. There are three types:
 - server middlewares – triggered inside a daemon; divided into two types:
   - batch middlewares – executed alongside a batch being fetched from the database
   - item middlewares – execute alongside an item during processing
+  - polling middlewares - execute with element during pooling
 
 The order of execution depends on the order specified in the outbox configuration:
 
@@ -579,6 +580,25 @@ class MyItemMiddleware
   end
 end
 ```
+
+Example of an polling middleware:
+
+```ruby
+# config/initializers/outbox.rb
+Rails.application.config.outbox.tap do |config|
+  config.polling_item_middlewares.push(
+    'MyItemMiddleware'
+  )
+end
+
+# my_create_polling_middleware.rb
+class MyPollingItemMiddleware
+  def call(item)
+    # your code
+    yield
+    # your code
+  end
+end
 
 ## Tracing
 
