@@ -170,5 +170,9 @@ module Sbmt
     def create_batch_middlewares
       @create_batch_middlewares ||= config.create_batch_middlewares.map(&:constantize)
     end
+
+    def polling_item_middlewares
+      @polling_item_middlewares ||= config.polling_item_middlewares.map(&:constantize)
+    end
   end
 end

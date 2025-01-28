@@ -64,6 +64,7 @@ module Sbmt
         c.item_process_middlewares = []
         c.create_item_middlewares = []
         c.create_batch_middlewares = []
+        c.polling_item_middlewares = []
 
         if defined?(::Sentry)
           c.batch_process_middlewares.push("Sbmt::Outbox::Middleware::Sentry::TracingBatchProcessMiddleware")

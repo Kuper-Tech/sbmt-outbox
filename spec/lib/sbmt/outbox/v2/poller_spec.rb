@@ -8,6 +8,8 @@ describe Sbmt::Outbox::V2::Poller do
   let(:regular_batch_size) { 2 }
   let(:retry_batch_size) { 1 }
   let(:throttler_tactic) { "noop" }
+  let(:dummy_middleware_class) { instance_double(Class, new: dummy_middleware) }
+  let(:dummy_middleware) { ->(*_args, &b) { b.call } }
 
   let(:poller) do
     described_class.new(
@@ -24,7 +26,11 @@ describe Sbmt::Outbox::V2::Poller do
 
   let(:redis) { instance_double(RedisClient) }
 
-  before { allow(redis).to receive(:pipelined).and_yield(redis) }
+  before do
+    allow(redis).to receive(:pipelined).and_yield(redis)
+    allow(Sbmt::Outbox).to receive(:polling_item_middlewares).and_return([dummy_middleware_class])
+    allow(dummy_middleware).to receive(:call).and_call_original
+  end
 
   context "when initialized" do
     it "properly partitions items and builds task queue" do
@@ -59,12 +65,14 @@ describe Sbmt::Outbox::V2::Poller do
         .with("sbmt:outbox:poller:inbox_item:0:lock", 1000)
 
       expect(poller.start).to be(Sbmt::Outbox::V2::ThreadPool::PROCESSED)
+      expect(dummy_middleware).not_to have_received(:call)
     end
 
     it "returns SKIPPED if lock is not acquired" do
       expect(poller.send(:lock_manager)).to receive(:lock).and_yield(nil)
 
       expect(poller.start).to be(Sbmt::Outbox::V2::ThreadPool::SKIPPED)
+      expect(dummy_middleware).not_to have_received(:call)
     end
 
     context "when default poll tactic is used" do
@@ -75,6 +83,7 @@ describe Sbmt::Outbox::V2::Poller do
         expect(poller.send(:lock_manager)).not_to receive(:lock)
 
         expect(poller.start).to be(Sbmt::Outbox::V2::ThreadPool::SKIPPED)
+        expect(dummy_middleware).not_to have_received(:call)
       end
 
       it "does not throttle processing if redis queue is not oversized" do
@@ -82,6 +91,7 @@ describe Sbmt::Outbox::V2::Poller do
         expect(poller.send(:lock_manager)).to receive(:lock).with("sbmt:outbox:poller:inbox_item:0:lock", 1000)
 
         expect(poller.start).to be(Sbmt::Outbox::V2::ThreadPool::PROCESSED)
+        expect(dummy_middleware).not_to have_received(:call)
       end
     end
 
@@ -104,6 +114,7 @@ describe Sbmt::Outbox::V2::Poller do
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_items_counter)
             .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(1)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
+          expect(dummy_middleware).to have_received(:call)
         end
       end
 
@@ -128,6 +139,7 @@ describe Sbmt::Outbox::V2::Poller do
             .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(3)
             .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(1)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
+          expect(dummy_middleware).to have_received(:call)
         end
       end
 
@@ -154,6 +166,7 @@ describe Sbmt::Outbox::V2::Poller do
             .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(2)
             .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(2)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
+          expect(dummy_middleware).to have_received(:call)
         end
       end
 
@@ -178,6 +191,7 @@ describe Sbmt::Outbox::V2::Poller do
             .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(1)
             .and increment_yabeda_counter(Yabeda.box_worker.batches_per_poll_counter).with_tags(name: "inbox_item", partition: 0, type: :inbox, worker_name: "poller", worker_version: 2).by(1)
             .and not_increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter)
+          expect(dummy_middleware).to have_received(:call)
         end
       end
     end
