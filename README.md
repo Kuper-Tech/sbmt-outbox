@@ -273,6 +273,7 @@ default: &default
       delivered_min_retention_period: PT1H #optional, default: PT1H, for statuses: delivered, retention period for delivered items, https://en.wikipedia.org/wiki/ISO_8601#Durations
       deletion_batch_size: 1_000 #optional, default: 1_000
       deletion_sleep_time: 0.5 #optional, default: 0.5
+      deletion_time_window: PT4H #optional, default: PT4H, for statuses: delivered, retention period for delivered items, https://en.wikipedia.org/wiki/ISO_8601#Durations
       max_retries: 3 # default 0, the number of retries before the item will be marked as failed
       strict_order: false # optional, default
       transports: # transports section
@@ -353,6 +354,7 @@ inbox_items: # inbox items section
     delivered_min_retention_period: PT1H #optional, default: PT1H, for statuses: delivered, retention period for delivered items, https://en.wikipedia.org/wiki/ISO_8601#Durations
     deletion_batch_size: 1_000 #optional, default: 1_000
     deletion_sleep_time: 0.5 #optional, default: 0.5
+    deletion_time_window: PT4H #optional, default: PT4H, for statuses: delivered, retention period for delivered items, https://en.wikipedia.org/wiki/ISO_8601#Durations
     max_retries: 3 # default 0, the number of retries before the item will be marked as failed
     transports: # transports section
       import_order: # underscored transport class name

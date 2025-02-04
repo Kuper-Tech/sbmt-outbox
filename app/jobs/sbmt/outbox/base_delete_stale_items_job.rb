@@ -102,45 +102,50 @@ module Sbmt
       #     SELECT "items"."id"
       #     FROM "items"
       #     WHERE (
-      #       "items"."status" = 1 AND "items"."created_at" < '2023-05-01 00:00:00'
+      #       "items"."status" IN (2) AND "items"."created_at" BETWEEN "2025-01-29 12:18:32.917836" AND "2025-01-29 12:18:32.927596" LIMIT 1000
       #     )
-      #     LIMIT 1000
       #   )
       def postgres_delete_in_batches(waterline_failed, waterline_delivered)
-        table = item_class.arel_table
-
         status_delivered = item_class.statuses[:delivered]
         status_failed_discarded = item_class.statuses.values_at(:failed, :discarded)
 
-        delete_items_in_batches(table, table[:status].eq(status_delivered).and(table[:created_at].lt(waterline_delivered)))
-        delete_items_in_batches(table, table[:status].in(status_failed_discarded).and(table[:created_at].lt(waterline_failed)))
+        delete_items_in_batches_with_between(waterline_delivered, status_delivered)
+        delete_items_in_batches_with_between(waterline_failed, status_failed_discarded)
       end
 
-      def delete_items_in_batches(table, condition)
-        subquery = table
-          .project(table[:id])
-          .where(condition)
-          .take(item_class.config.deletion_batch_size)
-
-        delete_statement = Arel::Nodes::DeleteStatement.new
-        delete_statement.relation = table
-        delete_statement.wheres = [table[:id].in(subquery)]
+      def delete_items_in_batches_with_between(waterline, statuses)
+        table = item_class.arel_table
+        batch_size = item_class.config.deletion_batch_size
+        time_window = item_class.config.deletion_time_window
+        min_date = item_class.where(table[:status].in(statuses)).minimum(:created_at)
         deleted_count = nil
 
-        loop do
-          track_deleted_latency do
-            deleted_count = item_class
-              .connection
-              .execute(delete_statement.to_sql)
-              .cmd_tuples
+        while min_date && min_date < waterline
+          max_date = [min_date + time_window, waterline].min
+
+          loop do
+            subquery = table
+              .project(table[:id])
+              .where(table[:status].in(statuses))
+              .where(table[:created_at].between(min_date..max_date))
+              .take(batch_size)
+
+            delete_statement = Arel::Nodes::DeleteStatement.new
+            delete_statement.relation = table
+            delete_statement.wheres = [table[:id].in(subquery)]
+
+            track_deleted_latency do
+              deleted_count = item_class.connection.execute(delete_statement.to_sql).cmd_tuples
+            end
+
+            track_deleted_counter(deleted_count)
+
+            logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} between #{min_date} and #{max_date}")
+            break if deleted_count < batch_size
+            lock_timer.checkpoint!
+            sleep(item_class.config.deletion_sleep_time) if deleted_count > 0
           end
-
-          track_deleted_counter(deleted_count)
-
-          logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
-          break if deleted_count == 0
-          lock_timer.checkpoint!
-          sleep(item_class.config.deletion_sleep_time)
+          min_date = max_date
         end
       end
 
@@ -154,37 +159,43 @@ module Sbmt
       # This approach doesn't require a subquery, making it more straightforward.
       #
       # Example SQL generated for deletion:
-      #   DELETE FROM `items`
+      #   DELETE FROM "items"
       #   WHERE (
-      #     `items`.`status` = 1 AND `items`.`created_at` < '2023-05-01 00:00:00'
+      #     "items"."status" IN (2) AND "items"."created_at" BETWEEN "2024-12-29 18:34:25.369234" AND "2024-12-29 22:34:25.369234" LIMIT 1000
       #   )
-      #   LIMIT 1000
       def mysql_delete_in_batches(waterline_failed, waterline_delivered)
         status_delivered = item_class.statuses[:delivered]
         status_failed_discarded = [item_class.statuses.values_at(:failed, :discarded)]
 
-        delete_items_in_batches_mysql(
-          item_class.where(status: status_delivered, created_at: ...waterline_delivered)
-        )
-        delete_items_in_batches_mysql(
-          item_class.where(status: status_failed_discarded).where(created_at: ...waterline_failed)
-        )
+        delete_items_in_batches_with_between_mysql(waterline_delivered, status_delivered)
+        delete_items_in_batches_with_between_mysql(waterline_failed, status_failed_discarded)
       end
 
-      def delete_items_in_batches_mysql(query)
+      def delete_items_in_batches_with_between_mysql(waterline, statuses)
+        batch_size = item_class.config.deletion_batch_size
+        time_window = item_class.config.deletion_time_window
+        min_date = item_class.where(status: statuses).minimum(:created_at)
         deleted_count = nil
 
-        loop do
-          track_deleted_latency do
-            deleted_count = query.limit(item_class.config.deletion_batch_size).delete_all
+        while min_date && min_date < waterline
+          max_date = [min_date + time_window, waterline].min
+
+          loop do
+            track_deleted_latency do
+              deleted_count = item_class
+                .where(status: statuses, created_at: min_date..max_date)
+                .limit(batch_size)
+                .delete_all
+            end
+
+            track_deleted_counter(deleted_count)
+
+            logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} between #{min_date} and #{max_date}")
+            break if deleted_count < batch_size
+            lock_timer.checkpoint!
+            sleep(item_class.config.deletion_sleep_time) if deleted_count > 0
           end
-
-          track_deleted_counter(deleted_count)
-
-          logger.log_info("Deleted #{deleted_count} #{box_type} items for #{box_name} items")
-          break if deleted_count == 0
-          lock_timer.checkpoint!
-          sleep(item_class.config.deletion_sleep_time)
+          min_date = max_date
         end
       end
 
