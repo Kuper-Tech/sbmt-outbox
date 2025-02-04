@@ -60,6 +60,10 @@ module Sbmt
         @delivered_min_retention_period ||= ActiveSupport::Duration.parse(options[:delivered_min_retention_period] || "PT1H")
       end
 
+      def deletion_time_window
+        @deletion_time_window ||= ActiveSupport::Duration.parse(options[:deletion_time_window] || "PT4H")
+      end
+
       def max_retries
         @max_retries ||= (options[:max_retries] || 0).to_i
       end

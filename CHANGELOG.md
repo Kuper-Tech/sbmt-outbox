@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.17.0] - 2025-01-30
+
+### Added
+
+- Added options for configuring jobs to remove old items:
+  - `deletion_time_window` - 4 hours
+
+### Changed
+
+- Change condition for job deleted items
+
 ## [6.16.0] - 2025-01-28
 
 ### Added
