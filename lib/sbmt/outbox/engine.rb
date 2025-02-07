@@ -25,8 +25,8 @@ module Sbmt
           c.cdn_url = "https://cdn.jsdelivr.net/npm/sbmt-outbox-ui@0.0.8/dist/assets/index.js"
         end
         c.process_items = ActiveSupport::OrderedOptions.new.tap do |c|
-          c.general_timeout = 120
-          c.cutoff_timeout = 60
+          c.general_timeout = 180
+          c.cutoff_timeout = 90
           c.batch_size = 200
         end
         c.worker = ActiveSupport::OrderedOptions.new.tap do |c|
@@ -54,8 +54,8 @@ module Sbmt
         end
         c.processor = ActiveSupport::OrderedOptions.new.tap do |pc|
           pc.threads_count = 4
-          pc.general_timeout = 120
-          pc.cutoff_timeout = 60
+          pc.general_timeout = 180
+          pc.cutoff_timeout = 90
           pc.brpop_delay = 1
         end
 

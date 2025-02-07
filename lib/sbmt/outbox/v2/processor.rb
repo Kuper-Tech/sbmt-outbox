@@ -10,7 +10,7 @@ module Sbmt
     module V2
       class Processor < BoxProcessor
         delegate :processor_config, :batch_process_middlewares, :logger, to: "Sbmt::Outbox"
-        attr_reader :lock_timeout, :brpop_delay
+        attr_reader :lock_timeout, :cache_ttl, :cutoff_timeout, :brpop_delay
 
         REDIS_BRPOP_MIN_DELAY = 0.1
 
@@ -18,11 +18,16 @@ module Sbmt
           boxes,
           threads_count: nil,
           lock_timeout: nil,
+          cache_ttl: nil,
+          cutoff_timeout: nil,
           brpop_delay: nil,
           redis: nil
         )
           @lock_timeout = lock_timeout || processor_config.general_timeout
+          @cache_ttl = cache_ttl || @lock_timeout * 10
+          @cutoff_timeout = cutoff_timeout || processor_config.cutoff_timeout
           @brpop_delay = brpop_delay || redis_brpop_delay(boxes.count, processor_config.brpop_delay)
+          @redis = redis
 
           super(boxes: boxes, threads_count: threads_count || processor_config.threads_count, name: "processor", redis: redis)
         end
@@ -66,14 +71,19 @@ module Sbmt
         end
 
         def process(task)
-          lock_timer = Cutoff.new(lock_timeout)
+          lock_timer = Cutoff.new(cutoff_timeout)
           last_id = 0
           strict_order = task.item_class.config.strict_order
 
           box_worker.item_execution_runtime.measure(task.yabeda_labels) do
             Outbox.database_switcher.use_master do
               task.ids.each do |id|
-                result = ProcessItem.call(task.item_class, id, worker_version: task.yabeda_labels[:worker_version])
+                result = ProcessItem.call(
+                  task.item_class, id,
+                  worker_version: task.yabeda_labels[:worker_version],
+                  cache_ttl_sec: cache_ttl,
+                  redis: @redis
+                )
 
                 box_worker.job_items_counter.increment(task.yabeda_labels)
                 last_id = id

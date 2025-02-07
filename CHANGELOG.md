@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.18.0] - 2025-02-04
+
+### Added
+
+- Add failed item caching in case of unrecoverable database conn issues
+- Add `retry_latency` metric to measure retries
+
+### Fixed
+
+- Fix item processing cutoff timeout to be less than generic redis lock timeout
+
 ## [6.17.0] - 2025-01-30
 
 ### Added

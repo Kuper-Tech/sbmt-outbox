@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "sbmt/outbox/metrics/utils"
+require "sbmt/outbox/v2/redis_item_meta"
 
 module Sbmt
   module Outbox
@@ -8,14 +9,16 @@ module Sbmt
       param :item_class, reader: :private
       param :item_id, reader: :private
       option :worker_version, reader: :private, optional: true, default: -> { 1 }
+      option :cache_ttl_sec, reader: :private, optional: true, default: -> { 5 * 60 }
+      option :redis, reader: :private, optional: true, default: -> {}
 
       METRICS_COUNTERS = %i[error_counter retry_counter sent_counter fetch_error_counter discarded_counter].freeze
 
-      delegate :log_success, :log_info, :log_failure, to: "Sbmt::Outbox.logger"
+      delegate :log_success, :log_info, :log_failure, :log_debug, to: "Sbmt::Outbox.logger"
       delegate :item_process_middlewares, to: "Sbmt::Outbox"
       delegate :box_type, :box_name, :owner, to: :item_class
 
-      attr_accessor :process_latency
+      attr_accessor :process_latency, :retry_latency
 
       def call
         log_success(
@@ -26,9 +29,23 @@ module Sbmt
         item = nil
 
         item_class.transaction do
-          item = yield fetch_item
+          item = yield fetch_item_and_lock_for_update
+
+          cached_item = fetch_redis_item_meta(redis_item_key(item_id))
+          if cached_retries_exceeded?(cached_item)
+            msg = "max retries exceeded: marking item as failed based on cached data: #{cached_item}"
+            item.set_errors_count(cached_item.errors_count)
+            track_failed(msg, item)
+            next Failure(msg)
+          end
+
+          if cached_greater_errors_count?(item, cached_item)
+            log_failure("inconsistent item: cached_errors_count:#{cached_item.errors_count} > db_errors_count:#{item.errors_count}: setting errors_count based on cached data:#{cached_item}")
+            item.set_errors_count(cached_item.errors_count)
+          end
 
           if item.processed_at?
+            self.retry_latency = Time.current - item.created_at
             item.config.retry_strategies.each do |retry_strategy|
               yield check_retry_strategy(item, retry_strategy)
             end
@@ -62,7 +79,48 @@ module Sbmt
 
       private
 
-      def fetch_item
+      def cached_retries_exceeded?(cached_item)
+        return false unless cached_item
+
+        item_class.max_retries_exceeded?(cached_item.errors_count)
+      end
+
+      def cached_greater_errors_count?(db_item, cached_item)
+        return false unless cached_item
+
+        cached_item.errors_count > db_item.errors_count
+      end
+
+      def fetch_redis_item_meta(redis_key)
+        return if worker_version < 2
+
+        data = redis.call("GET", redis_key)
+        return if data.blank?
+
+        Sbmt::Outbox::V2::RedisItemMeta.deserialize!(data)
+      rescue => ex
+        log_debug("error while fetching redis meta: #{ex.message}")
+        nil
+      end
+
+      def set_redis_item_meta(item, ex)
+        return if worker_version < 2
+        return if item.nil?
+
+        redis_key = redis_item_key(item.id)
+        error_msg = format_exception_error(ex, extract_cause: false)
+        data = Sbmt::Outbox::V2::RedisItemMeta.new(errors_count: item.errors_count, error_msg: error_msg)
+        redis.call("SET", redis_key, data.to_s, "EX", cache_ttl_sec)
+      rescue => ex
+        log_debug("error while fetching redis meta: #{ex.message}")
+        nil
+      end
+
+      def redis_item_key(item_id)
+        "#{box_type}:#{item_class.box_name}:#{item_id}"
+      end
+
+      def fetch_item_and_lock_for_update
         item = item_class
           .lock("FOR UPDATE")
           .find_by(id: item_id)
@@ -171,6 +229,7 @@ module Sbmt
           item.pending!
         end
       rescue => e
+        set_redis_item_meta(item, e)
         log_error_handling_error(e, item)
       end
 
@@ -259,6 +318,7 @@ module Sbmt
         end
 
         track_process_latency(labels) if process_latency
+        track_retry_latency(labels) if retry_latency
 
         return unless counters[:sent_counter].positive?
 
@@ -278,6 +338,10 @@ module Sbmt
 
       def track_process_latency(labels)
         Yabeda.outbox.process_latency.measure(labels, process_latency.round(3))
+      end
+
+      def track_retry_latency(labels)
+        Yabeda.outbox.retry_latency.measure(labels, retry_latency.round(3))
       end
     end
   end
