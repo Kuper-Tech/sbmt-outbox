@@ -9,12 +9,16 @@ describe Sbmt::Outbox::V2::Processor do
   let(:processor) do
     described_class.new(
       boxes,
-      lock_timeout: 1,
-      threads_count: 1,
+      lock_timeout: lock_timeout,
+      cutoff_timeout: cutoff_timeout,
+      threads_count: threads_count,
       redis: redis
     )
   end
 
+  let(:lock_timeout) { 1 }
+  let(:cutoff_timeout) { nil }
+  let(:threads_count) { 1 }
   let(:redis) { instance_double(RedisClient) }
 
   context "when initialized" do
@@ -49,6 +53,8 @@ describe Sbmt::Outbox::V2::Processor do
       let!(:item2) { create(:inbox_item, bucket: 0) }
 
       before do
+        allow(redis).to receive(:call).with("GET", "inbox:inbox_item:#{item1.id}").and_return(nil)
+        allow(redis).to receive(:call).with("GET", "inbox:inbox_item:#{item2.id}").and_return(nil)
         allow(redis).to receive(:blocking_call).with(1.1, "BRPOP", "inbox_item:job_queue", 0.1).and_return(%W[inbox_item:job_queue 0:#{Time.current.to_i}:#{item1.id},#{item2.id}])
       end
 
@@ -76,6 +82,29 @@ describe Sbmt::Outbox::V2::Processor do
           .and_yield(nil)
 
         expect(processor.start).to be(Sbmt::Outbox::V2::ThreadPool::SKIPPED)
+      end
+
+      context "when cutoff times out after first processed item in batch" do
+        let(:lock_timeout) { 10 }
+        let(:cutoff_timeout) { 1 }
+        let(:cutoff_exception) { Cutoff::CutoffExceededError.new(Cutoff.new(cutoff_timeout)) }
+
+        before do
+          allow_any_instance_of(Cutoff).to receive(:checkpoint!).and_raise(cutoff_exception)
+          allow(Sbmt::Outbox.logger).to receive(:log_info)
+        end
+
+        it "processes only first item" do
+          expect(processor.send(:lock_manager)).to receive(:lock)
+            .with("sbmt:outbox:processor:inbox_item:0:lock", 10000)
+            .and_yield(task)
+          expect(Sbmt::Outbox.logger).to receive(:log_info).with(/Lock timeout while processing/)
+
+          expect { processor.start }
+            .to change(InboxItem.delivered, :count).from(0).to(1)
+            .and increment_yabeda_counter(Yabeda.box_worker.job_items_counter).with_tags(name: "inbox_item", type: :inbox, worker_name: "processor", worker_version: 2).by(1)
+            .and increment_yabeda_counter(Yabeda.box_worker.job_timeout_counter).with_tags(name: "inbox_item", type: :inbox, worker_name: "processor", worker_version: 2).by(1)
+        end
       end
 
       context "when use option strict_order" do

@@ -50,6 +50,12 @@ Yabeda.configure do
       buckets: [0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30].freeze,
       comment: "A histogram for outbox/inbox deletion latency"
 
+    histogram :retry_latency,
+      tags: %i[type name partition owner],
+      unit: :seconds,
+      buckets: [1, 10, 20, 50, 120, 300, 900, 1800, 3600].freeze,
+      comment: "A histogram outbox retry latency"
+
     counter :deleted_counter,
       tags: %i[box_type box_name],
       comment: "A counter for the number of deleted outbox/inbox items"

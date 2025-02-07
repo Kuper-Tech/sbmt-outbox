@@ -49,6 +49,17 @@ module Sbmt
               end
             end
         end
+
+        def max_retries_exceeded?(count)
+          return false if config.strict_order
+          return true unless retriable?
+
+          count > config.max_retries
+        end
+
+        def retriable?
+          config.max_retries > 0
+        end
       end
 
       enum :status, {
@@ -135,18 +146,19 @@ module Sbmt
       end
 
       def retriable?
-        config.max_retries > 0
+        self.class.retriable?
       end
 
       def max_retries_exceeded?
-        return false if config.strict_order
-        return true unless retriable?
-
-        errors_count > config.max_retries
+        self.class.max_retries_exceeded?(errors_count)
       end
 
       def increment_errors_counter
         increment(:errors_count)
+      end
+
+      def set_errors_count(count)
+        self.errors_count = count
       end
 
       def add_error(ex_or_msg)

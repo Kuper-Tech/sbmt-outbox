@@ -4,8 +4,10 @@ require "ostruct"
 
 describe Sbmt::Outbox::ProcessItem do
   describe "#call" do
-    subject(:result) { described_class.call(OutboxItem, outbox_item.id) }
+    subject(:result) { described_class.call(OutboxItem, outbox_item.id, worker_version: worker_version, redis: redis) }
 
+    let(:redis) { nil }
+    let(:worker_version) { 1 }
     let(:max_retries) { 0 }
     let(:producer) { instance_double(Producer, call: true) }
     let(:dummy_middleware_class) { instance_double(Class, new: dummy_middleware) }
@@ -32,6 +34,97 @@ describe Sbmt::Outbox::ProcessItem do
 
       it "tracks Yabeda error counter" do
         expect { result }.to increment_yabeda_counter(Yabeda.outbox.fetch_error_counter).by(1)
+      end
+    end
+
+    context "when outbox item is being processed concurrently" do
+      let(:outbox_item) { create(:outbox_item) }
+      let(:error_msg) { "Mysql2::Error::TimeoutError: Lock wait timeout exceeded; try restarting transaction" }
+
+      before do
+        allow(OutboxItem).to receive(:lock).and_raise(
+          ActiveRecord::LockWaitTimeout.new(error_msg)
+        )
+      end
+
+      it "logs failure" do
+        expect(Sbmt::Outbox.error_tracker).to receive(:error)
+        allow(Sbmt::Outbox.logger).to receive(:log_failure)
+        expect(result.failure).to eq(error_msg)
+        expect(Sbmt::Outbox.logger)
+          .to have_received(:log_failure)
+          .with(/#{error_msg}/, stacktrace: kind_of(String))
+      end
+
+      it "does not call middleware" do
+        result
+        expect(dummy_middleware).not_to have_received(:call)
+      end
+
+      it "tracks Yabeda error counter" do
+        expect { result }.to increment_yabeda_counter(Yabeda.outbox.fetch_error_counter).by(1)
+      end
+    end
+
+    context "when there is cached item data" do
+      let(:redis) { RedisClient.new(url: ENV["REDIS_URL"]) }
+      let(:cached_errors_count) { 99 }
+      let(:db_errors_count) { 1 }
+      let(:max_retries) { 7 }
+
+      before do
+        data = Sbmt::Outbox::V2::RedisItemMeta.new(errors_count: cached_errors_count, error_msg: "Some error")
+        redis.call("SET", "outbox:outbox_item:#{outbox_item.id}", data.to_s)
+
+        allow_any_instance_of(Sbmt::Outbox::OutboxItemConfig).to receive(:max_retries).and_return(max_retries)
+      end
+
+      context "when worker_version is 1" do
+        let(:outbox_item) { create(:outbox_item) }
+        let(:worker_version) { 1 }
+
+        it "does not use cached data" do
+          expect { result }.not_to change { outbox_item.reload.errors_count }
+        end
+      end
+
+      context "when worker_version is 2" do
+        let(:outbox_item) { create(:outbox_item, errors_count: db_errors_count) }
+        let(:worker_version) { 2 }
+
+        before do
+          allow(Sbmt::Outbox.logger).to receive(:log_failure)
+        end
+
+        context "when cached errors_count exceed max retries" do
+          it "increments cached errors count and marks items as failed" do
+            expect(Sbmt::Outbox.logger).to receive(:log_failure).with(/max retries exceeded: marking item as failed based on cached data/, any_args)
+            expect { result }
+              .to change { outbox_item.reload.errors_count }.from(1).to(100)
+              .and change { outbox_item.reload.status }.from("pending").to("failed")
+          end
+        end
+
+        context "when cached errors_count is greater" do
+          let(:cached_errors_count) { 2 }
+
+          it "sets errors_count based on cached data" do
+            expect(Sbmt::Outbox.logger).to receive(:log_failure).with(/inconsistent item: cached_errors_count:2 > db_errors_count:1: setting errors_count based on cached data/, any_args)
+            expect { result }
+              .to change { outbox_item.reload.errors_count }.from(1).to(2)
+              .and change { outbox_item.reload.status }.from("pending").to("delivered")
+          end
+        end
+
+        context "when cached errors_count is less" do
+          let(:cached_errors_count) { 0 }
+
+          it "sets errors_count based on db data" do
+            expect { result }
+              .to not_change { outbox_item.reload.errors_count }
+              .and change { outbox_item.reload.status }.from("pending").to("delivered")
+          end
+        end
       end
     end
 
@@ -172,7 +265,8 @@ describe Sbmt::Outbox::ProcessItem do
         let!(:outbox_item) { create(:outbox_item, processed_at: Time.current) }
 
         it "doesn't track process_latency" do
-          expect { result }.not_to measure_yabeda_histogram(Yabeda.outbox.process_latency)
+          expect { result }.to measure_yabeda_histogram(Yabeda.outbox.retry_latency)
+            .and not_measure_yabeda_histogram(Yabeda.outbox.process_latency)
         end
       end
     end
@@ -214,6 +308,8 @@ describe Sbmt::Outbox::ProcessItem do
       end
 
       context "when error persisting fails" do
+        let(:redis) { RedisClient.new(url: ENV["REDIS_URL"]) }
+
         before do
           allow_any_instance_of(OutboxItem).to receive(:failed!).and_raise("boom")
         end
@@ -238,6 +334,84 @@ describe Sbmt::Outbox::ProcessItem do
 
         it "tracks Yabeda error counter" do
           expect { result }.to increment_yabeda_counter(Yabeda.outbox.error_counter).by(1)
+        end
+
+        context "when worker_version is 1" do
+          let(:worker_version) { 1 }
+
+          it "skips item state caching" do
+            result
+            data = redis.call("GET", "outbox:outbox_item:#{outbox_item.id}")
+            expect(data).to be_nil
+          end
+        end
+
+        context "when worker_version is 2" do
+          let(:worker_version) { 2 }
+
+          context "when there is no cached item state" do
+            it "caches item state in redis" do
+              result
+              data = redis.call("GET", "outbox:outbox_item:#{outbox_item.id}")
+              deserialized = JSON.parse(data)
+              expect(deserialized["timestamp"]).to be_an_integer
+              expect(deserialized).to include(
+                "error_msg" => "RuntimeError boom",
+                "errors_count" => 1,
+                "version" => 1
+              )
+            end
+
+            it "sets ttl for item state data" do
+              result
+              res = redis.call("EXPIRETIME", "outbox:outbox_item:#{outbox_item.id}")
+              expect(res).to be > 0
+            end
+          end
+
+          context "when there is cached item state with greater errors_count" do
+            before do
+              data = Sbmt::Outbox::V2::RedisItemMeta.new(errors_count: 2, error_msg: "Some previous error")
+              redis.call("SET", "outbox:outbox_item:#{outbox_item.id}", data.to_s)
+            end
+
+            it "caches item state in redis based on cached errors_count" do
+              result
+              data = redis.call("GET", "outbox:outbox_item:#{outbox_item.id}")
+              deserialized = JSON.parse(data)
+              expect(deserialized["timestamp"]).to be_an_integer
+              expect(deserialized).to include(
+                "error_msg" => "RuntimeError boom",
+                "errors_count" => 3,
+                "version" => 1
+              )
+            end
+
+            it "sets ttl for item state data" do
+              result
+              res = redis.call("EXPIRETIME", "outbox:outbox_item:#{outbox_item.id}")
+              expect(res).to be > 0
+            end
+          end
+
+          context "when there is cached item state with le/eq errors_count" do
+            before do
+              data = Sbmt::Outbox::V2::RedisItemMeta.new(errors_count: 0, error_msg: "Some previous error")
+              redis.call("SET", "outbox:outbox_item:#{outbox_item.id}", data.to_s)
+            end
+
+            it "caches item state in redis based on db errors_count" do
+              result
+              data = redis.call("GET", "outbox:outbox_item:#{outbox_item.id}")
+              deserialized = JSON.parse(data)
+              expect(deserialized["timestamp"]).to be_an_integer
+              expect(deserialized).to include(
+                "error_msg" => "RuntimeError boom",
+                "errors_count" => 1,
+                "version" => 1
+              )
+            end
+          end
         end
       end
     end
