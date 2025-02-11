@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.19.0] - 2025-02-11
+
+### Added
+
+- Querying minimum `created_at` for deletion now uses a replica database to reduce primary database load
+
 ## [6.18.0] - 2025-02-04
 
 ### Added
