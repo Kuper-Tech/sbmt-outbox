@@ -117,7 +117,9 @@ module Sbmt
         table = item_class.arel_table
         batch_size = item_class.config.deletion_batch_size
         time_window = item_class.config.deletion_time_window
-        min_date = item_class.where(table[:status].in(statuses)).minimum(:created_at)
+        min_date = Outbox.database_switcher.use_slave do
+          item_class.where(table[:status].in(statuses)).minimum(:created_at)
+        end
         deleted_count = nil
 
         while min_date && min_date < waterline
@@ -174,7 +176,9 @@ module Sbmt
       def delete_items_in_batches_with_between_mysql(waterline, statuses)
         batch_size = item_class.config.deletion_batch_size
         time_window = item_class.config.deletion_time_window
-        min_date = item_class.where(status: statuses).minimum(:created_at)
+        min_date = Outbox.database_switcher.use_slave do
+          item_class.where(status: statuses).minimum(:created_at)
+        end
         deleted_count = nil
 
         while min_date && min_date < waterline
