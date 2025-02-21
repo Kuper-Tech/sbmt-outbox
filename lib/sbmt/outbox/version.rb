@@ -2,6 +2,6 @@
 
 module Sbmt
   module Outbox
-    VERSION = "6.19.0"
+    VERSION = "6.19.1"
   end
 end

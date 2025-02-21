@@ -118,7 +118,10 @@ module Sbmt
         batch_size = item_class.config.deletion_batch_size
         time_window = item_class.config.deletion_time_window
         min_date = Outbox.database_switcher.use_slave do
-          item_class.where(table[:status].in(statuses)).minimum(:created_at)
+          # This query assumes that record with minimum 'id' also has minimum 'created_at'.
+          # We use it because it should be faster than plain 'SELECT MIN(created_at) ...'.
+          min_id = item_class.select(table[:id].minimum).where(status: statuses)
+          item_class.select(:created_at).where(table[:id].eq(min_id.arel)).first&.created_at
         end
         deleted_count = nil
 
@@ -174,10 +177,14 @@ module Sbmt
       end
 
       def delete_items_in_batches_with_between_mysql(waterline, statuses)
+        table = item_class.arel_table
         batch_size = item_class.config.deletion_batch_size
         time_window = item_class.config.deletion_time_window
         min_date = Outbox.database_switcher.use_slave do
-          item_class.where(status: statuses).minimum(:created_at)
+          # This query assumes that record with minimum 'id' also has minimum 'created_at'.
+          # We use it because plain 'SELECT MIN(created_at) ...' is VERY slow in MySQL.
+          min_id = item_class.select(table[:id].minimum).where(status: statuses)
+          item_class.select(:created_at).where(table[:id].eq(min_id.arel)).first&.created_at
         end
         deleted_count = nil
 

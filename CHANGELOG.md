@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.19.1] - 2025-02-20
+
+### Fixed
+
+- `MIN(created_at)` query in stale items deletion job has been optimised
+
 ## [6.19.0] - 2025-02-11
 
 ### Added
