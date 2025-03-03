@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- Fixed "Wrong number of arguments" error in call to `Logger#log_error` in `Sbmt::Outbox::ErrorTracker::error`
+
 ## [6.19.1] - 2025-02-20
 
 ### Fixed

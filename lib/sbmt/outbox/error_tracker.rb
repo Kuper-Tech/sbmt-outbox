@@ -6,7 +6,7 @@ module Sbmt
       class << self
         def error(message, params = {})
           unless defined?(Sentry)
-            Outbox.logger.log_error(message, params)
+            Outbox.logger.log_error(message, **params)
             return
           end
 
