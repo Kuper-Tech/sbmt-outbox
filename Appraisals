@@ -11,15 +11,23 @@ versions_map = {
   "8.0" => %w[3.3]
 }
 
+rack_versions = %w[2.0 3.0]
+
 current_ruby_version = RUBY_VERSION.split(".").first(2).join(".")
 
 versions_map.each do |rails_version, ruby_versions|
-  ruby_versions.each do |ruby_version|
-    next if ruby_version != current_ruby_version
+  rack_versions.each do |rack_version|
+    ruby_versions.each do |ruby_version|
+      next if ruby_version != current_ruby_version
 
-    appraise "rails-#{rails_version}" do
-      gem "rails", "~> #{rails_version}.0"
-      gem "concurrent-ruby", "1.3.4" if rails_version.to_f < 7.1
+      # rack v3 supported in Rails starting from 7.1
+      next if rails_version.to_f < 7.1 && rack_version.to_f > 2
+
+      appraise "rails-#{rails_version}-rack-#{rack_version}" do
+        gem "rails", "~> #{rails_version}.0"
+        gem "rack", "~> #{rack_version}"
+        gem "concurrent-ruby", "1.3.4" if rails_version.to_f < 7.1
+      end
     end
   end
 end

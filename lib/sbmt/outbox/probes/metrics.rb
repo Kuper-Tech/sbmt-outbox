@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rackup/handler/webrick" if Gem::Version.new(::Rack.release) >= Gem::Version.new("3")
+
 module Sbmt
   module Outbox
     module Probes
@@ -29,7 +31,7 @@ module Sbmt
 
           def start_webrick(app, middlewares:, port:)
             Thread.new do
-              ::Rack::Handler::WEBrick.run(
+              webrick.run(
                 ::Rack::Builder.new do
                   middlewares.each do |middleware, options|
                     use middleware, **options
@@ -40,6 +42,12 @@ module Sbmt
                 Port: port
               )
             end
+          end
+
+          def webrick
+            return ::Rack::Handler::WEBrick if Gem::Version.new(::Rack.release) < Gem::Version.new("3")
+
+            ::Rackup::Handler::WEBrick
           end
 
           def autostart_yabeda_server?

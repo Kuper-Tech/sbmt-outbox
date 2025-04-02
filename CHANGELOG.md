@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [6.20.0] - 2025-03-31
+
+### Fixed
+
+- Upgrade `http_health_check` dep
+
+### Added
+- Rack v3 support
+
 ## [6.19.2] - 2025-03-03
 
 ### Fixed

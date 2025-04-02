@@ -10,6 +10,8 @@ module Sbmt
     class BaseItem < Outbox.active_record_base_class
       self.abstract_class = true
 
+      delegate :retriable?, to: :class
+
       class << self
         delegate :owner, :strict_order, to: :config
 
@@ -143,10 +145,6 @@ module Sbmt
 
       def touch_processed_at
         self.processed_at = Time.current
-      end
-
-      def retriable?
-        self.class.retriable?
       end
 
       def max_retries_exceeded?
