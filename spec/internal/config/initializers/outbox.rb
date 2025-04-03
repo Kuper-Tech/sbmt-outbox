@@ -10,10 +10,4 @@ Rails.application.config.outbox.tap do |config|
   config.processor.tap do |pc|
     pc.brpop_delay = 0.1
   end
-
-  config.worker.tap do |wc|
-    wc.rate_limit = 1000
-    wc.rate_interval = 10
-    wc.shuffle_jobs = false
-  end
 end

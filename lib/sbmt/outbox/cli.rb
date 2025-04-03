@@ -33,34 +33,19 @@ module Sbmt
         aliases: "-t",
         type: :string,
         desc: "Poll tactic: [default, low-priority, aggressive]"
-      option :worker_version,
-        aliases: "-w",
-        type: :numeric,
-        desc: "Worker version: [1 | 2]"
       def start
         load_environment
 
-        version = options[:worker_version] || Outbox.default_worker_version
-
         boxes = format_boxes(options[:box])
-        check_deprecations!(boxes, version)
+        check_deprecations!(boxes)
 
-        worker = if version == 1
-          Sbmt::Outbox::V1::Worker.new(
-            boxes: boxes,
-            concurrency: options[:concurrency] || 10
-          )
-        elsif version == 2
-          Sbmt::Outbox::V2::Worker.new(
-            boxes: boxes,
-            poll_tactic: options[:poll_tactic],
-            poller_threads_count: options[:poll_threads],
-            poller_partitions_count: options[:poll_concurrency],
-            processor_concurrency: options[:concurrency] || 4
-          )
-        else
-          raise "Worker version #{version} is invalid, available versions: 1|2"
-        end
+        worker = Sbmt::Outbox::V2::Worker.new(
+          boxes: boxes,
+          poll_tactic: options[:poll_tactic],
+          poller_threads_count: options[:poll_threads],
+          poller_partitions_count: options[:poll_concurrency],
+          processor_concurrency: options[:concurrency] || 4
+        )
 
         Sbmt::Outbox.current_worker = worker
 
@@ -77,9 +62,7 @@ module Sbmt
 
       private
 
-      def check_deprecations!(boxes, version)
-        return unless version == 2
-
+      def check_deprecations!(boxes)
         boxes.each do |item_class|
           next if item_class.config.partition_size_raw.blank?
 
@@ -91,7 +74,6 @@ module Sbmt
         load(lookup_outboxfile)
 
         require "sbmt/outbox"
-        require "sbmt/outbox/v1/worker"
         require "sbmt/outbox/v2/worker"
       end
 

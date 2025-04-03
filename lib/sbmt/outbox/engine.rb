@@ -29,12 +29,6 @@ module Sbmt
           c.cutoff_timeout = 90
           c.batch_size = 200
         end
-        c.worker = ActiveSupport::OrderedOptions.new.tap do |c|
-          c.rate_limit = 20
-          c.rate_interval = 60
-          c.shuffle_jobs = true
-        end
-        c.default_worker_version = 2
 
         # worker v2
         c.poller = ActiveSupport::OrderedOptions.new.tap do |pc|
