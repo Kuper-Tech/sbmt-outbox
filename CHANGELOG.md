@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [7.0.0] - 2025-04-03
+
+### Changed
+
+- BREAKING: remove worker v1 support
+
 ## [6.20.0] - 2025-03-31
 
 ### Fixed
