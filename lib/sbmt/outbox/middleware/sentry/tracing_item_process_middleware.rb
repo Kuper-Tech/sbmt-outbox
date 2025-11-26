@@ -22,7 +22,7 @@ module Sbmt
             span&.set_data(:item_id, item.id)
 
             begin
-              yield
+              result = yield
             rescue
               finish_span(span, 500)
               finish_sentry_transaction(scope, transaction, 500) if new_transaction
@@ -31,6 +31,8 @@ module Sbmt
 
             finish_span(span, 200)
             finish_sentry_transaction(scope, transaction, 200) if new_transaction
+
+            result
           end
 
           private

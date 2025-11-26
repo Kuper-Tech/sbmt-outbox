@@ -19,6 +19,7 @@ describe Sbmt::Outbox::Middleware::Sentry::TracingBatchProcessMiddleware do
     expect(scope).to receive(:set_tags)
     expect(::Sentry).to receive(:start_transaction)
 
-    expect { described_class.new.call(job) {} }.not_to raise_error
+    result = described_class.new.call(job) { "block_value" }
+    expect(result).to eq("block_value")
   end
 end
