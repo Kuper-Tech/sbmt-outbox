@@ -18,13 +18,15 @@ module Sbmt
             transaction = start_transaction(scope, job)
 
             begin
-              yield
+              result = yield
             rescue
               finish_sentry_transaction(scope, transaction, 500)
               raise
             end
 
             finish_sentry_transaction(scope, transaction, 200)
+
+            result
           end
 
           private

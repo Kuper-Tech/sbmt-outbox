@@ -21,6 +21,7 @@ describe Sbmt::Outbox::Middleware::Sentry::TracingItemProcessMiddleware do
       .with(op: "sbmt.outbox.item_process", name: "Sbmt.Outbox.Outbox_item")
       .and_return(nil)
 
-    expect { described_class.new.call(outbox_item) {} }.not_to raise_error
+    result = described_class.new.call(outbox_item) { "block_value" }
+    expect(result).to eq("block_value")
   end
 end

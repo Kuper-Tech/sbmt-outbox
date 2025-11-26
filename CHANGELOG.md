@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [7.0.1] - 2025-11-26
+
+### Fixed
+
+- Return `yield` result from Sentry middlewares
+
 ## [7.0.0] - 2025-04-03
 
 ### Changed
