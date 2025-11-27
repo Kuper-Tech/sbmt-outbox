@@ -56,3 +56,7 @@ RSpec/MultipleMemoizedHelpers:
 RSpec/DescribeClass:
   Exclude:
     - spec/lib/sbmt/outbox/tasks/*
+
+Rails/Exit:
+  Exclude:
+    - spec/rails_helper.rb
