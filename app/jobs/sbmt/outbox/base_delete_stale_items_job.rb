@@ -234,7 +234,7 @@ module Sbmt
           .outbox
           .delete_latency
           .measure({box_type: box_type, box_name: box_name}) do
-          yield
+            yield
         end
       end
     end

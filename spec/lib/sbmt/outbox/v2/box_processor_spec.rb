@@ -46,6 +46,9 @@ describe Sbmt::Outbox::V2::BoxProcessor do
     before { allow(processor.send(:thread_pool)).to receive(:start).and_yield(0, task) }
 
     it "logs task tags" do
+      expect(Sbmt::Outbox.logger).to receive(:log_debug).thrice
+      expect(Sbmt::Outbox.logger).to receive(:log_info).with("abstract_worker: starting with 1 threads")
+      expect(Sbmt::Outbox.logger).to receive(:log_info).with("abstract_worker: starting thread pool")
       expect(Sbmt::Outbox.logger).to receive(:with_tags).with(**task.log_tags)
 
       expect { processor.start }

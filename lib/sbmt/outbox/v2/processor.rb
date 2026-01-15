@@ -105,6 +105,7 @@ module Sbmt
           RedisJob.deserialize!(result)
         rescue => ex
           logger.log_error("error while fetching redis job: #{ex.message}")
+          nil
         end
 
         def redis_block_timeout

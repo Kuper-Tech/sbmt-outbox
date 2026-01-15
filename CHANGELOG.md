@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [7.0.2] - 2026-01-14
+
+### Added
+
+- Debug logging for `thread_pool` / `box_processor`
+
 ## [7.0.1] - 2025-11-26
 
 ### Fixed
