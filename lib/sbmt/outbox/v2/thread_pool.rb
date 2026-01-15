@@ -28,6 +28,7 @@ module Sbmt
 
             if task == BREAK
               self.stopped = true
+              logger.log_debug("#{name}: received BREAK signal, stopping thread pool")
               return
             end
 
@@ -47,35 +48,54 @@ module Sbmt
             end
           end
 
-          logger.log_info("#{name}: threads started")
+          logger.log_info("#{name}: thread pool started with #{concurrency} threads")
 
           raise result if result.is_a?(Exception)
         end
 
         def stop
+          logger.log_info("#{name}: stopping thread pool")
           self.stopped = true
 
           threads.map(&:join) if start_async
         ensure
           stop_threads
+          logger.log_info("#{name}: thread pool stopped")
         end
 
         def running?
-          return false if stopped
+          if stopped
+            logger.log_info("#{name}: checking if running: stopped")
+            return false
+          end
 
           true
         end
 
         def alive?(timeout)
-          return false if stopped
+          if stopped
+            logger.log_info("#{name}: checking if alive: stopped")
+            return false
+          end
 
           deadline = Time.current - timeout
-          threads.all? do |thread|
-            last_active_at = last_active_at(thread)
-            return false unless last_active_at
+          alive_threads = threads.select do |thread|
+            next false unless thread.alive?
 
-            deadline < last_active_at
+            last_active_at = last_active_at(thread)
+            if last_active_at
+              deadline < last_active_at
+            else
+              false
+            end
           end
+
+          unless alive_threads.length == concurrency
+            logger.log_info("#{name}: checking if alive: false, only #{alive_threads.length}/#{concurrency} threads alive")
+            return false
+          end
+
+          true
         end
 
         private
@@ -98,6 +118,7 @@ module Sbmt
           exception = nil
 
           in_threads do |worker_num|
+            logger.log_debug("#{name}: worker #{worker_num} starting")
             self.worker_number = worker_num
             # We don't want to start all threads at the same time
             sleep(rand * (worker_num + 1)) if random_startup_delay
@@ -113,30 +134,39 @@ module Sbmt
               begin
                 yield task
               rescue Exception => e # rubocop:disable Lint/RescueException
+                logger.log_error("#{name}: worker #{worker_num} caught exception in task: #{e.class} - #{e.message}")
                 exception = e
               end
             end
           end
 
+          logger.log_info("#{name}: run_threads completed, exception: #{exception&.inspect}")
           exception
         end
 
         def in_threads
           Thread.handle_interrupt(Exception => :never) do
             Thread.handle_interrupt(Exception => :immediate) do
+              logger.log_info("#{name}: creating #{concurrency} threads")
               concurrency.times do |i|
                 threads << Thread.new { yield(i) }
               end
               threads.map(&:value) unless start_async
             end
           ensure
+            logger.log_debug("#{name}: in_threads ensuring stop_threads")
             stop_threads unless start_async
           end
         end
 
         def stop_threads
-          threads.each(&:kill)
+          logger.log_debug("#{name}: stop_threads called, clearing #{threads.length} threads")
+          threads.each do |thread|
+            logger.log_debug("#{name}: killing thread #{thread.object_id}")
+            thread.kill
+          end
           threads.clear
+          logger.log_debug("#{name}: stop_threads completed")
         end
 
         def worker_number=(num)

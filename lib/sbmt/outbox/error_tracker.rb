@@ -5,10 +5,8 @@ module Sbmt
     class ErrorTracker
       class << self
         def error(message, params = {})
-          unless defined?(Sentry)
-            Outbox.logger.log_error(message, **params)
-            return
-          end
+          Outbox.logger.log_error(message, **params)
+          return unless defined?(Sentry)
 
           Sentry.with_scope do |scope|
             scope.set_contexts(contexts: params)

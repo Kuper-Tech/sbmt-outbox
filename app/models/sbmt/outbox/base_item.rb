@@ -34,8 +34,8 @@ module Sbmt
         def calc_bucket_partitions(count)
           (0...count).to_a
             .index_with do |x|
-            (0...config.bucket_size).to_a
-              .select { |p| p % count == x }
+              (0...config.bucket_size).to_a
+                .select { |p| p % count == x }
           end
         end
 
