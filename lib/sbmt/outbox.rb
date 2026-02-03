@@ -12,7 +12,6 @@ require "cutoff"
 require "http_health_check"
 require "redis-client"
 require "connection_pool"
-require "ostruct"
 
 begin
   require "sentry-rails"

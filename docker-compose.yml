@@ -1,6 +1,6 @@
 services:
   ruby:
-    image: ruby:${RUBY_VERSION:-3.2}
+    image: ruby:${RUBY_VERSION:-3.4}
     environment:
       HISTFILE: /app/tmp/.bash_history
       BUNDLE_PATH: /usr/local/bundle
