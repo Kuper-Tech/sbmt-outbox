@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "sbmt/outbox/v2/processor"
+require "ostruct"
 
 # rubocop:disable RSpec/IndexedLet
 describe Sbmt::Outbox::V2::Processor do

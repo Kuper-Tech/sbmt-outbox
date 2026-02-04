@@ -35,7 +35,7 @@ Gem::Specification.new do |s|
   s.add_dependency "dry-initializer", "~> 3.0"
   s.add_dependency "dry-monads", "~> 1.3"
   s.add_dependency "exponential-backoff", "~> 0.0"
-  s.add_dependency "rails", ">= 6.0", "< 8.1"
+  s.add_dependency "rails", ">= 6.0", "<= 8.1"
   s.add_dependency "yabeda", "~> 0.8"
   s.add_dependency "thor", ">= 0.20", "< 2"
   s.add_dependency "redlock", "> 1.0", "< 3.0"
@@ -63,4 +63,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "opentelemetry-api", ">= 0.17.0"
   s.add_development_dependency "opentelemetry-common", ">= 0.17.0"
   s.add_development_dependency "opentelemetry-instrumentation-base", ">= 0.17.0"
+  s.add_development_dependency "ostruct"
 end

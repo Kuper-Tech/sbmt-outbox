@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [7.1.0] - 2026-02-04
+
+### Added
+
+- Add support of Rails 8.1
+- Add Ruby 3.4 to test matrix
+
 ## [7.0.2] - 2026-01-14
 
 ### Added
