@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [7.1.1] - 2026-02-17
+
+### Changed
+
+- Adjust Rails dependency
+
 ## [7.1.0] - 2026-02-04
 
 ### Added
