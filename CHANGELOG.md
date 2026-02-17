@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [7.1.2] - 2026-02-17
+
+### Fixed
+
+- Fix CI build on Github
+
 ## [7.1.1] - 2026-02-17
 
 ### Changed
