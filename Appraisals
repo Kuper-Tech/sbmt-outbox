@@ -28,6 +28,7 @@ versions_map.each do |rails_version, ruby_versions|
         gem "rails", "~> #{rails_version}.0"
         gem "rack", "~> #{rack_version}"
         gem "concurrent-ruby", "1.3.4" if rails_version.to_f < 7.1
+        gem "pg", force_ruby_platform: true if current_ruby_version == "2.7"
       end
     end
   end
