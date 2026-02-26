@@ -7,4 +7,4 @@ gemspec
 current_ruby_version = RUBY_VERSION.split(".").first(2).join(".")
 
 puts ["!!!!", current_ruby_version].inspect
-gem "pg", "1.6.2" if current_ruby_version == "2.7"
+gem "pg", "< 1.6.3", force_ruby_platform: true if current_ruby_version == "2.7"
