@@ -8,5 +8,5 @@ current_ruby_version = RUBY_VERSION.split(".").first(2).join(".")
 
 puts ["!!!!", current_ruby_version].inspect
 if current_ruby_version == "2.7"
-  gem "pg", "< 1.6.2"
+  gem "pg", "= 1.6.0"
 end
