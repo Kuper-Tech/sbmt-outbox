@@ -3,3 +3,8 @@
 source ENV.fetch("NEXUS_PUBLIC_SOURCE_URL", "https://rubygems.org")
 
 gemspec
+
+current_ruby_version = RUBY_VERSION.split(".").first(2).join(".")
+
+puts ["!!!!", current_ruby_version].inspect
+gem "pg", "1.6.2" if current_ruby_version == "2.7"
